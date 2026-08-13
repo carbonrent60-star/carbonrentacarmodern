@@ -283,6 +283,46 @@ export const carbonCopy = {
       ctaAction: "Avtomobil seç",
     },
 
+    testimonials: {
+      kicker: "MÜŞTƏRİ RƏYLƏRİ",
+      title1: "Yolda rahatlıq,",
+      title2: "sözdə etibar.",
+      intro:
+        "Carbon müştərilərinin avtomobil seçimi, təhvil prosesi və dəstək təcrübəsi haqqında qısa fikirləri.",
+      stats: [
+        ["500+", "məmnun müştəri"],
+        ["99%", "müştəri məmnuniyyəti"],
+        ["24/7", "aktiv dəstək"],
+      ],
+      items: [
+        {
+          name: "Aysel M.",
+          role: "Biznes səfəri",
+          text: "Avtomobil təmiz, vaxtında və tam hazır vəziyyətdə idi. Rezervasiya prosesi çox rahat keçdi.",
+        },
+        {
+          name: "Murad A.",
+          role: "Hava limanı transferi",
+          text: "Uçuş saatı dəyişsə də, komanda hər şeyi sakit şəkildə koordinasiya etdi. Sürücü vaxtında orada idi.",
+        },
+        {
+          name: "Nigar R.",
+          role: "Toy avtomobili",
+          text: "Xüsusi günümüz üçün seçdiyimiz avtomobil həm görüntü, həm də xidmət baxımından gözləntimizi qarşıladı.",
+        },
+        {
+          name: "Elvin H.",
+          role: "Gündəlik icarə",
+          text: "Qiymət və şərtlər əvvəlcədən aydın izah olundu. Heç bir gizli detal olmadı.",
+        },
+        {
+          name: "Leyla S.",
+          role: "Weekend səfəri",
+          text: "SUV seçimi səfər üçün çox rahat oldu. Təhvil və geri qaytarma prosesi sürətli idi.",
+        },
+      ],
+    },
+
     signature: {
       kicker: "CARBON CONCIERGE",
       heading1: "Hara gedirsiniz?",
@@ -711,6 +751,46 @@ export const carbonCopy = {
       ctaAction: "Choose a car",
     },
 
+    testimonials: {
+      kicker: "CLIENT STORIES",
+      title1: "Comfort on the road,",
+      title2: "trust in every detail.",
+      intro:
+        "Short notes from Carbon clients about car selection, handover and support.",
+      stats: [
+        ["500+", "happy clients"],
+        ["99%", "customer satisfaction"],
+        ["24/7", "active support"],
+      ],
+      items: [
+        {
+          name: "Aysel M.",
+          role: "Business trip",
+          text: "The car was clean, on time and fully ready. The reservation process felt very smooth.",
+        },
+        {
+          name: "Murad A.",
+          role: "Airport transfer",
+          text: "Even when the flight time changed, the team coordinated everything calmly. The driver was there on time.",
+        },
+        {
+          name: "Nigar R.",
+          role: "Wedding car",
+          text: "The car we chose for our special day matched our expectations in both appearance and service.",
+        },
+        {
+          name: "Elvin H.",
+          role: "Daily rental",
+          text: "The price and terms were explained clearly in advance. There were no hidden details.",
+        },
+        {
+          name: "Leyla S.",
+          role: "Weekend trip",
+          text: "The SUV was very comfortable for the trip. Pick-up and return were quick and easy.",
+        },
+      ],
+    },
+
     signature: {
       kicker: "CARBON CONCIERGE",
       heading1: "Where are you going?",
@@ -1137,6 +1217,46 @@ export const carbonCopy = {
       ctaText:
         "Выберите автомобиль и свяжитесь с нами для уточнения деталей аренды.",
       ctaAction: "Выбрать автомобиль",
+    },
+
+    testimonials: {
+      kicker: "ОТЗЫВЫ КЛИЕНТОВ",
+      title1: "Комфорт в дороге,",
+      title2: "доверие в деталях.",
+      intro:
+        "Короткие отзывы клиентов Carbon о выборе автомобиля, передаче и поддержке.",
+      stats: [
+        ["500+", "довольных клиентов"],
+        ["99%", "удовлетворенность"],
+        ["24/7", "активная поддержка"],
+      ],
+      items: [
+        {
+          name: "Aysel M.",
+          role: "Деловая поездка",
+          text: "Автомобиль был чистым, вовремя поданным и полностью готовым. Процесс бронирования прошел очень удобно.",
+        },
+        {
+          name: "Murad A.",
+          role: "Трансфер из аэропорта",
+          text: "Даже когда время рейса изменилось, команда спокойно все скоординировала. Водитель был на месте вовремя.",
+        },
+        {
+          name: "Nigar R.",
+          role: "Свадебный автомобиль",
+          text: "Автомобиль для особого дня оправдал ожидания и по внешнему виду, и по уровню сервиса.",
+        },
+        {
+          name: "Elvin H.",
+          role: "Ежедневная аренда",
+          text: "Цена и условия были заранее объяснены понятно. Никаких скрытых деталей не было.",
+        },
+        {
+          name: "Leyla S.",
+          role: "Поездка на выходные",
+          text: "SUV оказался очень удобным для поездки. Получение и возврат прошли быстро.",
+        },
+      ],
     },
 
     signature: {

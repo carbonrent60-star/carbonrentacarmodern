@@ -6,9 +6,10 @@ import { motion } from "motion/react";
 import Link from "next/link";
 import CarCard from "@/components/CarCard";
 import CarbonNavbar from "@/components/CarbonNavbar";
-import RentalGuide from "@/components/RentalGuide";
 import HomeExperience from "@/components/HomeExperience";
 import CarbonSignature from "@/components/CarbonSignature";
+import HomeJourneyBoard from "@/components/HomeJourneyBoard";
+import HomeTestimonials from "@/components/HomeTestimonials";
 import HomeBookingBar from "@/components/HomeBookingBar";
 import { featuredCars, type Car } from "@/data/cars";
 import { fetchPublicCars } from "@/lib/supabase/cars";
@@ -427,7 +428,8 @@ export default function Home() {
       </section>
 
       <CarbonSignature />
-      <RentalGuide />
+      <HomeJourneyBoard />
+      <HomeTestimonials />
       <HomeExperience />
     </main>
   );

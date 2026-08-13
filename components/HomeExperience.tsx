@@ -209,56 +209,6 @@ export default function HomeExperience() {
         </div>
       </section>
 
-      {/* ====================================================
-          FINAL CTA
-          ==================================================== */}
-      <section className="home-final-cta">
-        <div className="home-final-cta-noise" />
-
-        <div className="home-experience-inner home-final-cta-inner">
-          <motion.span
-            className="home-final-cta-label"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            CARBON RENT A CAR
-          </motion.span>
-
-          <motion.h2
-            initial={{ opacity: 0, y: 34 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.85, ease }}
-          >
-            {copy.homeExperience.ctaTitle1}
-            <br />
-            <em>{copy.homeExperience.ctaTitle2}</em>
-          </motion.h2>
-
-          <motion.div
-            className="home-final-cta-bottom"
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.1, ease }}
-          >
-            <p>{copy.homeExperience.ctaText}</p>
-
-            <div className="home-final-actions">
-              <Link href="/avtomobiller" className="home-final-primary">
-                {copy.homeExperience.ctaAction}
-                <ArrowRight size={16} strokeWidth={1.6} />
-              </Link>
-
-              <a href="tel:+994502200050" className="home-final-secondary">
-                +994 50 220 00 50
-              </a>
-            </div>
-          </motion.div>
-        </div>
-      </section>
     </>
   );
 }
