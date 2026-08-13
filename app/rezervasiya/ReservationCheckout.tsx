@@ -35,6 +35,7 @@ import { createPortal } from "react-dom";
 
 import CarbonNavbar from "@/components/CarbonNavbar";
 import type { Car } from "@/data/cars";
+import {useCarbonCopy} from "@/lib/carbon-locale";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -51,6 +52,159 @@ const extraLabels: Record<string, string> = {
   support: "Prioritet dəstək",
   "second-driver": "Əlavə sürücü",
 };
+
+const reservationCopy = {
+  az: {
+    backToCar: "Avtomobilə qayıt",
+    live: "SORĞU SİSTEMİ AKTİVDİR",
+    kicker: "CARBON RESERVATION / 04",
+    heroLine1: "Son bir neçə",
+    heroLine2: "detal.",
+    heroText:
+      "Avtomobil artıq seçilib. Səfər məlumatlarını yoxlayın, əlaqə məlumatlarınızı daxil edin və sorğunu Carbon komandasına göndərin.",
+    steps: [
+      ["01", "Səfər", "Tarix və seçimlər"],
+      ["02", "Əlaqə", "Sizin məlumatlar"],
+      ["03", "Yoxlama", "Son təsdiq"],
+    ],
+    tripStep: "01 / SƏFƏR",
+    tripHeading: "Səfərinizi yoxlayın.",
+    handoverMethod: "TƏHVİL ÜSULU",
+    office: "Carbon məntəqəsi",
+    officeText: "Avtomobili məntəqədən təhvil alın",
+    delivery: "Çatdırılma",
+    deliveryText: "Avtomobil seçdiyiniz ünvana gəlsin",
+    officePickup: "Məntəqədən təhvil",
+    finalStep: "03 / YEKUN",
+    finalHeading: "Hər şey hazırdır.",
+    carLabel: "AVTOMOBİL",
+    tripLabel: "SƏFƏR",
+    handoverLabel: "TƏHVİL",
+    driverLabel: "SÜRÜCÜ",
+    durationLabel: "Müddət",
+    day: "gün",
+    request: "Sorğu ilə",
+    whatsapp: {
+      hello: "Salam Carbon 👋",
+      title: "Yeni avtomobil rezervasiya sorğusu:",
+      car: "Avtomobil",
+      category: "Kateqoriya",
+      pickup: "Götürmə",
+      return: "Qaytarma",
+      duration: "Müddət",
+      handover: "Təhvil",
+      address: "Ünvan",
+      driver: "Sürücü",
+      extras: "Əlavələr",
+      daily: "Günlük qiymət",
+      total: "Təxmini məbləğ",
+      name: "Ad",
+      phone: "Telefon",
+      note: "Qeyd",
+      confirm: "Mövcudluğu təsdiqləməyinizi xahiş edirəm.",
+    },
+  },
+  en: {
+    backToCar: "Back to car",
+    live: "REQUEST SYSTEM ACTIVE",
+    kicker: "CARBON RESERVATION / 04",
+    heroLine1: "A few final",
+    heroLine2: "details.",
+    heroText:
+      "The car is already selected. Check the trip details, enter your contact information and send the request to the Carbon team.",
+    steps: [
+      ["01", "Trip", "Dates and options"],
+      ["02", "Contact", "Your details"],
+      ["03", "Review", "Final confirmation"],
+    ],
+    tripStep: "01 / TRIP",
+    tripHeading: "Review your trip.",
+    handoverMethod: "HANDOVER METHOD",
+    office: "Carbon office",
+    officeText: "Pick up the car from our office",
+    delivery: "Delivery",
+    deliveryText: "Have the car delivered to your address",
+    officePickup: "Pick up at office",
+    finalStep: "03 / FINAL",
+    finalHeading: "Everything is ready.",
+    carLabel: "CAR",
+    tripLabel: "TRIP",
+    handoverLabel: "HANDOVER",
+    driverLabel: "DRIVER",
+    durationLabel: "Duration",
+    day: "day",
+    request: "On request",
+    whatsapp: {
+      hello: "Hello Carbon 👋",
+      title: "New car reservation request:",
+      car: "Car",
+      category: "Category",
+      pickup: "Pick-up",
+      return: "Return",
+      duration: "Duration",
+      handover: "Handover",
+      address: "Address",
+      driver: "Driver",
+      extras: "Extras",
+      daily: "Daily price",
+      total: "Estimated total",
+      name: "Name",
+      phone: "Phone",
+      note: "Note",
+      confirm: "Please confirm availability.",
+    },
+  },
+  ru: {
+    backToCar: "Вернуться к авто",
+    live: "СИСТЕМА ЗАЯВОК АКТИВНА",
+    kicker: "CARBON RESERVATION / 04",
+    heroLine1: "Несколько последних",
+    heroLine2: "деталей.",
+    heroText:
+      "Автомобиль уже выбран. Проверьте данные поездки, укажите контактную информацию и отправьте заявку команде Carbon.",
+    steps: [
+      ["01", "Поездка", "Даты и опции"],
+      ["02", "Контакты", "Ваши данные"],
+      ["03", "Проверка", "Финальное подтверждение"],
+    ],
+    tripStep: "01 / ПОЕЗДКА",
+    tripHeading: "Проверьте поездку.",
+    handoverMethod: "СПОСОБ ПЕРЕДАЧИ",
+    office: "Офис Carbon",
+    officeText: "Получите автомобиль в нашем офисе",
+    delivery: "Доставка",
+    deliveryText: "Автомобиль приедет на выбранный адрес",
+    officePickup: "Получение в офисе",
+    finalStep: "03 / ФИНАЛ",
+    finalHeading: "Все готово.",
+    carLabel: "АВТОМОБИЛЬ",
+    tripLabel: "ПОЕЗДКА",
+    handoverLabel: "ПЕРЕДАЧА",
+    driverLabel: "ВОДИТЕЛЬ",
+    durationLabel: "Срок",
+    day: "дн.",
+    request: "По запросу",
+    whatsapp: {
+      hello: "Здравствуйте, Carbon 👋",
+      title: "Новая заявка на бронирование автомобиля:",
+      car: "Автомобиль",
+      category: "Категория",
+      pickup: "Получение",
+      return: "Возврат",
+      duration: "Срок",
+      handover: "Передача",
+      address: "Адрес",
+      driver: "Водитель",
+      extras: "Дополнительно",
+      daily: "Цена за день",
+      total: "Примерная сумма",
+      name: "Имя",
+      phone: "Телефон",
+      note: "Заметка",
+      confirm: "Пожалуйста, подтвердите доступность.",
+    },
+  },
+} as const;
 
 function isoToday(offset = 0) {
   const date = new Date();
@@ -852,6 +1006,9 @@ export default function ReservationCheckout({
   car: Car | null;
   initial: Initial;
 }) {
+  const {locale} = useCarbonCopy();
+  const t = reservationCopy[locale];
+
   const [startDate, setStartDate] = useState(
     initial.start || isoToday(1),
   );
@@ -926,38 +1083,39 @@ export default function ReservationCheckout({
   function whatsappHref() {
     if (!car) return "#";
 
+    const w = t.whatsapp;
     const lines = [
-      "Salam Carbon 👋",
+      w.hello,
       "",
-      "Yeni avtomobil rezervasiya sorğusu:",
+      w.title,
       "",
-      `Avtomobil: ${car.title}`,
-      `Kateqoriya: ${car.category}`,
-      `Götürmə: ${formatDate(startDate)}`,
-      `Qaytarma: ${formatDate(endDate)}`,
-      `Müddət: ${days} gün`,
-      `Təhvil: ${
+      `${w.car}: ${car.title}`,
+      `${w.category}: ${car.category}`,
+      `${w.pickup}: ${formatDate(startDate)}`,
+      `${w.return}: ${formatDate(endDate)}`,
+      `${w.duration}: ${days} ${t.day}`,
+      `${w.handover}: ${
         pickup === "delivery"
-          ? "Ünvana çatdırılma"
-          : "Carbon məntəqəsi"
+          ? t.delivery
+          : t.office
       }`,
       ...(pickup === "delivery" && deliveryAddress
-        ? [`Ünvan: ${deliveryAddress}`]
+        ? [`${w.address}: ${deliveryAddress}`]
         : []),
-      `Sürücü: ${drivers}`,
-      `Əlavələr: ${extrasText}`,
-      `Günlük qiymət: ${
-        dailyRate !== null ? `${dailyRate} ₼` : "Sorğu ilə"
+      `${w.driver}: ${drivers}`,
+      `${w.extras}: ${extrasText}`,
+      `${w.daily}: ${
+        dailyRate !== null ? `${dailyRate} ₼` : t.request
       }`,
-      `Təxmini məbləğ: ${
-        total !== null ? `${total} ₼` : "Sorğu ilə"
+      `${w.total}: ${
+        total !== null ? `${total} ₼` : t.request
       }`,
       "",
-      `Ad: ${name}`,
-      `Telefon: ${phone}`,
-      ...(note.trim() ? [`Qeyd: ${note.trim()}`] : []),
+      `${w.name}: ${name}`,
+      `${w.phone}: ${phone}`,
+      ...(note.trim() ? [`${w.note}: ${note.trim()}`] : []),
       "",
-      "Mövcudluğu təsdiqləməyinizi xahiş edirəm.",
+      w.confirm,
     ];
 
     return `https://wa.me/994554840006?text=${encodeURIComponent(
@@ -1026,12 +1184,12 @@ export default function ReservationCheckout({
           <div className="reservation-v4-topbar">
             <Link href={`/avtomobiller/${car.slug}`}>
               <ArrowLeft size={13} />
-              Avtomobilə qayıt
+              {t.backToCar}
             </Link>
 
             <div className="reservation-v4-live">
               <i />
-              SORĞU SİSTEMİ AKTİVDİR
+              {t.live}
             </div>
           </div>
 
@@ -1042,13 +1200,13 @@ export default function ReservationCheckout({
               transition={{ duration: 0.7, ease }}
             >
               <span className="reservation-v4-kicker">
-                CARBON RESERVATION / 04
+                {t.kicker}
               </span>
 
               <h1>
-                Son bir neçə
+                {t.heroLine1}
                 <br />
-                <em>detal.</em>
+                <em>{t.heroLine2}</em>
               </h1>
             </motion.div>
 
@@ -1061,18 +1219,12 @@ export default function ReservationCheckout({
                 ease,
               }}
             >
-              Avtomobil artıq seçilib. Səfər məlumatlarını
-              yoxlayın, əlaqə məlumatlarınızı daxil edin və
-              sorğunu Carbon komandasına göndərin.
+              {t.heroText}
             </motion.p>
           </div>
 
           <div className="reservation-v4-steps">
-            {[
-              ["01", "Səfər", "Tarix və seçimlər"],
-              ["02", "Əlaqə", "Sizin məlumatlar"],
-              ["03", "Yoxlama", "Son təsdiq"],
-            ].map((item, index) => {
+            {t.steps.map((item, index) => {
               const number = index + 1;
               const active = step === number;
               const done = step > number;
@@ -1120,8 +1272,8 @@ export default function ReservationCheckout({
                   >
                     <div className="reservation-v4-panel-head">
                       <div>
-                        <span>01 / SƏFƏR</span>
-                        <h2>Səfərinizi yoxlayın.</h2>
+                        <span>{t.tripStep}</span>
+                        <h2>{t.tripHeading}</h2>
                       </div>
 
                       <CalendarDays size={23} />
@@ -1137,7 +1289,7 @@ export default function ReservationCheckout({
                     />
 
                     <div className="reservation-v4-section-label">
-                      TƏHVİL ÜSULU
+                      {t.handoverMethod}
                     </div>
 
                     <div className="reservation-v4-choice-grid">
@@ -1155,9 +1307,9 @@ export default function ReservationCheckout({
                         </span>
 
                         <div>
-                          <strong>Carbon məntəqəsi</strong>
+                          <strong>{t.office}</strong>
                           <small>
-                            Avtomobili məntəqədən təhvil alın
+                            {t.officeText}
                           </small>
                         </div>
 
@@ -1182,9 +1334,9 @@ export default function ReservationCheckout({
                         </span>
 
                         <div>
-                          <strong>Çatdırılma</strong>
+                          <strong>{t.delivery}</strong>
                           <small>
-                            Avtomobil seçdiyiniz ünvana gəlsin
+                            {t.deliveryText}
                           </small>
                         </div>
 
@@ -1426,8 +1578,8 @@ export default function ReservationCheckout({
                   >
                     <div className="reservation-v4-panel-head">
                       <div>
-                        <span>03 / YEKUN</span>
-                        <h2>Hər şey hazırdır.</h2>
+                        <span>{t.finalStep}</span>
+                        <h2>{t.finalHeading}</h2>
                       </div>
 
                       <Sparkles size={23} />
@@ -1435,36 +1587,36 @@ export default function ReservationCheckout({
 
                     <div className="reservation-v4-review">
                       <div>
-                        <span>AVTOMOBİL</span>
+                        <span>{t.carLabel}</span>
                         <strong>{car.title}</strong>
                         <small>{car.category}</small>
                       </div>
 
                       <div>
-                        <span>SƏFƏR</span>
+                        <span>{t.tripLabel}</span>
                         <strong>
                           {formatDate(startDate)} →{" "}
                           {formatDate(endDate)}
                         </strong>
-                        <small>{days} gün</small>
+                        <small>{days} {t.day}</small>
                       </div>
 
                       <div>
-                        <span>TƏHVİL</span>
+                        <span>{t.handoverLabel}</span>
                         <strong>
                           {pickup === "delivery"
-                            ? "Çatdırılma"
-                            : "Carbon məntəqəsi"}
+                            ? t.delivery
+                            : t.office}
                         </strong>
                         <small>
                           {pickup === "delivery"
                             ? deliveryAddress
-                            : "Məntəqədən təhvil"}
+                            : t.officePickup}
                         </small>
                       </div>
 
                       <div>
-                        <span>SÜRÜCÜ</span>
+                        <span>{t.driverLabel}</span>
                         <strong>{drivers}</strong>
                         <small>{extrasText}</small>
                       </div>
@@ -1656,8 +1808,8 @@ export default function ReservationCheckout({
                     <Clock3 size={14} />
 
                     <span>
-                      <small>Müddət</small>
-                      <strong>{days} gün</strong>
+                      <small>{t.durationLabel}</small>
+                      <strong>{days} {t.day}</strong>
                     </span>
                   </div>
 
@@ -1665,11 +1817,11 @@ export default function ReservationCheckout({
                     <MapPin size={14} />
 
                     <span>
-                      <small>Təhvil</small>
+                      <small>{t.handoverLabel}</small>
                       <strong>
                         {pickup === "delivery"
-                          ? "Çatdırılma"
-                          : "Carbon məntəqəsi"}
+                          ? t.delivery
+                          : t.office}
                       </strong>
                     </span>
                   </div>
@@ -1678,7 +1830,7 @@ export default function ReservationCheckout({
                     <Users size={14} />
 
                     <span>
-                      <small>Sürücü</small>
+                      <small>{t.driverLabel}</small>
                       <strong>{drivers}</strong>
                     </span>
                   </div>

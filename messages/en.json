@@ -1,0 +1,29 @@
+{
+  "common": {
+    "language": "Language",
+    "contact": "Contact",
+    "contactUs": "Contact us",
+    "home": "Home",
+    "cars": "Cars",
+    "weddingCars": "Wedding cars",
+    "blog": "Blog",
+    "about": "About us",
+    "services": "Services",
+    "menu": "Menu",
+    "close": "Close",
+    "today": "Today",
+    "done": "Done",
+    "day": "day",
+    "selectDate": "Select date"
+  },
+  "nav": {
+    "home": "Home",
+    "cars": "Cars",
+    "weddingCars": "Wedding cars",
+    "blog": "Blog",
+    "about": "About us",
+    "services": "Services",
+    "contact": "Contact",
+    "contactButton": "Contact us"
+  }
+}

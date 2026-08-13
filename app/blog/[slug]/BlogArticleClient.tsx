@@ -14,7 +14,13 @@ import {
   Clock3,
 } from "lucide-react";
 import type { BlogPost } from "../../data/blog";
-import { formatBlogDate } from "../../data/blog";
+import {
+  blogUi,
+  formatLocalizedBlogDate,
+  localizeBlogPost,
+  localizeBlogPosts,
+} from "../../data/blog-localized";
+import { useCarbonCopy } from "@/lib/carbon-locale";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -25,6 +31,10 @@ export default function BlogArticleClient({
   post: BlogPost;
   related: BlogPost[];
 }) {
+  const { locale } = useCarbonCopy();
+  const ui = blogUi[locale];
+  const localizedPost = localizeBlogPost(post, locale);
+  const localizedRelated = localizeBlogPosts(related, locale);
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll();
 
@@ -57,12 +67,12 @@ export default function BlogArticleClient({
           >
             <Link href="/blog">
               <ArrowLeft size={14} />
-              Journal
+              {ui.journal}
             </Link>
 
             <span>
-              {post.category} /{" "}
-              {formatBlogDate(post.date)}
+              {localizedPost.category} /{" "}
+              {formatLocalizedBlogDate(localizedPost.date, locale)}
             </span>
           </motion.div>
 
@@ -81,17 +91,17 @@ export default function BlogArticleClient({
             }}
           >
             <div className="ca-kicker">
-              <span>{post.eyebrow}</span>
+              <span>{localizedPost.eyebrow}</span>
             </div>
 
-            <h1>{post.title}</h1>
+            <h1>{localizedPost.title}</h1>
 
             <div className="ca-heading-bottom">
-              <p>{post.intro}</p>
+              <p>{localizedPost.intro}</p>
 
               <div className="ca-reading">
                 <Clock3 size={14} />
-                <span>{post.readingTime}</span>
+                <span>{localizedPost.readingTime}</span>
               </div>
             </div>
           </motion.div>
@@ -113,11 +123,11 @@ export default function BlogArticleClient({
         }}
       >
         <figure className="ca-cover">
-          <img src={post.image} alt={post.title} />
+          <img src={localizedPost.image} alt={localizedPost.title} />
 
           <figcaption>
             <span>CARBON JOURNAL</span>
-            <span>{post.category}</span>
+            <span>{localizedPost.category}</span>
           </figcaption>
         </figure>
       </motion.div>
@@ -126,15 +136,15 @@ export default function BlogArticleClient({
         <div className="ca-article-grid">
           <aside className="ca-rail">
             <div className="ca-rail-sticky">
-              <span>MƏQALƏ</span>
-              <strong>{post.readingTime}</strong>
+              <span>{ui.article}</span>
+              <strong>{localizedPost.readingTime}</strong>
               <i />
               <small>CARBON / 2026</small>
             </div>
           </aside>
 
           <div className="ca-prose">
-            {post.sections.map((section, index) => (
+            {localizedPost.sections.map((section, index) => (
               <motion.section
                 key={`${post.slug}-${index}`}
                 initial={
@@ -189,7 +199,7 @@ export default function BlogArticleClient({
                       alt={
                         section.imageAlt ||
                         section.heading ||
-                        post.title
+                        localizedPost.title
                       }
                     />
                   </figure>
@@ -200,23 +210,23 @@ export default function BlogArticleClient({
         </div>
       </article>
 
-      {related.length > 0 && (
+      {localizedRelated.length > 0 && (
         <section className="ca-related">
           <div className="ca-shell">
             <div className="ca-related-head">
               <div>
-                <span>DAVAM ET</span>
-                <h2>Növbəti oxu.</h2>
+                <span>{ui.continue}</span>
+                <h2>{ui.nextRead}</h2>
               </div>
 
               <Link href="/blog">
-                Bütün məqalələr
+                {ui.allArticles}
                 <ArrowRight size={14} />
               </Link>
             </div>
 
             <div className="ca-related-grid">
-              {related.slice(0, 3).map(
+              {localizedRelated.slice(0, 3).map(
                 (item, index) => (
                   <motion.article
                     key={item.slug}

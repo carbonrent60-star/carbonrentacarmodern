@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
+import { useCarbonCopy } from "@/lib/carbon-locale";
 import {
   ArrowDown,
   ArrowRight,
@@ -107,6 +108,12 @@ const services = [
 ];
 
 export default function ServicesClient() {
+  const { copy } = useCarbonCopy();
+  const localizedServices = services.map((service, index) => ({
+    ...service,
+    ...copy.servicesPage.items[index],
+  }));
+
   return (
     <main className="services-page">
       <section className="services-hero">
@@ -133,9 +140,9 @@ export default function ServicesClient() {
               transition={{ duration: 0.9, delay: 0.1, ease }}
             >
               <h1>
-                Sadəcə avtomobil
+                {copy.servicesPage.heroTitle1}
                 <br />
-                <em>icarə etmirik.</em>
+                <em>{copy.servicesPage.heroTitle2}</em>
               </h1>
             </motion.div>
 
@@ -146,13 +153,11 @@ export default function ServicesClient() {
               transition={{ duration: 0.8, delay: 0.3, ease }}
             >
               <p>
-                Sərfəli qiymətlərlə avtomobil kirayəsi, VIP transfer,
-                texniki dəstək və daha çoxunu sizə təqdim edirik.
-                Rahatlıq və keyfiyyət bizimlə başlayır.
+                {copy.servicesPage.heroText}
               </p>
 
               <a href="#services-list">
-                Xidmətləri kəşf et
+                {copy.servicesPage.discover}
                 <ArrowDown size={15} />
               </a>
             </motion.div>
@@ -161,17 +166,17 @@ export default function ServicesClient() {
           <div className="services-hero-footer">
             <div>
               <ShieldCheck size={17} />
-              <span>Tam sığortalı</span>
+              <span>{copy.servicesPage.footerStats[0]}</span>
             </div>
             <i />
             <div>
               <MapPin size={17} />
-              <span>Bakı və regionlar</span>
+              <span>{copy.servicesPage.footerStats[1]}</span>
             </div>
             <i />
             <div>
               <Sparkles size={17} />
-              <span>Premium xidmət</span>
+              <span>{copy.servicesPage.footerStats[2]}</span>
             </div>
           </div>
         </div>
@@ -180,8 +185,8 @@ export default function ServicesClient() {
       <section className="services-intro" id="services-list">
         <div className="services-shell">
           <div className="services-section-line">
-            <span>XİDMƏTLƏRİMİZ</span>
-            <span>06 İSTİQAMƏT</span>
+            <span>{copy.servicesPage.sectionLabel}</span>
+            <span>{copy.servicesPage.sectionCount}</span>
           </div>
 
           <div className="services-intro-grid">
@@ -191,15 +196,13 @@ export default function ServicesClient() {
               viewport={{ once: true }}
               transition={{ duration: 0.8, ease }}
             >
-              Hər səfərə uyğun
+              {copy.servicesPage.introTitle1}
               <br />
-              <em>bir həll.</em>
+              <em>{copy.servicesPage.introTitle2}</em>
             </motion.h2>
 
             <p>
-              Şəhər daxilində bir gündən uzunmüddətli istifadəyə,
-              hava limanı transferindən xüsusi günlərə qədər —
-              ehtiyacınıza uyğun xidməti seçin.
+              {copy.servicesPage.introText}
             </p>
           </div>
         </div>
@@ -207,7 +210,7 @@ export default function ServicesClient() {
 
       <section className="services-list">
         <div className="services-shell">
-          {services.map((service, index) => {
+          {localizedServices.map((service, index) => {
             const Icon = service.icon;
 
             return (

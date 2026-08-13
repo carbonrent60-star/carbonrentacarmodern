@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { cars } from "@/data/cars";
+import { getCarForSite } from "@/lib/supabase/cars";
 import ReservationCheckout from "./ReservationCheckout";
 
 export const metadata: Metadata = {
@@ -29,7 +29,7 @@ export default async function ReservationPage({
   const query = await searchParams;
 
   const slug = value(query.car);
-  const car = cars.find((item) => item.slug === slug) ?? null;
+  const car = slug ? await getCarForSite(slug) : null;
 
   return (
     <ReservationCheckout

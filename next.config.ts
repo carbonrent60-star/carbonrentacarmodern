@@ -1,6 +1,15 @@
-import type { NextConfig } from "next";
+import type {NextConfig} from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "60mb",
+    },
+  },
+
   images: {
     remotePatterns: [
       {
@@ -8,6 +17,12 @@ const nextConfig: NextConfig = {
         hostname: "framerusercontent.com",
         port: "",
         pathname: "/images/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/**",
       },
     ],
   },
@@ -17,4 +32,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

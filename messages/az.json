@@ -1,0 +1,29 @@
+{
+  "common": {
+    "language": "Dil",
+    "contact": "Əlaqə",
+    "contactUs": "Əlaqə saxla",
+    "home": "Ana səhifə",
+    "cars": "Avtomobillər",
+    "weddingCars": "Toy avtomobilləri",
+    "blog": "Blog",
+    "about": "Haqqımızda",
+    "services": "Xidmətlər",
+    "menu": "Menyu",
+    "close": "Bağla",
+    "today": "Bu gün",
+    "done": "Hazırdır",
+    "day": "gün",
+    "selectDate": "Tarix seçin"
+  },
+  "nav": {
+    "home": "Ana səhifə",
+    "cars": "Avtomobillər",
+    "weddingCars": "Toy avtomobilləri",
+    "blog": "Blog",
+    "about": "Haqqımızda",
+    "services": "Xidmətlər",
+    "contact": "Əlaqə",
+    "contactButton": "Əlaqə saxla"
+  }
+}

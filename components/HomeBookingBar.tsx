@@ -1,6 +1,11 @@
 "use client";
 
 import {
+  translateCarValue,
+  useCarbonCopy,
+} from "@/lib/carbon-locale";
+import { fetchPublicCars } from "@/lib/supabase/cars";
+import {
   useEffect,
   useMemo,
   useRef,
@@ -27,26 +32,9 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { cars } from "@/data/cars";
+import { cars, type Car } from "@/data/cars";
 
 const ease = [0.22, 1, 0.36, 1] as const;
-
-const months = [
-  "Yanvar",
-  "Fevral",
-  "Mart",
-  "Aprel",
-  "May",
-  "İyun",
-  "İyul",
-  "Avqust",
-  "Sentyabr",
-  "Oktyabr",
-  "Noyabr",
-  "Dekabr",
-];
-
-const weekdays = ["B.e", "Ç.a", "Ç", "C.a", "C", "Ş", "B"];
 
 function toLocalISO(date: Date) {
   const year = date.getFullYear();
@@ -61,19 +49,27 @@ function fromISO(value: string) {
   return new Date(year, month - 1, day, 12, 0, 0);
 }
 
-function formatDate(value: string) {
-  if (!value) return "Tarix seçin";
+function formatDate(
+  value: string,
+  localeCode: string,
+  fallback: string
+) {
+  if (!value) return fallback;
 
-  return new Intl.DateTimeFormat("az-AZ", {
+  return new Intl.DateTimeFormat(localeCode, {
     day: "2-digit",
     month: "short",
   }).format(fromISO(value));
 }
 
-function formatLongDate(value: string) {
-  if (!value) return "Seçilməyib";
+function formatLongDate(
+  value: string,
+  localeCode: string,
+  fallback: string
+) {
+  if (!value) return fallback;
 
-  return new Intl.DateTimeFormat("az-AZ", {
+  return new Intl.DateTimeFormat(localeCode, {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -153,6 +149,8 @@ type CalendarMonthProps = {
   startDate: string;
   endDate: string;
   minDate: string;
+  months: readonly string[];
+  weekdays: readonly string[];
   onSelect: (value: string) => void;
 };
 
@@ -161,6 +159,8 @@ function CalendarMonth({
   startDate,
   endDate,
   minDate,
+  months,
+  weekdays,
   onSelect,
 }: CalendarMonthProps) {
   const days = useMemo(
@@ -248,6 +248,7 @@ function DateRangePicker({
   minDate,
   onChange,
 }: DatePickerProps) {
+  const { copy, localeCode } = useCarbonCopy();
   const [visibleMonth, setVisibleMonth] = useState(() => {
     return new Date(
       new Date().getFullYear(),
@@ -339,7 +340,7 @@ function DateRangePicker({
           <motion.button
             type="button"
             className="hb-picker-backdrop"
-            aria-label="Təqvimi bağla"
+            aria-label={copy.booking.close}
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -370,11 +371,11 @@ function DateRangePicker({
           >
             <div className="hb-calendar-top">
               <div>
-                <span>İCARƏ TARİXLƏRİ</span>
+                <span>{copy.bookingBar.rentalDates}</span>
                 <strong>
                   {phase === "start"
-                    ? "Götürmə tarixini seçin"
-                    : "Qaytarma tarixini seçin"}
+                    ? copy.bookingBar.choosePickup
+                    : copy.bookingBar.chooseReturn}
                 </strong>
               </div>
 
@@ -382,7 +383,7 @@ function DateRangePicker({
                 type="button"
                 className="hb-picker-close"
                 onClick={onClose}
-                aria-label="Bağla"
+                aria-label={copy.booking.close}
               >
                 <X size={17} />
               </button>
@@ -398,8 +399,14 @@ function DateRangePicker({
               >
                 <CalendarDays size={16} />
                 <span>
-                  <small>GÖTÜRMƏ</small>
-                  <strong>{formatLongDate(calendarStartDate)}</strong>
+                  <small>{copy.booking.pickup}</small>
+                  <strong>
+                    {formatLongDate(
+                      calendarStartDate,
+                      localeCode,
+                      copy.booking.chooseDate
+                    )}
+                  </strong>
                 </span>
               </button>
 
@@ -416,11 +423,15 @@ function DateRangePicker({
               >
                 <Clock3 size={16} />
                 <span>
-                  <small>QAYTARMA</small>
+                  <small>{copy.booking.return}</small>
                   <strong>
                     {draftStart !== null
-                      ? "Tarix seçin"
-                      : formatLongDate(endDate)}
+                      ? copy.booking.chooseDate
+                      : formatLongDate(
+                          endDate,
+                          localeCode,
+                          copy.booking.chooseDate
+                        )}
                   </strong>
                 </span>
               </button>
@@ -434,13 +445,13 @@ function DateRangePicker({
                     addMonths(value, -1)
                   )
                 }
-                aria-label="Əvvəlki ay"
+                aria-label={copy.booking.from}
               >
                 <ChevronLeft size={18} />
               </button>
 
               <div>
-                {months[visibleMonth.getMonth()]}{" "}
+                {copy.booking.months[visibleMonth.getMonth()]}{" "}
                 {visibleMonth.getFullYear()}
               </div>
 
@@ -451,7 +462,7 @@ function DateRangePicker({
                     addMonths(value, 1)
                   )
                 }
-                aria-label="Növbəti ay"
+                aria-label={copy.booking.to}
               >
                 <ChevronRight size={18} />
               </button>
@@ -463,6 +474,8 @@ function DateRangePicker({
                 startDate={calendarStartDate}
                 endDate={calendarEndDate}
                 minDate={minDate}
+                months={copy.booking.months}
+                weekdays={copy.booking.dayNames}
                 onSelect={handleSelect}
               />
 
@@ -471,6 +484,8 @@ function DateRangePicker({
                 startDate={calendarStartDate}
                 endDate={calendarEndDate}
                 minDate={minDate}
+                months={copy.booking.months}
+                weekdays={copy.booking.dayNames}
                 onSelect={handleSelect}
               />
             </div>
@@ -478,14 +493,14 @@ function DateRangePicker({
             <div className="hb-calendar-bottom">
               <span>
                 <i />
-                Seçilmiş tarix aralığı
+                {copy.bookingBar.selectedRange}
               </span>
 
               <button
                 type="button"
                 onClick={onClose}
               >
-                Hazırdır
+                {copy.booking.confirm}
                 <ArrowRight size={14} />
               </button>
             </div>
@@ -500,6 +515,7 @@ function DateRangePicker({
 type CarPickerProps = {
   open: boolean;
   selectedSlug: string;
+  availableCars: Car[];
   onClose: () => void;
   onSelect: (slug: string) => void;
   anchorRef: {
@@ -510,10 +526,12 @@ type CarPickerProps = {
 function CarPicker({
   open,
   selectedSlug,
+  availableCars,
   onClose,
   onSelect,
   anchorRef,
 }: CarPickerProps) {
+  const { copy, locale } = useCarbonCopy();
   const panelRef = useRef<HTMLDivElement>(null);
 
   const [search, setSearch] = useState("");
@@ -527,8 +545,8 @@ function CarPicker({
   });
 
   const rentalCars = useMemo(
-    () => cars.filter((car) => car.rentalVisible !== false),
-    []
+    () => availableCars.filter((car) => car.rentalVisible !== false),
+    [availableCars]
   );
 
   const categories = useMemo(
@@ -736,14 +754,14 @@ function CarPicker({
         <div className="hb-car-dropdown-head">
           <div>
             <span>CARBON FLEET</span>
-            <strong>Avtomobil seçin</strong>
+            <strong>{copy.booking.selectCar}</strong>
           </div>
 
           <button
             type="button"
             className="hb-car-dropdown-close"
             onClick={onClose}
-            aria-label="Bağla"
+            aria-label={copy.booking.close}
           >
             <X size={15} strokeWidth={1.7} />
           </button>
@@ -757,7 +775,7 @@ function CarPicker({
             onChange={(event) =>
               setSearch(event.target.value)
             }
-            placeholder="Model və ya marka axtarın..."
+            placeholder={copy.bookingBar.searchPlaceholder}
             autoFocus
           />
 
@@ -765,7 +783,7 @@ function CarPicker({
             <button
               type="button"
               onClick={() => setSearch("")}
-              aria-label="Axtarışı sil"
+              aria-label={copy.bookingBar.clearSearch}
             >
               <X size={12} />
             </button>
@@ -786,18 +804,18 @@ function CarPicker({
                 setCategory(item)
               }
             >
-              {item}
+              {copy.carsPage.categories[item as keyof typeof copy.carsPage.categories] ?? item}
             </button>
           ))}
         </div>
 
         <div className="hb-car-dropdown-count">
           <span>
-            {filteredCars.length} avtomobil
+            {filteredCars.length} {copy.bookingBar.carCount}
           </span>
 
           <span>
-            günlük qiymət
+            {copy.bookingBar.dailyPrice}
           </span>
         </div>
 
@@ -840,7 +858,7 @@ function CarPicker({
                   <small>
                     {car.brand}
                     <i>·</i>
-                    {car.category}
+                    {copy.carsPage.categories[car.category as keyof typeof copy.carsPage.categories] ?? car.category}
                   </small>
 
                   <strong>
@@ -848,21 +866,21 @@ function CarPicker({
                   </strong>
 
                   <em>
-                    {car.seats ?? "—"} yer
+                    {car.seats ?? "—"} {copy.car.seats}
                     <i>·</i>
-                    {car.transmission}
+                    {translateCarValue(car.transmission, locale)}
                     <i>·</i>
-                    {car.fuel}
+                    {translateCarValue(car.fuel, locale)}
                   </em>
                 </span>
 
                 <span className="hb-car-dropdown-price">
-                  <small>GÜNLÜK</small>
+                  <small>{copy.bookingBar.daily}</small>
 
                   <strong>
                     {price
                       ? `${price} ₼`
-                      : "Sorğu"}
+                      : copy.bookingBar.request}
                   </strong>
                 </span>
 
@@ -888,11 +906,11 @@ function CarPicker({
               />
 
               <strong>
-                Avtomobil tapılmadı
+                {copy.bookingBar.noCar}
               </strong>
 
               <span>
-                Axtarışı və ya kateqoriyanı dəyişin.
+                {copy.bookingBar.noCarText}
               </span>
             </div>
           )}
@@ -901,11 +919,11 @@ function CarPicker({
         <div className="hb-car-dropdown-foot">
           <span>
             <i />
-            Carbon avtomobil parkı
+            {copy.bookingBar.fleet}
           </span>
 
           <span>
-            ESC · bağla
+            {copy.bookingBar.escClose}
           </span>
         </div>
       </motion.div>
@@ -915,6 +933,8 @@ function CarPicker({
 }
 
 export default function HomeBookingBar() {
+  const { copy, localeCode } = useCarbonCopy();
+  const [availableCars, setAvailableCars] = useState<Car[]>(cars);
   const [carSlug, setCarSlug] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -927,6 +947,20 @@ export default function HomeBookingBar() {
 
   const sectionRef = useRef<HTMLElement>(null);
   const carButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetchPublicCars().then((supabaseCars) => {
+      if (mounted && supabaseCars?.length) {
+        setAvailableCars(supabaseCars);
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const today = new Date();
@@ -971,8 +1005,8 @@ export default function HomeBookingBar() {
   }, [calendarOpen]);
 
   const selectedCar = useMemo(
-    () => cars.find((car) => car.slug === carSlug),
-    [carSlug]
+    () => availableCars.find((car) => car.slug === carSlug),
+    [availableCars, carSlug]
   );
 
   const duration = useMemo(() => {
@@ -1038,7 +1072,7 @@ export default function HomeBookingBar() {
     <section
       ref={sectionRef}
       className="home-booking hb-v2"
-      aria-label="Sürətli rezervasiya"
+      aria-label={copy.bookingBar.aria}
     >
       <motion.div
         className="home-booking-shell"
@@ -1063,14 +1097,14 @@ export default function HomeBookingBar() {
           <div className="home-booking-topline-left">
             <span className="home-booking-live">
               <i />
-              REZERVASİYA
+              {copy.bookingBar.reservation}
             </span>
 
             <span className="home-booking-separator" />
 
             <span className="home-booking-status">
               <Check size={12} strokeWidth={2} />
-              Sistem aktivdir
+              {copy.bookingBar.systemActive}
             </span>
           </div>
 
@@ -1084,20 +1118,16 @@ export default function HomeBookingBar() {
           <div>
             <span className="home-booking-eyebrow">
               <Sparkles size={13} strokeWidth={1.65} />
-              SÜRƏTLİ SEÇİM
+              {copy.bookingBar.quickChoice}
             </span>
 
             <h2>
-              Səfərinizi
-              <span> indi planlayın.</span>
+              {copy.bookingBar.heading1}
+              <span> {copy.bookingBar.heading2}</span>
             </h2>
           </div>
 
-          <p>
-            Avtomobili şəkillərlə seçin, tarix aralığını
-            müəyyən edin və rezervasiyanı saniyələr içində
-            başladın.
-          </p>
+          <p>{copy.bookingBar.intro}</p>
         </div>
 
         <div className="hb-v2-command">
@@ -1119,7 +1149,7 @@ export default function HomeBookingBar() {
             </span>
 
             <span className="hb-v2-field-copy">
-              <small>AVTOMOBİL</small>
+              <small>{copy.booking.car}</small>
 
               {selectedCar ? (
                 <span className="hb-v2-selected-car">
@@ -1132,11 +1162,15 @@ export default function HomeBookingBar() {
 
                   <span>
                     <strong>{selectedCar.title}</strong>
-                    <em>{selectedCar.category}</em>
+                    <em>
+                      {copy.carsPage.categories[
+                        selectedCar.category as keyof typeof copy.carsPage.categories
+                      ] ?? selectedCar.category}
+                    </em>
                   </span>
                 </span>
               ) : (
-                <strong>Avtomobil seçin</strong>
+                <strong>{copy.booking.selectCar}</strong>
               )}
             </span>
 
@@ -1159,9 +1193,21 @@ export default function HomeBookingBar() {
             </span>
 
             <span className="hb-v2-field-copy">
-              <small>GÖTÜRMƏ</small>
-              <strong>{formatDate(startDate)}</strong>
-              <em>{formatLongDate(startDate)}</em>
+              <small>{copy.booking.pickup}</small>
+              <strong>
+                {formatDate(
+                  startDate,
+                  localeCode,
+                  copy.booking.chooseDate
+                )}
+              </strong>
+              <em>
+                {formatLongDate(
+                  startDate,
+                  localeCode,
+                  copy.booking.chooseDate
+                )}
+              </em>
             </span>
           </button>
 
@@ -1178,9 +1224,21 @@ export default function HomeBookingBar() {
             </span>
 
             <span className="hb-v2-field-copy">
-              <small>QAYTARMA</small>
-              <strong>{formatDate(endDate)}</strong>
-              <em>{formatLongDate(endDate)}</em>
+              <small>{copy.booking.return}</small>
+              <strong>
+                {formatDate(
+                  endDate,
+                  localeCode,
+                  copy.booking.chooseDate
+                )}
+              </strong>
+              <em>
+                {formatLongDate(
+                  endDate,
+                  localeCode,
+                  copy.booking.chooseDate
+                )}
+              </em>
             </span>
           </button>
 
@@ -1190,7 +1248,7 @@ export default function HomeBookingBar() {
             </span>
 
             <span className="hb-v2-field-copy">
-              <small>TƏHVİL</small>
+              <small>{copy.bookingBar.pickupMethod}</small>
 
               <span className="hb-v2-native-select">
                 <select
@@ -1202,14 +1260,14 @@ export default function HomeBookingBar() {
                         | "delivery"
                     )
                   }
-                  aria-label="Təhvil üsulu"
+                  aria-label={copy.bookingBar.pickupMethod}
                 >
                   <option value="office">
-                    Carbon ofisi
+                    {copy.bookingBar.office}
                   </option>
 
                   <option value="delivery">
-                    Ünvanıma çatdırılma
+                    {copy.bookingBar.delivery}
                   </option>
                 </select>
 
@@ -1253,15 +1311,15 @@ export default function HomeBookingBar() {
               <small>
                 {valid
                   ? estimate
-                    ? `${duration} GÜN · ~${estimate} ₼`
-                    : `${duration} GÜN`
-                  : "DAVAM ET"}
+                    ? `${duration} ${copy.bookingBar.days} · ~${estimate} ₼`
+                    : `${duration} ${copy.bookingBar.days}`
+                  : copy.bookingBar.continue}
               </small>
 
               <strong>
                 {valid
-                  ? "Rezervasiya et"
-                  : "Seçim edin"}
+                  ? copy.bookingBar.reserve
+                  : copy.bookingBar.choose}
               </strong>
             </span>
 
@@ -1279,11 +1337,11 @@ export default function HomeBookingBar() {
             <ShieldCheck size={14} strokeWidth={1.55} />
 
             <span>
-              Tam kasko
+              {copy.bookingBar.fullCasco}
               <b>·</b>
-              Şəffaf qiymət
+              {copy.bookingBar.transparentPrice}
               <b>·</b>
-              24/7 dəstək
+              {copy.bookingBar.support}
             </span>
           </div>
 
@@ -1295,14 +1353,14 @@ export default function HomeBookingBar() {
                 {dailyPrice ? (
                   <>
                     <b>·</b>
-                    {dailyPrice} ₼ / gün
+                    {dailyPrice} ₼ {copy.car.perDay}
                   </>
                 ) : null}
               </>
             ) : (
               <>
                 <i />
-                Avtomobil gözlənilir
+                {copy.bookingBar.waitingCar}
               </>
             )}
           </span>
@@ -1312,6 +1370,7 @@ export default function HomeBookingBar() {
       <CarPicker
         open={carPickerOpen}
         selectedSlug={carSlug}
+        availableCars={availableCars}
         onClose={() => setCarPickerOpen(false)}
         onSelect={setCarSlug}
         anchorRef={carButtonRef}

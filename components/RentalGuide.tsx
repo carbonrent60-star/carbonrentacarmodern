@@ -14,10 +14,11 @@ import {
   CarFront,
 } from "lucide-react";
 import { useState } from "react";
+import { useCarbonCopy } from "@/lib/carbon-locale";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-const steps = [
+const stepStructure = [
   {
     number: "01",
     eyebrow: "GÖTÜRÜLMƏ VAXTI",
@@ -53,7 +54,7 @@ const steps = [
   },
 ];
 
-const benefits = [
+const benefitStructure = [
   {
     icon: ShieldCheck,
     title: "Kasko sığortalı",
@@ -80,7 +81,7 @@ const benefits = [
   },
 ];
 
-const requirements = [
+const requirementStructure = [
   {
     icon: FileText,
     number: "01",
@@ -107,7 +108,7 @@ const requirements = [
   },
 ];
 
-const faqs = [
+const faqStructure = [
   {
     q: "Avtomobili necə rezervasiya edə bilərəm?",
     a: "İstədiyiniz avtomobili seçdikdən sonra bizimlə əlaqə saxlayın. Komandamız mövcudluğu, tarixləri və təhvil detallarını sizinlə dəqiqləşdirəcək.",
@@ -127,6 +128,33 @@ const faqs = [
 ];
 
 export default function RentalGuide() {
+  const { copy } = useCarbonCopy();
+
+  const steps = stepStructure.map((item, index) => ({
+    ...item,
+    ...copy.guide.steps[index],
+  }));
+
+  const benefits = benefitStructure.map((item, index) => ({
+    ...item,
+    title: copy.guide.benefits[index][0],
+    text: copy.guide.benefits[index][1],
+  }));
+
+  const requirements = requirementStructure.map((item, index) => ({
+    ...item,
+    title: copy.guide.requirements[index][0],
+    text: copy.guide.requirements[index][1],
+  }));
+
+  const faqs = faqStructure.map((item, index) => ({
+    ...item,
+    q: copy.guide.faq[index][0],
+    a: copy.guide.faq[index][1],
+  }));
+
+
+
   const [activeStep, setActiveStep] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
@@ -150,21 +178,20 @@ export default function RentalGuide() {
             <div>
               <span className="carbon-guide-kicker">
                 <i />
-                CARBON EXPERIENCE
+                {copy.guide.experience}
               </span>
 
               <h2>
-                İcarə prosesi.
+                {copy.guide.heading1}
                 <br />
-                <em>Sadə və aydın.</em>
+                <em>{copy.guide.heading2}</em>
               </h2>
             </div>
 
             <div className="carbon-guide-head-side">
               <span>01 — 03</span>
               <p>
-                Avtomobili seçdiyiniz andan açarı aldığınız ana qədər hər
-                detal düşünülüb.
+                {copy.guide.intro}
               </p>
             </div>
           </motion.div>
@@ -347,11 +374,11 @@ export default function RentalGuide() {
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease }}
           >
-            <span>BEFORE YOU DRIVE</span>
+            <span>{copy.guide.beforeDrive}</span>
             <h2>
-              Yola çıxmaq üçün
+              {copy.guide.requirementsHeading1}
               <br />
-              <em>cəmi bir neçə detal.</em>
+              <em>{copy.guide.requirementsHeading2}</em>
             </h2>
           </motion.div>
 
@@ -398,18 +425,15 @@ export default function RentalGuide() {
             <span>FAQ / CARBON</span>
 
             <h2>
-              Sualınız
+              {copy.guide.faqHeading1}
               <br />
-              <em>qaldı?</em>
+              <em>{copy.guide.faqHeading2}</em>
             </h2>
 
-            <p>
-              Rezervasiya və icarə ilə bağlı ən çox verilən sualları burada
-              topladıq.
-            </p>
+            <p>{copy.guide.faqIntro}</p>
 
             <a href="#contact">
-              Bizimlə əlaqə
+              {copy.guide.faqContact}
               <ArrowRight size={15} strokeWidth={1.5} />
             </a>
           </div>

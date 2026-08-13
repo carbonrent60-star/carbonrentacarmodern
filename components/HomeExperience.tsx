@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
+import { useCarbonCopy } from "@/lib/carbon-locale";
 import {
   ArrowRight,
   CarFront,
@@ -42,6 +43,13 @@ const advantages = [
 ];
 
 export default function HomeExperience() {
+  const { copy } = useCarbonCopy();
+  const localizedAdvantages = advantages.map((item, index) => ({
+    ...item,
+    title: copy.homeExperience.advantages[index][0],
+    text: copy.homeExperience.advantages[index][1],
+  }));
+
   return (
     <>
       {/* ====================================================
@@ -57,19 +65,16 @@ export default function HomeExperience() {
             transition={{ duration: 0.75, ease }}
           >
             <div>
-              <span className="home-kicker">XÜSUSİ XİDMƏTLƏR</span>
+              <span className="home-kicker">{copy.homeExperience.kicker}</span>
 
               <h2>
-                Sadəcə avtomobil deyil.
+                {copy.homeExperience.title1}
                 <br />
-                <em>Səfərinizə uyğun xidmət.</em>
+                <em>{copy.homeExperience.title2}</em>
               </h2>
             </div>
 
-            <p>
-              Carbon gündəlik avtomobil icarəsindən əlavə, xüsusi günlər və
-              transfer ehtiyacları üçün ayrıca seçilmiş avtomobillər təqdim edir.
-            </p>
+            <p>{copy.homeExperience.intro}</p>
           </motion.div>
 
           <div className="home-service-grid">
@@ -81,26 +86,25 @@ export default function HomeExperience() {
               transition={{ duration: 0.8, ease }}
             >
               <div className="home-service-card-top">
-                <span>01 / TOY AVTOMOBİLLƏRİ</span>
+                <span>{copy.homeExperience.services[0].top}</span>
                 <Sparkles size={19} strokeWidth={1.35} />
               </div>
 
               <div className="home-service-card-content">
-                <span className="home-service-eyebrow">XÜSUSİ GÜNLƏR</span>
+                <span className="home-service-eyebrow">
+                  {copy.homeExperience.services[0].eyebrow}
+                </span>
 
                 <h3>
-                  Günün özü qədər
+                  {copy.homeExperience.services[0].title1}
                   <br />
-                  <em>xüsusi seçim.</em>
+                  <em>{copy.homeExperience.services[0].title2}</em>
                 </h3>
 
-                <p>
-                  Toy və digər xüsusi günlər üçün premium avtomobillərdən
-                  ibarət seçilmiş kolleksiya.
-                </p>
+                <p>{copy.homeExperience.services[0].text}</p>
 
                 <Link href="/toy-avtomobilleri">
-                  Kolleksiyaya bax
+                  {copy.homeExperience.services[0].action}
                   <ArrowRight size={15} strokeWidth={1.5} />
                 </Link>
               </div>
@@ -123,21 +127,20 @@ export default function HomeExperience() {
               </div>
 
               <div className="home-service-card-content">
-                <span className="home-service-eyebrow">TRANSFER XİDMƏTİ</span>
+                <span className="home-service-eyebrow">
+                  {copy.homeExperience.services[1].eyebrow}
+                </span>
 
                 <h3>
-                  A nöqtəsindən
+                  {copy.homeExperience.services[1].title1}
                   <br />
-                  <em>rahatlıqla B-yə.</em>
+                  <em>{copy.homeExperience.services[1].title2}</em>
                 </h3>
 
-                <p>
-                  Hava limanı, şəhər və fərdi marşrutlar üçün uyğun
-                  avtomobillərlə transfer xidməti.
-                </p>
+                <p>{copy.homeExperience.services[1].text}</p>
 
                 <Link href="/avtomobiller">
-                  Transfer avtomobilləri
+                  {copy.homeExperience.services[1].action}
                   <ArrowRight size={15} strokeWidth={1.5} />
                 </Link>
               </div>
@@ -162,12 +165,12 @@ export default function HomeExperience() {
               viewport={{ once: true }}
               transition={{ duration: 0.7, ease }}
             >
-              <span className="home-kicker">NİYƏ CARBON?</span>
+              <span className="home-kicker">{copy.homeExperience.whyKicker}</span>
 
               <h2>
-                Detallarda
+                {copy.homeExperience.whyTitle1}
                 <br />
-                <em>fərq var.</em>
+                <em>{copy.homeExperience.whyTitle2}</em>
               </h2>
             </motion.div>
 
@@ -175,7 +178,7 @@ export default function HomeExperience() {
           </div>
 
           <div className="home-advantage-grid">
-            {advantages.map((item, index) => {
+            {localizedAdvantages.map((item, index) => {
               const Icon = item.icon;
 
               return (
@@ -229,9 +232,9 @@ export default function HomeExperience() {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.85, ease }}
           >
-            Növbəti yolunuz
+            {copy.homeExperience.ctaTitle1}
             <br />
-            <em>buradan başlayır.</em>
+            <em>{copy.homeExperience.ctaTitle2}</em>
           </motion.h2>
 
           <motion.div
@@ -241,14 +244,11 @@ export default function HomeExperience() {
             viewport={{ once: true }}
             transition={{ duration: 0.7, delay: 0.1, ease }}
           >
-            <p>
-              Avtomobilinizi seçin və icarə ilə bağlı məlumat üçün bizimlə
-              əlaqə saxlayın.
-            </p>
+            <p>{copy.homeExperience.ctaText}</p>
 
             <div className="home-final-actions">
               <Link href="/avtomobiller" className="home-final-primary">
-                Avtomobil seç
+                {copy.homeExperience.ctaAction}
                 <ArrowRight size={16} strokeWidth={1.6} />
               </Link>
 

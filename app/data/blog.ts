@@ -309,6 +309,147 @@ export const blogPosts: BlogPost[] = [
       },
     ],
   },
+
+  {
+    slug: "aeroport-transferi-yoxsa-kiraye-avtomobil",
+    title: "Aeroport transferi yoxsa kirayə avtomobil?",
+    description:
+      "Bakıya səfər edərkən transfer və kirayə avtomobil arasında düzgün seçim etmək üçün praktik müqayisə.",
+    image:
+      "https://framerusercontent.com/images/VUzmNKhFW8FdZlZp5QpTnfbrsQ.png",
+    date: "2025-02-08",
+    category: "Səyahət",
+    readingTime: "6 dəq",
+    eyebrow: "AEROPORT · ŞƏHƏR",
+    intro:
+      "Hava limanına enən kimi ilk qərarlardan biri nəqliyyatdır. Bəzən transfer ən rahat seçimdir, bəzən isə avtomobil kirayəsi bütün səfəri daha sərbəst edir.",
+    sections: [
+      {
+        heading: "Səfərin məqsədindən başlayın",
+        paragraphs: [
+          "Əgər Bakıda yalnız bir neçə görüşünüz və əvvəlcədən bəlli marşrutunuz varsa, transfer xidməti sadə və rahat həll ola bilər. Sürücü sizi qarşılayır, ünvanınıza aparır və siz park, yol və vaxt məsələlərini düşünmürsünüz.",
+          "Əgər şəhərdə bir neçə gün qalacaq, fərqli ünvanlara gedəcək və ya Bakıdan kənara çıxacaqsınızsa, kirayə avtomobil daha çevik seçimdir. Gün ərzində plan dəyişəndə ayrıca nəqliyyat axtarmağa ehtiyac qalmır.",
+        ],
+      },
+      {
+        heading: "Büdcəni yalnız bir gedişlə ölçməyin",
+        paragraphs: [
+          "Transfer bir istiqamət üçün sərfəli görünə bilər, amma səfər boyunca çoxlu hərəkət planı varsa, ümumi xərc sürətlə arta bilər. Kirayə avtomobildə isə gündəlik qiymət əvvəlcədən bilinir və planı daha rahat hesablamaq olur.",
+          "Büdcə hesablayarkən yanacaq, parklanma, əlavə sürücü və təhvil məntəqəsi kimi detalları da nəzərə alın. Düzgün müqayisə yalnız qiyməti deyil, vaxt rahatlığını da göstərir.",
+        ],
+        quote:
+          "Ən rahat seçim səfərin ritminə uyğun olan seçimdir.",
+      },
+      {
+        heading: "İşgüzar səfər və ailəvi səyahət fərqlidir",
+        paragraphs: [
+          "İşgüzar səfərdə dəqiq vaxt, sakit salon və təqdimatlı avtomobil vacib ola bilər. Bu halda transfer və ya premium sedan seçimi görüşlər arasında rahat hərəkət üçün daha uyğundur.",
+          "Ailəvi səyahətdə isə baqaj, uşaq oturacağı, geniş salon və yolüstü dayanacaqlar ön plana çıxır. Bu vəziyyətdə SUV və ya geniş sedan kirayəsi daha praktik olur.",
+        ],
+      },
+      {
+        heading: "Carbon komandası necə kömək edir?",
+        paragraphs: [
+          "Səfər planınızı paylaşdığınız zaman komanda sizə transfer, qısa müddətli kirayə və ya daha uzun istifadə üçün uyğun variantı izah edə bilər.",
+          "Məqsəd artıq xidmət satmaq deyil, səfərinizi daha sadə etməkdir. Bəzən bir transfer kifayətdir, bəzən isə avtomobilin açarını almaq bütün planı rahatlaşdırır.",
+        ],
+      },
+    ],
+  },
+
+  {
+    slug: "bakidan-regionlara-avtomobille-planlama",
+    title: "Bakıdan regionlara avtomobillə çıxmazdan əvvəl",
+    description:
+      "Qəbələ, Şamaxı, Quba və digər istiqamətlərə rahat səyahət üçün avtomobil, vaxt və marşrut planlaması.",
+    image:
+      "https://framerusercontent.com/images/iIsQJZ5Fga8I1GrdHE0vtTXWAKA.png",
+    date: "2025-02-08",
+    category: "Səyahət",
+    readingTime: "7 dəq",
+    eyebrow: "REGİONLAR · PLANLAMA",
+    intro:
+      "Azərbaycanın regionlarına avtomobillə getmək marşrutu öz tempinizdə qurmaq imkanı verir. Rahat səfər üçün avtomobil sinfi, hava, dayanacaqlar və vaxt ehtiyatı əvvəlcədən düşünülməlidir.",
+    sections: [
+      {
+        heading: "Marşrut yol şəraitinə görə seçilməlidir",
+        paragraphs: [
+          "Bakıdan Şamaxı, Qəbələ və İsmayıllı istiqamətləri dəyişən relyefə malikdir. Yolun bir hissəsi rahat magistral, digər hissəsi isə döngəli dağ yolları ola bilər.",
+          "Quba, Qusar və dağ kəndlərinə doğru gedərkən mövsüm xüsusi önəm daşıyır. Yağış, qar və duman səyahət vaxtını dəyişə bilər, buna görə yola çıxmazdan əvvəl hava proqnozunu yoxlamaq vacibdir.",
+        ],
+      },
+      {
+        heading: "Sedan, krossover, yoxsa SUV?",
+        paragraphs: [
+          "Şəhərlərarası rahat yollarda sedan çox vaxt kifayət edir. Daha az yanacaq sərfiyyatı, sakit salon və stabil idarəetmə uzun yolda rahatlıq yaradır.",
+          "Dağlıq istiqamətlər, daha çox baqaj və ailəvi səfərlər üçün krossover və SUV daha rahat seçim ola bilər. Hündür oturuş və geniş salon uzun məsafədə özünü göstərir.",
+        ],
+      },
+      {
+        heading: "Vaxt ehtiyatı saxlayın",
+        paragraphs: [
+          "Region səfərində yalnız xəritədə görünən məsafəyə güvənmək doğru deyil. Yolüstü dayanacaqlar, yemək fasilələri, foto məkanları və hava şəraiti ümumi vaxtı dəyişə bilər.",
+          "Avtomobili qaytarma vaxtını planlayarkən gecikmə riskini də nəzərə alın. Bir saatlıq ehtiyat bəzən səfərin sonunda tələskənliyin qarşısını alır.",
+        ],
+        quote:
+          "Yaxşı planlanmış yol daha az tələskənlik və daha çox rahatlıq deməkdir.",
+      },
+      {
+        heading: "Səfərdən əvvəl qısa yoxlama",
+        paragraphs: [
+          "Yanacaq səviyyəsi, təkərlər, işıqlar, sənədlər və əlaqə nömrələri yola çıxmazdan əvvəl yoxlanmalıdır. Bu sadə addımlar uzun səfərdə böyük rahatlıq yaradır.",
+          "Kirayə avtomobil götürərkən gedəcəyiniz istiqaməti komandaya bildirmək də faydalıdır. Beləliklə, avtomobil seçimi və mümkün tövsiyələr marşrutunuza uyğunlaşır.",
+        ],
+      },
+    ],
+  },
+
+  {
+    slug: "toy-avtomobili-secerken-nelere-diqqet-etmeli",
+    title: "Toy avtomobili seçərkən nələrə diqqət etməli?",
+    description:
+      "Toy, nişan və fotosessiya üçün avtomobil seçərkən stil, vaxt planı, komfort və praktik detallar.",
+    image:
+      "https://framerusercontent.com/images/ykE8KVUPTwy1vat0GhnW9e9lMhk.png",
+    date: "2025-02-09",
+    category: "Toy avtomobilləri",
+    readingTime: "6 dəq",
+    eyebrow: "XÜSUSİ GÜN · SEÇİM",
+    intro:
+      "Toy avtomobili yalnız şəkil üçün fon deyil. O, günün ritminə, marşrutuna, geyim rahatlığına və ümumi atmosferinə uyğun seçilməlidir.",
+    sections: [
+      {
+        heading: "Stil konseptə uyğun olmalıdır",
+        paragraphs: [
+          "Klassik toy atmosferi üçün zərif sedan və premium modellər daha uyğun görünə bilər. Minimal, modern mərasimlərdə isə daha sakit rəng və təmiz dizayn ön plana çıxır.",
+          "Avtomobilin rəngi, salonu və ümumi görünüşü foto və video çəkilişdə böyük rol oynayır. Seçim yalnız brendə görə deyil, mərasimin vizual dili ilə birlikdə edilməlidir.",
+        ],
+      },
+      {
+        heading: "Komfortu unutmayın",
+        paragraphs: [
+          "Gəlinlik, kostyum, aksesuarlar və uzun çəkiliş günü avtomobilin salon rahatlığını vacib edir. Arxa oturacaq sahəsi, qapı açılışı və kondisioner kimi detallar real istifadə zamanı hiss olunur.",
+          "Toy günü plan çox sıx olur. Rahat avtomobil yolda əlavə stress yaratmır və məkanlar arasında keçidi daha sakit edir.",
+        ],
+      },
+      {
+        heading: "Vaxt planı dəqiq olmalıdır",
+        paragraphs: [
+          "Fotosessiya, mərasim, restoran və ev ünvanları əvvəlcədən müəyyənləşdirilməlidir. Avtomobilin hansı saatlarda lazım olacağı dəqiq bilinsə, həm qiymət, həm də logistika daha rahat hesablanır.",
+          "Gecikmə ehtimalı olan günlərdə vaxt ehtiyatı saxlamaq tövsiyə olunur. Xüsusilə şəhər mərkəzi və həftəsonu marşrutlarında trafik planı dəyişdirə bilər.",
+        ],
+        quote:
+          "Xüsusi gün üçün yaxşı seçim gözəl görünməklə yanaşı, günü asanlaşdırmalıdır.",
+      },
+      {
+        heading: "Əvvəlcədən rezervasiya edin",
+        paragraphs: [
+          "Toy mövsümündə populyar modellər daha tez rezerv olunur. İstədiyiniz avtomobili və saat aralığını qorumaq üçün qərarı son günə saxlamaq düzgün deyil.",
+          "Rezervasiya zamanı avtomobilin modeli, rəngi, istifadə müddəti, marşrut və əlavə istəklər aydın qeyd olunmalıdır. Bu, xüsusi günün daha problemsiz keçməsinə kömək edir.",
+        ],
+      },
+    ],
+  },
 ];
 
 export function getBlogPost(slug: string) {

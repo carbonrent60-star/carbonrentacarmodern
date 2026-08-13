@@ -2,6 +2,10 @@
 
 import { motion } from "motion/react";
 import {
+  translateCarValue,
+  useCarbonCopy,
+} from "@/lib/carbon-locale";
+import {
   ArrowUpRight,
   BriefcaseBusiness,
   Fuel,
@@ -23,6 +27,7 @@ export default function CarCard({
   index: number;
 }) {
   const price = getShortTermPrice(car);
+  const { copy, locale } = useCarbonCopy();
 
   return (
     <motion.article
@@ -42,7 +47,7 @@ export default function CarCard({
 
           {car.transferAvailable && (
             <span className="transfer-badge">
-              Transfer
+              {copy.car.transfer}
             </span>
           )}
         </div>
@@ -74,7 +79,7 @@ export default function CarCard({
             stiffness: 350,
             damping: 25,
           }}
-          aria-label={`${car.title} avtomobilinə bax`}
+          aria-label={`${car.title} ${copy.car.view}`}
         >
           <ArrowUpRight size={18} strokeWidth={1.6} />
         </motion.a>
@@ -91,10 +96,10 @@ export default function CarCard({
             {price !== null ? (
               <>
                 <strong>{price} ₼</strong>
-                <span>/ gün</span>
+                <span>{copy.car.perDay}</span>
               </>
             ) : (
-              <span>Qiymət üçün əlaqə</span>
+              <span>{copy.car.contactPrice}</span>
             )}
           </div>
         </div>
@@ -103,18 +108,18 @@ export default function CarCard({
           {car.seats !== null && (
             <span>
               <Users size={15} strokeWidth={1.5} />
-              {car.seats} yer
+              {car.seats} {copy.car.seats}
             </span>
           )}
 
           <span>
             <Gauge size={15} strokeWidth={1.5} />
-            {car.transmission}
+            {translateCarValue(car.transmission, locale)}
           </span>
 
           <span>
             <Fuel size={15} strokeWidth={1.5} />
-            {car.fuel}
+            {translateCarValue(car.fuel, locale)}
           </span>
 
           {car.baggage !== null && (

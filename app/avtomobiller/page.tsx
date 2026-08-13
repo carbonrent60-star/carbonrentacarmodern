@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AnimatePresence,
   LayoutGroup,
@@ -26,8 +26,13 @@ import {
   X,
 } from "lucide-react";
 
-import { cars, type CarCategory } from "@/data/cars";
+import { cars, type Car, type CarCategory } from "@/data/cars";
+import { fetchPublicCars } from "@/lib/supabase/cars";
 import CarbonNavbar from "@/components/CarbonNavbar";
+import {
+  translateCarValue,
+  useCarbonCopy,
+} from "@/lib/carbon-locale";
 
 type CategoryFilter = "Hamısı" | CarCategory | "TRANSFER";
 
@@ -48,59 +53,9 @@ const categories: CategoryFilter[] = [
   "TRANSFER",
 ];
 
-const brands = Array.from(
-  new Set(cars.map((car) => car.brand)),
-).sort();
-
-const transmissions = Array.from(
-  new Set(
-    cars
-      .map((car) => car.transmission)
-      .filter(Boolean),
-  ),
-).sort();
-
-const fuels = Array.from(
-  new Set(
-    cars
-      .map((car) => car.fuel)
-      .filter(Boolean),
-  ),
-).sort();
-
-const engines = Array.from(
-  new Set(
-    cars
-      .map((car) => car.engine)
-      .filter(Boolean),
-  ),
-).sort();
-
-const seatOptions = Array.from(
-  new Set(
-    cars
-      .map((car) => car.seats)
-      .filter(
-        (value): value is number =>
-          typeof value === "number",
-      ),
-  ),
-).sort((a, b) => a - b);
-
-const baggageOptions = Array.from(
-  new Set(
-    cars
-      .map((car) => car.baggage)
-      .filter(
-        (value): value is number =>
-          typeof value === "number",
-      ),
-  ),
-).sort((a, b) => a - b);
-
 const ease = [0.22, 1, 0.36, 1] as const;
 
-function getPrice(car: (typeof cars)[number]) {
+function getPrice(car: Car) {
   const prices = [
     car.rentalPrices.days1to3,
     car.rentalPrices.days4to7,
@@ -116,7 +71,7 @@ function getPrice(car: (typeof cars)[number]) {
   return prices.length ? Math.min(...prices) : null;
 }
 
-function getDisplayPrice(car: (typeof cars)[number]) {
+function getDisplayPrice(car: Car) {
   return (
     car.rentalPrices.days1to3 ??
     car.rentalPrices.days4to7 ??
@@ -128,6 +83,8 @@ function getDisplayPrice(car: (typeof cars)[number]) {
 }
 
 export default function CarsPage() {
+  const { copy, locale } = useCarbonCopy();
+  const [siteCars, setSiteCars] = useState<Car[]>(cars);
   const [search, setSearch] = useState("");
   const [category, setCategory] =
     useState<CategoryFilter>("Hamısı");
@@ -158,12 +115,75 @@ export default function CarsPage() {
   const [sort, setSort] =
     useState<SortType>("recommended");
 
+  useEffect(() => {
+    let mounted = true;
+
+    fetchPublicCars().then((supabaseCars) => {
+      if (mounted && supabaseCars?.length) {
+        setSiteCars(supabaseCars);
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const brands = useMemo(
+    () => Array.from(new Set(siteCars.map((car) => car.brand))).sort(),
+    [siteCars]
+  );
+
+  const transmissions = useMemo(
+    () =>
+      Array.from(
+        new Set(siteCars.map((car) => car.transmission).filter(Boolean))
+      ).sort(),
+    [siteCars]
+  );
+
+  const fuels = useMemo(
+    () =>
+      Array.from(new Set(siteCars.map((car) => car.fuel).filter(Boolean))).sort(),
+    [siteCars]
+  );
+
+  const engines = useMemo(
+    () =>
+      Array.from(new Set(siteCars.map((car) => car.engine).filter(Boolean))).sort(),
+    [siteCars]
+  );
+
+  const seatOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          siteCars
+            .map((car) => car.seats)
+            .filter((value): value is number => typeof value === "number")
+        )
+      ).sort((a, b) => a - b),
+    [siteCars]
+  );
+
+  const baggageOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          siteCars
+            .map((car) => car.baggage)
+            .filter((value): value is number => typeof value === "number")
+        )
+      ).sort((a, b) => a - b),
+    [siteCars]
+  );
+
   const filteredCars = useMemo(() => {
     const query = search
       .trim()
       .toLocaleLowerCase("az");
 
-    const result = cars.filter((car) => {
+    const result = siteCars.filter((car) => {
       const matchesSearch =
         !query ||
         car.title
@@ -269,6 +289,7 @@ export default function CarsPage() {
     transferOnly,
     weddingOnly,
     sort,
+    siteCars,
   ]);
 
   const activeFilterCount =
@@ -285,18 +306,18 @@ export default function CarsPage() {
 
   const smallBaggageOptions = Array.from(
     new Set(
-      cars
+      siteCars
         .map((car) => car.smallBaggage)
         .filter((value): value is number => typeof value === "number"),
     ),
   ).sort((a, b) => a - b);
 
-  const transferCount = cars.filter(
+  const transferCount = siteCars.filter(
     (car) => car.transferAvailable,
   ).length;
 
   const categoryCount = new Set(
-    cars.map((car) => car.category),
+    siteCars.map((car) => car.category),
   ).size;
 
   function clearFilters() {
@@ -316,12 +337,12 @@ export default function CarsPage() {
 
   const sortLabel =
     sort === "price-low"
-      ? "Əvvəl ucuz"
+      ? copy.carsPage.sort.low
       : sort === "price-high"
-        ? "Əvvəl premium"
+        ? copy.carsPage.sort.high
         : sort === "name"
-          ? "Ada görə"
-          : "Carbon seçimi";
+          ? copy.carsPage.sort.name
+          : copy.carsPage.sort.recommended;
 
   return (
     <main className="fleet-v4">
@@ -386,10 +407,10 @@ export default function CarsPage() {
                   ease,
                 }}
               >
-                Sadəcə avtomobil
+                {copy.carsPage.heroTitle1}
                 <br />
-                deyil.
-                <span> Doğru seçim.</span>
+                {copy.carsPage.heroTitle2}
+                <span> {copy.carsPage.heroTitle3}</span>
               </motion.h1>
             </div>
 
@@ -415,14 +436,11 @@ export default function CarsPage() {
               />
 
               <p>
-                Şəhər üçün kompakt seçimdən,
-                biznes səfərinə və xüsusi günə
-                qədər — Carbon kolleksiyasını
-                saniyələr içində filtrləyin.
+                {copy.carsPage.heroIntro}
               </p>
 
               <a href="#fleet-results">
-                Kolleksiyanı araşdır
+                {copy.carsPage.explore}
                 <ArrowRight size={14} />
               </a>
             </motion.div>
@@ -506,13 +524,13 @@ export default function CarsPage() {
                 </span>
 
                 <strong>
-                  Səyahətinizə uyğun avtomobili tapın
+                  {copy.carsPage.finderTitle}
                 </strong>
               </div>
 
               <span className="fleet-v4-command-status">
                 <i />
-                {filteredCars.length} uyğun nəticə
+                {filteredCars.length} {copy.carsPage.resultSuffix}
               </span>
             </div>
 
@@ -530,7 +548,7 @@ export default function CarsPage() {
                     setSearch(event.target.value)
                   }
                   placeholder="Mercedes, BMW, SUV..."
-                  aria-label="Avtomobil axtar"
+                  aria-label={copy.carsPage.finderTitle}
                 />
 
                 <AnimatePresence>
@@ -550,7 +568,7 @@ export default function CarsPage() {
                         opacity: 0,
                         scale: 0.7,
                       }}
-                      aria-label="Axtarışı təmizlə"
+                      aria-label={copy.carsPage.reset}
                     >
                       <X size={14} />
                     </motion.button>
@@ -569,7 +587,7 @@ export default function CarsPage() {
               >
                 <SlidersHorizontal size={15} />
 
-                <span>Filtrlər</span>
+                <span>{copy.carsPage.filters}</span>
 
                 {activeFilterCount > 0 && (
                   <i>{activeFilterCount}</i>
@@ -606,7 +624,9 @@ export default function CarsPage() {
                         />
                       )}
 
-                      <span>{item}</span>
+                      <span>
+                        {copy.carsPage.categories[item as keyof typeof copy.carsPage.categories] ?? item}
+                      </span>
                     </button>
                   );
                 })}
@@ -638,10 +658,10 @@ export default function CarsPage() {
 
                     <div className="fleet-v6-filter-head">
                       <div>
-                        <span>ƏTRAFLI FİLTRLƏR</span>
-                        <strong>
-                          Avtomobili detallara görə seçin
-                        </strong>
+                      <span>{copy.carsPage.detailedFilters}</span>
+                      <strong>
+                          {copy.carsPage.chooseByDetails}
+                      </strong>
                       </div>
 
                       {activeFilterCount > 0 && (
@@ -651,7 +671,7 @@ export default function CarsPage() {
                           onClick={clearFilters}
                         >
                           <X size={13} />
-                          Sıfırla
+                          {copy.carsPage.reset}
                         </button>
                       )}
                     </div>
@@ -664,8 +684,8 @@ export default function CarsPage() {
                             <CarFront size={16} />
                           </span>
                           <div>
-                            <small>MARKA</small>
-                            <strong>İstehsalçı</strong>
+                            <small>{copy.carsPage.brand}</small>
+                            <strong>{copy.carsPage.manufacturer}</strong>
                           </div>
                         </div>
 
@@ -687,7 +707,7 @@ export default function CarsPage() {
                                 {selectedBrand === brand && (
                                   <Check size={11} />
                                 )}
-                                {brand}
+                                {brand === "Hamısı" ? copy.carsPage.all : brand}
                               </button>
                             ),
                           )}
@@ -701,7 +721,7 @@ export default function CarsPage() {
                           </span>
                           <div>
                             <small>OTURACAQ</small>
-                            <strong>Sərnişin sayı</strong>
+                            <strong>{copy.carsPage.seats}</strong>
                           </div>
                         </div>
 
@@ -717,7 +737,7 @@ export default function CarsPage() {
                               setMinSeats(null)
                             }
                           >
-                            Hamısı
+                            {copy.carsPage.all}
                           </button>
 
                           {seatOptions.map((value) => (
@@ -746,7 +766,7 @@ export default function CarsPage() {
                           </span>
                           <div>
                             <small>BAQAJ</small>
-                            <strong>Çamadan tutumu</strong>
+                            <strong>{copy.carsPage.baggage}</strong>
                           </div>
                         </div>
 
@@ -762,7 +782,7 @@ export default function CarsPage() {
                               setMinBaggage(null)
                             }
                           >
-                            Hamısı
+                            {copy.carsPage.all}
                           </button>
 
                           {baggageOptions.map((value) => (
@@ -791,8 +811,8 @@ export default function CarsPage() {
                           </span>
 
                           <div>
-                            <small>ƏL YÜKÜ</small>
-                            <strong>Kiçik baqaj tutumu</strong>
+                            <small>{copy.carsPage.baggage}</small>
+                            <strong>{copy.carsPage.baggage}</strong>
                           </div>
                         </div>
 
@@ -808,7 +828,7 @@ export default function CarsPage() {
                               setMinSmallBaggage(null)
                             }
                           >
-                            Hamısı
+                            {copy.carsPage.all}
                           </button>
 
                           {smallBaggageOptions.map((value) => (
@@ -836,8 +856,8 @@ export default function CarsPage() {
                             <Settings2 size={16} />
                           </span>
                           <div>
-                            <small>TRANSMİSSİYA</small>
-                            <strong>Sürətlər qutusu</strong>
+                            <small>{copy.carsPage.transmission}</small>
+                            <strong>{copy.carsPage.transmission}</strong>
                           </div>
                         </div>
 
@@ -861,7 +881,9 @@ export default function CarsPage() {
                               {transmission === item && (
                                 <Check size={11} />
                               )}
-                              {item}
+                              {item === "Hamısı"
+                                ? copy.carsPage.all
+                                : translateCarValue(item, locale)}
                             </button>
                           ))}
                         </div>
@@ -873,8 +895,8 @@ export default function CarsPage() {
                             <Fuel size={16} />
                           </span>
                           <div>
-                            <small>YANACAQ</small>
-                            <strong>Yanacaq növü</strong>
+                            <small>{copy.carsPage.fuel}</small>
+                            <strong>{copy.carsPage.fuel}</strong>
                           </div>
                         </div>
 
@@ -896,7 +918,9 @@ export default function CarsPage() {
                                 {fuel === item && (
                                   <Check size={11} />
                                 )}
-                                {item}
+                                {item === "Hamısı"
+                                  ? copy.carsPage.all
+                                  : translateCarValue(item, locale)}
                               </button>
                             ),
                           )}
@@ -909,8 +933,8 @@ export default function CarsPage() {
                             <Gauge size={16} />
                           </span>
                           <div>
-                            <small>MÜHƏRRİK</small>
-                            <strong>Mühərrik həcmi</strong>
+                            <small>{copy.carsPage.engine}</small>
+                            <strong>{copy.carsPage.engine}</strong>
                           </div>
                         </div>
 
@@ -932,7 +956,7 @@ export default function CarsPage() {
                                 {engine === item && (
                                   <Check size={11} />
                                 )}
-                                {item}
+                                {item === "Hamısı" ? copy.carsPage.all : item}
                               </button>
                             ),
                           )}
@@ -962,10 +986,10 @@ export default function CarsPage() {
 
                         <div>
                           <strong>
-                            Transfer xidməti
+                            {copy.car.transfer}
                           </strong>
                           <small>
-                            Transfer üçün uyğun avtomobillər
+                            {copy.homeExperience.services[1].text}
                           </small>
                         </div>
 
@@ -991,10 +1015,10 @@ export default function CarsPage() {
 
                         <div>
                           <strong>
-                            Toy avtomobili
+                            {copy.homeExperience.services[0].top.replace("01 / ", "")}
                           </strong>
                           <small>
-                            Toy və xüsusi günlər üçün
+                            {copy.homeExperience.services[0].eyebrow}
                           </small>
                         </div>
 
@@ -1009,7 +1033,7 @@ export default function CarsPage() {
                           {filteredCars.length}
                         </strong>
                         <span>
-                          avtomobil seçimə uyğundur
+                          {copy.carsPage.resultSuffix}
                         </span>
                       </div>
 
@@ -1019,7 +1043,7 @@ export default function CarsPage() {
                           setFiltersOpen(false)
                         }
                       >
-                        Nəticələri göstər
+                        {copy.carsPage.results}
                         <ArrowRight size={14} />
                       </button>
                     </div>
@@ -1034,7 +1058,7 @@ export default function CarsPage() {
 
           <div className="fleet-v4-results-head">
             <div>
-              <span>NƏTİCƏ</span>
+              <span>{copy.carsPage.results}</span>
 
               <AnimatePresence mode="wait">
                 <motion.strong
@@ -1059,7 +1083,7 @@ export default function CarsPage() {
               </AnimatePresence>
 
               <small>
-                avtomobil göstərilir
+                {copy.carsPage.shown}
               </small>
             </div>
 
@@ -1109,17 +1133,17 @@ export default function CarsPage() {
                     {[
                       [
                         "recommended",
-                        "Carbon seçimi",
+                        copy.carsPage.sort.recommended,
                       ],
                       [
                         "price-low",
-                        "Əvvəl ucuz",
+                        copy.carsPage.sort.low,
                       ],
                       [
                         "price-high",
-                        "Əvvəl premium",
+                        copy.carsPage.sort.high,
                       ],
-                      ["name", "Ada görə"],
+                      ["name", copy.carsPage.sort.name],
                     ].map(([value, label]) => (
                       <button
                         type="button"
@@ -1224,12 +1248,12 @@ export default function CarsPage() {
                             <div className="fleet-v4-card-top">
                               <div>
                                 <span>
-                                  {car.category}
+                                  {copy.carsPage.categories[car.category as keyof typeof copy.carsPage.categories] ?? car.category}
                                 </span>
 
                                 {car.transferAvailable && (
                                   <span className="fleet-v4-transfer-badge">
-                                    TRANSFER
+                                    {copy.car.transfer}
                                   </span>
                                 )}
                               </div>
@@ -1307,12 +1331,12 @@ export default function CarsPage() {
                                       {price} ₼
                                     </strong>
                                     <span>
-                                      / gün
+                                      {copy.carsPage.perDay}
                                     </span>
                                   </>
                                 ) : (
                                   <strong>
-                                    Sorğu ilə
+                                    {copy.carsPage.request}
                                   </strong>
                                 )}
                               </div>
@@ -1325,7 +1349,7 @@ export default function CarsPage() {
                                   <Users
                                     size={13}
                                   />
-                                  {car.seats} nəfər
+                                  {car.seats} {copy.carsPage.people}
                                 </span>
                               )}
 
@@ -1333,7 +1357,7 @@ export default function CarsPage() {
                                 <Fuel
                                   size={13}
                                 />
-                                {car.fuel}
+                                {translateCarValue(car.fuel, locale)}
                               </span>
 
                               <span>
@@ -1341,7 +1365,7 @@ export default function CarsPage() {
                                   size={13}
                                 />
                                 {
-                                  car.transmission
+                                  translateCarValue(car.transmission, locale)
                                 }
                               </span>
 
@@ -1367,11 +1391,11 @@ export default function CarsPage() {
 
                             <div className="fleet-v4-card-footer">
                               <span>
-                                Ətraflı baxış
+                                {copy.carsPage.detail}
                               </span>
 
                               <span>
-                                seç və rezerv et
+                                {copy.carsPage.reserve}
                                 <ArrowRight
                                   size={12}
                                 />
@@ -1414,19 +1438,18 @@ export default function CarsPage() {
                 <span>CARBON FINDER</span>
 
                 <h2>
-                  Uyğun avtomobil tapılmadı.
+                  {copy.carsPage.emptyTitle}
                 </h2>
 
                 <p>
-                  Axtarışı dəyişin və ya aktiv
-                  filtrləri sıfırlayın.
+                  {copy.carsPage.emptyText}
                 </p>
 
                 <button
                   type="button"
                   onClick={clearFilters}
                 >
-                  Bütün avtomobilləri göstər
+                  {copy.carsPage.showAll}
                   <ArrowRight size={14} />
                 </button>
               </motion.div>

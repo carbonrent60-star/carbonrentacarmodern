@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AnimatePresence,
@@ -14,8 +14,13 @@ import {
 } from "lucide-react";
 import {
   blogPosts,
-  formatBlogDate,
 } from "../data/blog";
+import {
+  blogUi,
+  formatLocalizedBlogDate,
+  localizeBlogPosts,
+} from "../data/blog-localized";
+import { useCarbonCopy } from "@/lib/carbon-locale";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -44,23 +49,33 @@ function ArticleImage({
 }
 
 export default function BlogClient() {
-  const [category, setCategory] = useState("Hamısı");
+  const { locale } = useCarbonCopy();
+  const ui = blogUi[locale];
+  const posts = useMemo(
+    () => localizeBlogPosts(blogPosts, locale),
+    [locale],
+  );
+  const [category, setCategory] = useState<string>(ui.all);
   const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    setCategory(ui.all);
+  }, [ui.all]);
 
   const categories = useMemo(
     () => [
-      "Hamısı",
+      ui.all,
       ...Array.from(
-        new Set(blogPosts.map((post) => post.category)),
+        new Set(posts.map((post) => post.category)),
       ),
     ],
-    [],
+    [posts, ui.all],
   );
 
   const visible =
-    category === "Hamısı"
-      ? blogPosts
-      : blogPosts.filter(
+    category === ui.all || !categories.includes(category)
+      ? posts
+      : posts.filter(
           (post) => post.category === category,
         );
 
@@ -90,16 +105,15 @@ export default function BlogClient() {
               </div>
 
               <h1>
-                Yol üçün
+                {ui.title1}
                 <br />
-                <span>daha yaxşı fikirlər.</span>
+                <span>{ui.title2}</span>
               </h1>
             </div>
 
             <div className="cj-intro-side">
               <p>
-                Avtomobil, səyahət, sığorta və düzgün
-                seçim haqqında qısa, praktik bələdçilər.
+                {ui.intro}
               </p>
 
               <div className="cj-issue">
@@ -117,7 +131,7 @@ export default function BlogClient() {
         <div className="cj-shell">
           <div className="cj-filter-bar">
             <span className="cj-filter-label">
-              Kateqoriya
+              {ui.category}
             </span>
 
             <div className="cj-filters">
@@ -175,10 +189,10 @@ export default function BlogClient() {
               <div className="cj-shell">
                 <div className="cj-section-label">
                   <span>01</span>
-                  <p>Seçilmiş məqalə</p>
+                  <p>{ui.featured}</p>
                   <i />
                   <small>
-                    {String(visible.length).padStart(2, "0")} yazı
+                    {String(visible.length).padStart(2, "0")} {ui.posts}
                   </small>
                 </div>
 
@@ -213,7 +227,7 @@ export default function BlogClient() {
                       <span>{featured.category}</span>
                       <i />
                       <span>
-                        {formatBlogDate(featured.date)}
+                        {formatLocalizedBlogDate(featured.date, locale)}
                       </span>
                     </div>
 
@@ -236,7 +250,7 @@ export default function BlogClient() {
                         href={`/blog/${featured.slug}`}
                         className="cj-text-link"
                       >
-                        Oxumağa başla
+                        {ui.startReading}
                         <ArrowRight size={15} />
                       </Link>
                     </div>
@@ -251,7 +265,7 @@ export default function BlogClient() {
               <div className="cj-shell">
                 <div className="cj-section-label">
                   <span>02</span>
-                  <p>Son yazılar</p>
+                  <p>{ui.latest}</p>
                   <i />
                   <small>Carbon Journal</small>
                 </div>
@@ -323,13 +337,13 @@ export default function BlogClient() {
 
                         <div className="cj-story-foot">
                           <span>
-                            {formatBlogDate(post.date)}
+                            {formatLocalizedBlogDate(post.date, locale)}
                           </span>
 
                           <Link
                             href={`/blog/${post.slug}`}
                           >
-                            Oxu
+                            {ui.read}
                             <ArrowRight size={13} />
                           </Link>
                         </div>
@@ -362,13 +376,13 @@ export default function BlogClient() {
 
             <div className="cj-end-main">
               <h2>
-                Oxumaq kifayətdir.
+                {ui.enough}
                 <br />
-                <span>İndi yola çıx.</span>
+                <span>{ui.goNow}</span>
               </h2>
 
               <Link href="/avtomobiller">
-                Avtomobillərə bax
+                {ui.viewCars}
                 <span>
                   <ArrowUpRight size={18} />
                 </span>

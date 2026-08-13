@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   ArrowLeft,
@@ -11,12 +12,98 @@ import {
 } from "lucide-react";
 
 import CarbonNavbar from "@/components/CarbonNavbar";
-import { cars } from "@/data/cars";
+import { cars, type Car } from "@/data/cars";
+import { useCarbonCopy } from "@/lib/carbon-locale";
+import { fetchPublicCars } from "@/lib/supabase/cars";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
+const weddingCollectionText = {
+  az: {
+    back: "Ana səhifə",
+    kicker: "CARBON / XÜSUSİ KOLLEKSİYA",
+    hero1: "Xüsusi gününüzə",
+    hero2: " xüsusi avtomobil.",
+    intro:
+      "Toy, nişan, fotosessiya və xüsusi tədbirlər üçün seçilmiş premium avtomobillər.",
+    car: "AVTOMOBİL",
+    selected: "SEÇİLMİŞ AVTOMOBİLLƏR",
+    collection: "Toy kolleksiyası",
+    collectionIntro:
+      "Klassik, sport və premium modellər arasından xüsusi gününüzə uyğun avtomobili seçin.",
+    wedding: "TOY",
+    seats: "yer",
+    starts: "Başlayır",
+    final1: "Detallar sizə deyil,",
+    final2: " bizə qalsın.",
+    finalIntro:
+      "Avtomobil seçimi, vaxt və təşkilati detallar üçün komandamızla əlaqə saxlayın. Xüsusi gününüz üçün uyğun variantı birlikdə müəyyən edək.",
+    request: "Müraciət et",
+  },
+  en: {
+    back: "Home",
+    kicker: "CARBON / SPECIAL COLLECTION",
+    hero1: "A special car",
+    hero2: " for your special day.",
+    intro:
+      "Selected premium cars for weddings, engagements, photo sessions and special events.",
+    car: "CAR",
+    selected: "SELECTED CARS",
+    collection: "Wedding collection",
+    collectionIntro:
+      "Choose the right car for your special day from classic, sport and premium models.",
+    wedding: "WEDDING",
+    seats: "seats",
+    starts: "Starts from",
+    final1: "Leave the details",
+    final2: " to us.",
+    finalIntro:
+      "Contact our team for car selection, timing and organization details. Together we will find the right option for your special day.",
+    request: "Send request",
+  },
+  ru: {
+    back: "Главная",
+    kicker: "CARBON / СПЕЦИАЛЬНАЯ КОЛЛЕКЦИЯ",
+    hero1: "Особенный автомобиль",
+    hero2: " для особенного дня.",
+    intro:
+      "Подобранные премиальные автомобили для свадьбы, помолвки, фотосессии и особых мероприятий.",
+    car: "АВТО",
+    selected: "ВЫБРАННЫЕ АВТО",
+    collection: "Свадебная коллекция",
+    collectionIntro:
+      "Выберите автомобиль для особого дня среди классических, спортивных и премиальных моделей.",
+    wedding: "СВАДЬБА",
+    seats: "мест",
+    starts: "От",
+    final1: "Оставьте детали",
+    final2: " нам.",
+    finalIntro:
+      "Свяжитесь с нашей командой по выбору автомобиля, времени и организационным деталям. Вместе подберем подходящий вариант для вашего особого дня.",
+    request: "Отправить заявку",
+  },
+} as const;
+
 export default function WeddingCollectionClient() {
-  const weddingCars = cars.filter(
+  const { locale } = useCarbonCopy();
+  const t = weddingCollectionText[locale];
+  const [siteCars, setSiteCars] = useState<Car[]>(cars);
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetchPublicCars().then((supabaseCars) => {
+      if (mounted && supabaseCars?.length) {
+        setSiteCars(supabaseCars);
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const weddingCars = siteCars.filter(
     (car) =>
       car.weddingAvailable &&
       car.weddingPrice != null
@@ -47,7 +134,7 @@ export default function WeddingCollectionClient() {
           >
             <Link href="/" className="wedding-back">
               <ArrowLeft size={14} />
-              Ana səhifə
+              {t.back}
             </Link>
           </motion.div>
 
@@ -68,12 +155,12 @@ export default function WeddingCollectionClient() {
               }}
             >
               <span className="wedding-kicker">
-                CARBON / XÜSUSİ KOLLEKSİYA
+                {t.kicker}
               </span>
 
               <h1>
-                Xüsusi gününüzə
-                <em> xüsusi avtomobil.</em>
+                {t.hero1}
+                <em>{t.hero2}</em>
               </h1>
             </motion.div>
 
@@ -94,15 +181,14 @@ export default function WeddingCollectionClient() {
               }}
             >
               <p>
-                Toy, nişan, fotosessiya və xüsusi tədbirlər üçün
-                seçilmiş premium avtomobillər.
+                {t.intro}
               </p>
 
               <div>
                 <span>
                   {String(weddingCars.length).padStart(2, "0")}
                 </span>
-                <small>AVTOMOBİL</small>
+                <small>{t.car}</small>
               </div>
             </motion.div>
           </div>
@@ -131,13 +217,12 @@ export default function WeddingCollectionClient() {
             }}
           >
             <div>
-              <span>SEÇİLMİŞ AVTOMOBİLLƏR</span>
-              <h2>Toy kolleksiyası</h2>
+              <span>{t.selected}</span>
+              <h2>{t.collection}</h2>
             </div>
 
             <p>
-              Klassik, sport və premium modellər arasından
-              xüsusi gününüzə uyğun avtomobili seçin.
+              {t.collectionIntro}
             </p>
           </motion.div>
 
@@ -177,7 +262,7 @@ export default function WeddingCollectionClient() {
                     </span>
 
                     <span className="wedding-card-type">
-                      TOY
+                      {t.wedding}
                     </span>
                   </div>
 
@@ -225,7 +310,7 @@ export default function WeddingCollectionClient() {
                       {car.seats != null && (
                         <span>
                           <Users size={13} />
-                          {car.seats} yer
+                          {car.seats} {t.seats}
                         </span>
                       )}
 
@@ -238,12 +323,12 @@ export default function WeddingCollectionClient() {
 
                       <span>
                         <CalendarHeart size={13} />
-                        Toy
+                        {t.wedding}
                       </span>
                     </div>
 
                     <div className="wedding-card-price">
-                      <span>Başlayır</span>
+                      <span>{t.starts}</span>
 
                       <strong>
                         {car.weddingPrice} ₼
@@ -280,18 +365,16 @@ export default function WeddingCollectionClient() {
           <span>CARBON WEDDING</span>
 
           <h2>
-            Detallar sizə deyil,
-            <em> bizə qalsın.</em>
+            {t.final1}
+            <em>{t.final2}</em>
           </h2>
 
           <p>
-            Avtomobil seçimi, vaxt və təşkilati detallar üçün
-            komandamızla əlaqə saxlayın. Xüsusi gününüz üçün
-            uyğun variantı birlikdə müəyyən edək.
+            {t.finalIntro}
           </p>
 
           <Link href="/#contact">
-            Müraciət et
+            {t.request}
             <ArrowRight size={15} />
           </Link>
         </motion.div>

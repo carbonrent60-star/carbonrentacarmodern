@@ -2,52 +2,34 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
+import { useCarbonCopy } from "@/lib/carbon-locale";
+import { useTranslations } from "next-intl";
 import {
   ArrowRight,
   ArrowUpRight,
   Check,
-  Headphones,
-  LockKeyhole,
   MapPin,
   Phone,
-  ShieldCheck,
 } from "lucide-react";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-const navigation = [
-  { label: "Ana səhifə", href: "/" },
-  { label: "Avtomobillər", href: "/avtomobiller" },
-  { label: "Toy avtomobilləri", href: "/toy-avtomobilleri" },
-  { label: "Blog", href: "/blog" },
-];
-
-const information = [
-  { label: "Haqqımızda", href: "/haqqimizda" },
-  { label: "Əlaqə", href: "/elaqe" },
-  { label: "Şərtlər və Qaydalar", href: "/sertler" },
-  { label: "Məxfilik Siyasəti", href: "/mexfilik-siyaseti" },
-];
-
-const trustItems = [
-  {
-    icon: ShieldCheck,
-    title: "100% Təhlükəsizlik",
-    text: "Kasko sığortalı və etibarlı",
-  },
-  {
-    icon: LockKeyhole,
-    title: "Təhlükəsiz ödəniş",
-    text: "Qorunan rezervasiya prosesi",
-  },
-  {
-    icon: Headphones,
-    title: "24/7 Dəstək",
-    text: "Hər zaman əlaqə",
-  },
-];
-
 export default function CarbonFooter() {
+  const { copy } = useCarbonCopy();
+  const t = useTranslations("nav");
+  const localizedNavigation = [
+    { label: t("home"), href: "/" },
+    { label: t("cars"), href: "/avtomobiller" },
+    { label: t("weddingCars"), href: "/toy-avtomobilleri" },
+    { label: t("blog"), href: "/blog" },
+  ];
+  const localizedInformation = [
+    { label: t("about"), href: "/haqqimizda" },
+    { label: t("contact"), href: "/elaqe" },
+    { label: copy.footer.legal[0], href: "/sertler" },
+    { label: copy.footer.legal[1], href: "/mexfilik-siyaseti" },
+  ];
+
   return (
     <footer className="carbon-global-footer">
       <div className="carbon-footer-glow carbon-footer-glow-one" />
@@ -68,20 +50,19 @@ export default function CarbonFooter() {
             </div>
 
             <h2>
-              Yolunuzu seçin.
+              {copy.footer.heading1}
               <br />
-              <em>Qalanını biz həll edək.</em>
+              <em>{copy.footer.heading2}</em>
             </h2>
           </div>
 
           <div className="carbon-footer-cta-side">
             <p>
-              Bakı daxilində avtomobil icarəsi, xüsusi gün avtomobilləri
-              və transfer xidmətləri üçün premium təcrübə.
+              {copy.footer.intro}
             </p>
 
             <Link href="/avtomobiller" className="carbon-footer-main-action">
-              <span>Avtomobil seç</span>
+              <span>{copy.footer.action}</span>
 
               <span className="carbon-footer-main-action-icon">
                 <ArrowRight size={18} strokeWidth={1.6} />
@@ -109,15 +90,15 @@ export default function CarbonFooter() {
             </Link>
 
             <p>
-              Premium avtomobil icarəsi.
+              {copy.footer.brandText1}
               <br />
-              Bakı, Azərbaycan.
+              {copy.footer.brandText2}
             </p>
 
             <div className="carbon-footer-status">
               <span>
                 <i />
-                Xidmət aktivdir
+                {copy.footer.active}
               </span>
 
               <span>
@@ -130,10 +111,10 @@ export default function CarbonFooter() {
           <div className="carbon-footer-columns">
             <div className="carbon-footer-column">
               <span className="carbon-footer-column-title">
-                NAVİQASİYA
+                {copy.footer.navigation}
               </span>
 
-              {navigation.map((item) => (
+              {localizedNavigation.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <span>{item.label}</span>
                   <ArrowUpRight size={13} strokeWidth={1.5} />
@@ -143,10 +124,10 @@ export default function CarbonFooter() {
 
             <div className="carbon-footer-column">
               <span className="carbon-footer-column-title">
-                MƏLUMAT
+                {copy.footer.information}
               </span>
 
-              {information.map((item) => (
+              {localizedInformation.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <span>{item.label}</span>
                   <ArrowUpRight size={13} strokeWidth={1.5} />
@@ -156,7 +137,7 @@ export default function CarbonFooter() {
 
             <div className="carbon-footer-column carbon-footer-contact">
               <span className="carbon-footer-column-title">
-                ƏLAQƏ
+                {copy.footer.contact}
               </span>
 
               <a href="tel:+994554840006">
@@ -189,7 +170,7 @@ export default function CarbonFooter() {
                 <span>
                   Ələsgər Qayıbov 12/22
                   <br />
-                  Bakı, Azərbaycan
+                  {copy.footer.location}
                 </span>
               </a>
             </div>
@@ -206,7 +187,7 @@ export default function CarbonFooter() {
           <div className="carbon-footer-bottom-center">
             <span>crbnrnt.com</span>
             <i />
-            <span>Bakı · Azərbaycan</span>
+            <span>{copy.footer.location.replace(", ", " · ")}</span>
           </div>
 
           <a

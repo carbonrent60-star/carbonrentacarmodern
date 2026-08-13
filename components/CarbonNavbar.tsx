@@ -5,10 +5,11 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowRight,
-  ChevronDown,
   Menu,
   X,
 } from "lucide-react";
+import {useTranslations} from "next-intl";
+import CarbonLanguageSwitcher from "./CarbonLanguageSwitcher";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -26,23 +27,24 @@ export default function CarbonNavbar({
   active,
 }: CarbonNavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const t = useTranslations("nav");
 
   const links = home
     ? [
-        ["Avtomobillər", "#cars", "cars"],
-        ["Toy avtomobilləri", "/toy-avtomobilleri", "wedding"],
-        ["Blog", "/blog", "blog"],
-        ["Haqqımızda", "/haqqimizda", "about"],
-        ["Xidmətlər", "#services", ""],
-        ["Əlaqə", "/elaqe", "contact"],
+        [t("cars"), "#cars", "cars"],
+        [t("weddingCars"), "/toy-avtomobilleri", "wedding"],
+        [t("blog"), "/blog", "blog"],
+        [t("about"), "/haqqimizda", "about"],
+        [t("services"), "#services", ""],
+        [t("contact"), "/elaqe", "contact"],
       ]
     : [
-        ["Ana səhifə", "/", ""],
-        ["Avtomobillər", "/avtomobiller", "cars"],
-        ["Toy avtomobilləri", "/toy-avtomobilleri", "wedding"],
-        ["Blog", "/blog", "blog"],
-        ["Haqqımızda", "/haqqimizda", "about"],
-        ["Əlaqə", "/elaqe", "contact"],
+        [t("home"), "/", ""],
+        [t("cars"), "/avtomobiller", "cars"],
+        [t("weddingCars"), "/toy-avtomobilleri", "wedding"],
+        [t("blog"), "/blog", "blog"],
+        [t("about"), "/haqqimizda", "about"],
+        [t("contact"), "/elaqe", "contact"],
       ];
 
   const contactHref = "/elaqe";
@@ -132,10 +134,7 @@ export default function CarbonNavbar({
         </nav>
 
         <div className="nav-actions">
-          <button className="language" type="button">
-            AZ
-            <ChevronDown size={13} strokeWidth={1.7} />
-          </button>
+          <CarbonLanguageSwitcher />
 
           <motion.a
             className="contact-button"
@@ -153,7 +152,7 @@ export default function CarbonNavbar({
               damping: 25,
             }}
           >
-            Əlaqə saxla
+            {t("contactButton")}
             <ArrowRight size={16} strokeWidth={1.8} />
           </motion.a>
 
@@ -279,10 +278,7 @@ export default function CarbonNavbar({
               >
                 <span>MENYU</span>
 
-                <button type="button">
-                  AZ
-                  <ChevronDown size={12} strokeWidth={1.6} />
-                </button>
+                <CarbonLanguageSwitcher mobile />
               </motion.div>
 
               <nav className="carbon-mobile-navigation">
@@ -359,7 +355,7 @@ export default function CarbonNavbar({
                 >
                   <span>
                     <small>BİZİMLƏ ƏLAQƏ</small>
-                    <strong>Əlaqə saxla</strong>
+                    <strong>{t("contactButton")}</strong>
                   </span>
 
                   <motion.i

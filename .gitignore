@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+.carbon-backups/
+*.before-*
 
 # debug
 npm-debug.log*

@@ -1,15 +1,17 @@
 "use client";
 
-import Image from "next/image";
+import { useCarbonCopy } from "@/lib/carbon-locale";
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
+import Link from "next/link";
 import CarCard from "@/components/CarCard";
 import CarbonNavbar from "@/components/CarbonNavbar";
 import RentalGuide from "@/components/RentalGuide";
 import HomeExperience from "@/components/HomeExperience";
 import CarbonSignature from "@/components/CarbonSignature";
 import HomeBookingBar from "@/components/HomeBookingBar";
-import { featuredCars } from "@/data/cars";
+import { featuredCars, type Car } from "@/data/cars";
+import { fetchPublicCars } from "@/lib/supabase/cars";
 import {
   ArrowDown,
   ArrowRight,
@@ -34,7 +36,9 @@ const fadeUp = {
 };
 
 export default function Home() {
+  const { copy } = useCarbonCopy();
   const [ready, setReady] = useState(false);
+  const [homeFeaturedCars, setHomeFeaturedCars] = useState<Car[]>(featuredCars);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -42,6 +46,33 @@ export default function Home() {
     }, 120);
 
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetchPublicCars().then((supabaseCars) => {
+      if (!mounted || !supabaseCars?.length) {
+        return;
+      }
+
+      const preferredSlugs = featuredCars.map((car) => car.slug);
+      const preferredCars = preferredSlugs
+        .map((slug) => supabaseCars.find((car) => car.slug === slug))
+        .filter((car): car is Car => Boolean(car));
+
+      setHomeFeaturedCars(
+        preferredCars.length >= 3
+          ? preferredCars.slice(0, 3)
+          : supabaseCars
+              .filter((car) => car.rentalVisible !== false)
+              .slice(0, 3)
+      );
+    });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
@@ -113,7 +144,7 @@ export default function Home() {
               }}
               style={{ transformOrigin: "left" }}
             />
-            BAKIDA AVTOMOBİL İCARƏSİ
+            {copy.hero.eyebrow}
           </motion.div>
 
           <div className="hero-title-wrap">
@@ -137,7 +168,7 @@ export default function Home() {
                 ease,
               }}
             >
-              Yolunu seç.
+              {copy.hero.line1}
             </motion.h1>
 
             <motion.h1
@@ -160,7 +191,7 @@ export default function Home() {
                 ease,
               }}
             >
-              Qalanını biz həll edək.
+              {copy.hero.line2}
             </motion.h1>
           </div>
 
@@ -172,8 +203,7 @@ export default function Home() {
               ease,
             }}
           >
-            Premium avtomobillər, rahat icarə prosesi və hər səfər üçün
-            etibarlı seçim.
+            {copy.hero.description}
           </motion.p>
 
           <motion.div
@@ -202,8 +232,8 @@ export default function Home() {
               }}
             >
               <span className="hero-cta-copy">
-                <span className="hero-cta-kicker">KOLLEKSİYA</span>
-                <strong>Avtomobil seç</strong>
+                <span className="hero-cta-kicker">{copy.hero.collection}</span>
+                <strong>{copy.hero.chooseCar}</strong>
               </span>
 
               <motion.span
@@ -239,8 +269,8 @@ export default function Home() {
               </span>
 
               <span className="hero-cta-copy">
-                <span className="hero-cta-kicker">DƏSTƏK</span>
-                <strong>Bizimlə əlaqə</strong>
+                <span className="hero-cta-kicker">{copy.hero.support}</span>
+                <strong>{copy.hero.contactUs}</strong>
               </span>
 
               <span className="hero-cta-secondary-arrow">
@@ -284,7 +314,7 @@ export default function Home() {
 
               <div>
                 <strong>24/7</strong>
-                <span>Dəstək</span>
+                <span>{copy.hero.support247Text}</span>
               </div>
             </motion.div>
 
@@ -301,7 +331,7 @@ export default function Home() {
 
               <div>
                 <strong>Premium</strong>
-                <span>Avtomobil seçimi</span>
+                <span>{copy.hero.premiumText}</span>
               </div>
             </motion.div>
 
@@ -317,14 +347,14 @@ export default function Home() {
               <ShieldCheck size={25} strokeWidth={1.4} />
 
               <div>
-                <strong>Tam sığortalı</strong>
-                <span>Güvənli icarə</span>
+                <strong>{copy.hero.insured}</strong>
+                <span>{copy.hero.insuredText}</span>
               </div>
             </motion.div>
           </div>
 
           <a href="#cars" className="scroll-indicator">
-            <span>Avtomobillərə bax</span>
+            <span>{copy.homeExperience.ctaAction}</span>
 
             <motion.div
               animate={{
@@ -365,9 +395,9 @@ export default function Home() {
               viewport={{ once: true, amount: 0.4 }}
               transition={{ duration: 0.8, ease }}
             >
-              Hər yol üçün
+              {copy.homeExperience.ctaTitle1}
               <br />
-              <span>doğru avtomobil.</span>
+              <span>{copy.homeExperience.ctaAction}.</span>
             </motion.h2>
 
             <motion.div
@@ -378,19 +408,18 @@ export default function Home() {
               transition={{ duration: 0.7, delay: 0.1, ease }}
             >
               <p>
-                Şəhər səfərlərindən xüsusi günlərə qədər, ehtiyacınıza uyğun
-                avtomobili Carbon kolleksiyasından seçin.
+                {copy.homeExperience.intro}
               </p>
 
-              <a href="/avtomobiller" className="text-link">
-                Bütün avtomobillər
+              <Link href="/avtomobiller" className="text-link">
+                {copy.booking.allCars}
                 <ArrowRight size={15} strokeWidth={1.6} />
-              </a>
+              </Link>
             </motion.div>
           </div>
 
           <div className="car-grid">
-            {featuredCars.map((car, index) => (
+            {homeFeaturedCars.map((car, index) => (
               <CarCard key={car.id} car={car} index={index} />
             ))}
           </div>

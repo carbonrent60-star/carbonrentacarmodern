@@ -40,6 +40,10 @@ import { createPortal } from "react-dom";
 import CarbonNavbar from "@/components/CarbonNavbar";
 import CarbonDateRangePicker from "@/components/CarbonDateRangePicker";
 import {
+  translateCarValue,
+  useCarbonCopy,
+} from "@/lib/carbon-locale";
+import {
   type Car,
   getShortTermPrice,
 } from "@/data/cars";
@@ -87,6 +91,153 @@ const extras = [
   },
 ];
 
+const detailText = {
+  az: {
+    reservation: "REZERVASİYA",
+    tripTitle: "Səfərinizi qurun.",
+    requestOpen: "Sorğu açıqdır",
+    selectedDuration: "Seçilmiş müddət üçün",
+    day: "gün",
+    byRequest: "Sorğu ilə",
+    extras: "Əlavələr",
+    selected: "seçilib",
+    optional: "İstəyə bağlı",
+    estimatedTotal: "Təxmini məbləğ",
+    nextStep: "NÖVBƏTİ ADDIM",
+    confirm: "Rezervasiyanı təsdiqlə",
+    security:
+      "Sorğu göndərmə ödəniş yaratmır. Mövcudluq və yekun şərtlər Carbon komandası tərəfindən təsdiqlənir.",
+    heroTitle1: "Avtomobil hazırdır.",
+    heroTitle2: "Siz tarixi seçin.",
+    heroIntro:
+      "Tarixləri seçin və təxmini qiyməti dərhal görün. Son təsdiqdən əvvəl komandamız mövcudluğu və bütün şərtləri sizinlə dəqiqləşdirəcək.",
+    clearTerms: "Aydın şərtlər",
+    noHiddenSteps: "Gizli addım yoxdur",
+    directSupport: "Birbaşa dəstək",
+    carbonTeam: "Carbon komandası ilə",
+    freeRequest: "Ödənişsiz sorğu",
+    confirmFirst: "Əvvəl təsdiq, sonra proses",
+    cars: "Avtomobillər",
+    forRent: "İCARƏ ÜÇÜN",
+    passenger: "Sərnişin",
+    person: "nəfər",
+    fuel: "Yanacaq",
+    transmission: "Sürətlər qutusu",
+    engine: "Mühərrik",
+    luggage: "Baqaj",
+    large: "böyük",
+    pickupOfficeTitle: "Carbon məntəqəsi",
+    pickupDeliveryTitle: "Çatdırılma",
+    prioritySupportTitle: "Prioritet dəstək",
+    prioritySupportText: "Rezervasiya boyunca sürətli əlaqə",
+    secondDriverTitle: "Əlavə sürücü",
+    secondDriverText: "İkinci sürücünü rezervasiyaya əlavə edin",
+    alternatives: "ALTERNATİVLƏR",
+    anotherChoice1: "Başqa bir",
+    anotherChoice2: " seçim?",
+    allCars: "Bütün avtomobillər",
+    startingPrice: "Başlayan qiymət",
+    booking: "Rezervasiya",
+    bestRate: "ƏN YAXŞI TARİF",
+  },
+  en: {
+    reservation: "RESERVATION",
+    tripTitle: "Set up your trip.",
+    requestOpen: "Request is open",
+    selectedDuration: "For the selected duration",
+    day: "day",
+    byRequest: "On request",
+    extras: "Extras",
+    selected: "selected",
+    optional: "Optional",
+    estimatedTotal: "Estimated total",
+    nextStep: "NEXT STEP",
+    confirm: "Confirm reservation",
+    security:
+      "Sending a request does not create a payment. Availability and final terms are confirmed by the Carbon team.",
+    heroTitle1: "The car is ready.",
+    heroTitle2: "Choose your dates.",
+    heroIntro:
+      "Select dates and see the estimated price instantly. Before final confirmation, our team will confirm availability and all terms with you.",
+    clearTerms: "Clear terms",
+    noHiddenSteps: "No hidden steps",
+    directSupport: "Direct support",
+    carbonTeam: "With the Carbon team",
+    freeRequest: "Free request",
+    confirmFirst: "Confirmation first, process after",
+    cars: "Cars",
+    forRent: "FOR RENT",
+    passenger: "Passenger",
+    person: "people",
+    fuel: "Fuel",
+    transmission: "Transmission",
+    engine: "Engine",
+    luggage: "Luggage",
+    large: "large",
+    pickupOfficeTitle: "Carbon office",
+    pickupDeliveryTitle: "Delivery",
+    prioritySupportTitle: "Priority support",
+    prioritySupportText: "Fast contact throughout the reservation",
+    secondDriverTitle: "Additional driver",
+    secondDriverText: "Add a second driver to the reservation",
+    alternatives: "ALTERNATIVES",
+    anotherChoice1: "Another",
+    anotherChoice2: " choice?",
+    allCars: "All cars",
+    startingPrice: "Starting price",
+    booking: "Reservation",
+    bestRate: "BEST RATE",
+  },
+  ru: {
+    reservation: "БРОНИРОВАНИЕ",
+    tripTitle: "Настройте поездку.",
+    requestOpen: "Заявка открыта",
+    selectedDuration: "За выбранный период",
+    day: "день",
+    byRequest: "По запросу",
+    extras: "Дополнительно",
+    selected: "выбрано",
+    optional: "Опционально",
+    estimatedTotal: "Итого ориентировочно",
+    nextStep: "СЛЕДУЮЩИЙ ШАГ",
+    confirm: "Подтвердить бронирование",
+    security:
+      "Отправка заявки не создает оплату. Наличие и финальные условия подтверждаются командой Carbon.",
+    heroTitle1: "Автомобиль готов.",
+    heroTitle2: "Выберите даты.",
+    heroIntro:
+      "Выберите даты и сразу увидьте ориентировочную стоимость. Перед финальным подтверждением наша команда уточнит наличие и все условия.",
+    clearTerms: "Понятные условия",
+    noHiddenSteps: "Без скрытых шагов",
+    directSupport: "Прямая поддержка",
+    carbonTeam: "С командой Carbon",
+    freeRequest: "Бесплатная заявка",
+    confirmFirst: "Сначала подтверждение, затем процесс",
+    cars: "Автомобили",
+    forRent: "ДЛЯ АРЕНДЫ",
+    passenger: "Пассажиры",
+    person: "чел.",
+    fuel: "Топливо",
+    transmission: "Коробка передач",
+    engine: "Двигатель",
+    luggage: "Багаж",
+    large: "большой",
+    pickupOfficeTitle: "Офис Carbon",
+    pickupDeliveryTitle: "Доставка",
+    prioritySupportTitle: "Приоритетная поддержка",
+    prioritySupportText: "Быстрая связь на протяжении бронирования",
+    secondDriverTitle: "Дополнительный водитель",
+    secondDriverText: "Добавьте второго водителя к бронированию",
+    alternatives: "АЛЬТЕРНАТИВЫ",
+    anotherChoice1: "Другой",
+    anotherChoice2: " вариант?",
+    allCars: "Все автомобили",
+    startingPrice: "Цена от",
+    booking: "Бронирование",
+    bestRate: "ЛУЧШИЙ ТАРИФ",
+  },
+} as const;
+
 function isoToday(offset = 0) {
   const date = new Date();
   date.setDate(date.getDate() + offset);
@@ -116,10 +267,19 @@ function getRate(car: Car, days: number) {
   return car.rentalPrices[tier.key];
 }
 
-function formatDate(value: string) {
-  if (!value) return "Tarix seçilməyib";
+function formatDate(value: string, locale: "az" | "en" | "ru") {
+  if (!value) {
+    return locale === "ru"
+      ? "Дата не выбрана"
+      : locale === "en"
+        ? "Date not selected"
+        : "Tarix seçilməyib";
+  }
 
-  return new Intl.DateTimeFormat("az-AZ", {
+  const intlLocale =
+    locale === "ru" ? "ru-RU" : locale === "en" ? "en-US" : "az-AZ";
+
+  return new Intl.DateTimeFormat(intlLocale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -133,6 +293,8 @@ function ReservationPanel({
   car: Car;
   compact?: boolean;
 }) {
+  const { locale } = useCarbonCopy();
+  const t = detailText[locale];
   const [startDate, setStartDate] = useState(isoToday(1));
   const [endDate, setEndDate] = useState(isoToday(4));
   const [pickup, setPickup] = useState("office");
@@ -154,6 +316,21 @@ function ReservationPanel({
   const selectedPickup =
     pickupOptions.find((item) => item.id === pickup) ??
     pickupOptions[0];
+  const selectedPickupTitle =
+    selectedPickup.id === "delivery"
+      ? t.pickupDeliveryTitle
+      : t.pickupOfficeTitle;
+  const localizedExtras = extras.map((extra) => ({
+    ...extra,
+    title:
+      extra.id === "second-driver"
+        ? t.secondDriverTitle
+        : t.prioritySupportTitle,
+    text:
+      extra.id === "second-driver"
+        ? t.secondDriverText
+        : t.prioritySupportText,
+  }));
 
   const checkoutParams = new URLSearchParams({
     car: car.slug,
@@ -186,28 +363,28 @@ function ReservationPanel({
       <div className="carbon-reserve-card-top">
         <div>
           <span className="carbon-reserve-kicker">
-            REZERVASİYA
+            {t.reservation}
           </span>
 
-          <h3>Səfərinizi qurun.</h3>
+          <h3>{t.tripTitle}</h3>
         </div>
 
         <div className="carbon-live-status">
           <i />
-          Sorğu açıqdır
+          {t.requestOpen}
         </div>
       </div>
 
       <div className="carbon-reserve-price">
-        <span>Seçilmiş müddət üçün</span>
+        <span>{t.selectedDuration}</span>
 
         {dailyRate !== null ? (
           <div>
             <strong>{dailyRate} ₼</strong>
-            <small>/ gün</small>
+            <small>/ {t.day}</small>
           </div>
         ) : (
-          <strong>Sorğu ilə</strong>
+          <strong>{t.byRequest}</strong>
         )}
       </div>
 
@@ -228,13 +405,13 @@ function ReservationPanel({
         >
           <span>
             <Sparkles size={14} />
-            Əlavələr
+            {t.extras}
           </span>
 
           <span>
             {selectedExtras.length
-              ? `${selectedExtras.length} seçilib`
-              : "İstəyə bağlı"}
+              ? `${selectedExtras.length} ${t.selected}`
+              : t.optional}
 
             <ChevronDown
               size={14}
@@ -252,7 +429,7 @@ function ReservationPanel({
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3, ease }}
             >
-              {extras.map((extra) => {
+              {localizedExtras.map((extra) => {
                 const Icon = extra.icon;
                 const selected = selectedExtras.includes(
                   extra.id,
@@ -286,21 +463,21 @@ function ReservationPanel({
       <div className="carbon-reserve-summary">
         <div>
           <span>
-            {formatDate(startDate)} — {formatDate(endDate)}
+            {formatDate(startDate, locale)} — {formatDate(endDate, locale)}
           </span>
 
           <small>
-            {days} gün · {selectedPickup.title}
+            {days} {t.day} · {selectedPickupTitle}
           </small>
         </div>
 
         <div className="carbon-reserve-total">
-          <span>Təxmini məbləğ</span>
+          <span>{t.estimatedTotal}</span>
 
           <strong>
             {estimatedTotal !== null
               ? `${estimatedTotal} ₼`
-              : "Sorğu ilə"}
+              : t.byRequest}
           </strong>
         </div>
       </div>
@@ -312,8 +489,8 @@ function ReservationPanel({
         whileTap={{ scale: 0.985 }}
       >
         <span>
-          <small>NÖVBƏTİ ADDIM</small>
-          Rezervasiyanı təsdiqlə
+          <small>{t.nextStep}</small>
+          {t.confirm}
         </span>
 
         <span className="carbon-submit-arrow">
@@ -325,8 +502,7 @@ function ReservationPanel({
         <ShieldCheck size={13} />
 
         <span>
-          Sorğu göndərmə ödəniş yaratmır. Mövcudluq və yekun
-          şərtlər Carbon komandası tərəfindən təsdiqlənir.
+          {t.security}
         </span>
       </div>
     </div>
@@ -340,6 +516,8 @@ export default function CarDetailClient({
   car: Car;
   relatedCars: Car[];
 }) {
+  const { locale } = useCarbonCopy();
+  const t = detailText[locale];
   const heroRef = useRef<HTMLElement | null>(null);
 
   const { scrollYProgress } = useScroll({
@@ -364,36 +542,40 @@ export default function CarDetailClient({
   const specs = [
     {
       icon: Users,
-      label: "Sərnişin",
+      label: t.passenger,
       value:
-        car.seats !== null ? `${car.seats} nəfər` : "—",
+        car.seats !== null ? `${car.seats} ${t.person}` : "—",
     },
     {
       icon: Fuel,
-      label: "Yanacaq",
-      value: car.fuel,
+      label: t.fuel,
+      value: translateCarValue(car.fuel, locale),
     },
     {
       icon: Settings2,
-      label: "Sürətlər qutusu",
-      value: car.transmission,
+      label: t.transmission,
+      value: translateCarValue(car.transmission, locale),
     },
     {
       icon: Gauge,
-      label: "Mühərrik",
+      label: t.engine,
       value: car.engine ?? "—",
     },
     {
       icon: Luggage,
-      label: "Baqaj",
+      label: t.luggage,
       value:
-        car.baggage !== null ? `${car.baggage} böyük` : "—",
+        car.baggage !== null ? `${car.baggage} ${t.large}` : "—",
     },
   ];
 
   const availableTiers = pricingTiers.filter(
     (tier) => car.rentalPrices[tier.key] !== null,
   );
+  const formatTierLabel = (tier: (typeof pricingTiers)[number]) =>
+    tier.key === "days30plus"
+      ? `30+ ${t.day}`
+      : `${tier.min}-${tier.max} ${t.day}`;
 
   return (
     <main className="carbon-detail-v3">
@@ -412,7 +594,7 @@ export default function CarDetailClient({
           >
             <Link href="/avtomobiller">
               <ArrowLeft size={13} />
-              Avtomobillər
+              {t.cars}
             </Link>
 
             <span>/</span>
@@ -473,7 +655,7 @@ export default function CarDetailClient({
                 <div className="carbon-showroom-top">
                   <div className="carbon-showroom-status">
                     <i />
-                    İCARƏ ÜÇÜN
+                    {t.forRent}
                   </div>
 
                   <div className="carbon-showroom-tags">
@@ -620,10 +802,10 @@ export default function CarDetailClient({
                       {String(index + 1).padStart(2, "0")}
                     </span>
 
-                    {best && <small>BEST RATE</small>}
+                    {best && <small>{t.bestRate}</small>}
                   </div>
 
-                  <strong>{tier.label}</strong>
+                  <strong>{formatTierLabel(tier)}</strong>
 
                   <div className="carbon-rate-value">
                     {price !== null ? (
@@ -631,7 +813,7 @@ export default function CarDetailClient({
                         <b>{price}</b>
                         <span>
                           ₼
-                          <small>/ gün</small>
+                          <small>/ {t.day}</small>
                         </span>
                       </>
                     ) : (
@@ -738,40 +920,35 @@ export default function CarDetailClient({
               <span>CARBON RESERVATION</span>
 
               <h2>
-                Avtomobil hazırdır.
+                {t.heroTitle1}
                 <br />
-                <em>Siz tarixi seçin.</em>
+                <em>{t.heroTitle2}</em>
               </h2>
 
-              <p>
-                Tarixləri seçin və təxmini qiyməti dərhal
-                görün. Son təsdiqdən əvvəl komandamız
-                mövcudluğu və bütün şərtləri sizinlə
-                dəqiqləşdirəcək.
-              </p>
+              <p>{t.heroIntro}</p>
 
               <div className="carbon-booking-trust">
                 <div>
                   <ShieldCheck size={18} />
                   <span>
-                    <strong>Aydın şərtlər</strong>
-                    <small>Gizli addım yoxdur</small>
+                    <strong>{t.clearTerms}</strong>
+                    <small>{t.noHiddenSteps}</small>
                   </span>
                 </div>
 
                 <div>
                   <Headphones size={18} />
                   <span>
-                    <strong>Birbaşa dəstək</strong>
-                    <small>Carbon komandası ilə</small>
+                    <strong>{t.directSupport}</strong>
+                    <small>{t.carbonTeam}</small>
                   </span>
                 </div>
 
                 <div>
                   <WalletCards size={18} />
                   <span>
-                    <strong>Ödənişsiz sorğu</strong>
-                    <small>Əvvəl təsdiq, sonra proses</small>
+                    <strong>{t.freeRequest}</strong>
+                    <small>{t.confirmFirst}</small>
                   </span>
                 </div>
               </div>
@@ -821,16 +998,16 @@ export default function CarDetailClient({
           <div className="carbon-detail-container">
             <div className="carbon-related-head-v3">
               <div>
-                <span>ALTERNATİVLƏR</span>
+                <span>{t.alternatives}</span>
 
                 <h2>
-                  Başqa bir
-                  <em> seçim?</em>
+                  {t.anotherChoice1}
+                  <em>{t.anotherChoice2}</em>
                 </h2>
               </div>
 
               <Link href="/avtomobiller">
-                Bütün avtomobillər
+                {t.allCars}
                 <ArrowRight size={14} />
               </Link>
             </div>
@@ -855,7 +1032,7 @@ export default function CarDetailClient({
                       href={`/avtomobiller/${item.slug}`}
                       className="carbon-related-image"
                     >
-                      <span>{item.category}</span>
+                      <span>{translateCarValue(item.category, locale)}</span>
 
                       <Image
                         src={item.thumbnail}
@@ -884,10 +1061,10 @@ export default function CarDetailClient({
                         {price !== null ? (
                           <>
                             <strong>{price} ₼</strong>
-                            <span>/ gün</span>
+                            <span>/ {t.day}</span>
                           </>
                         ) : (
-                          <span>Sorğu ilə</span>
+                          <span>{t.byRequest}</span>
                         )}
                       </div>
                     </div>
@@ -901,17 +1078,17 @@ export default function CarDetailClient({
 
       <div className="carbon-mobile-reserve">
         <div>
-          <span>Başlayan qiymət</span>
+          <span>{t.startingPrice}</span>
 
           <strong>
             {startingPrice !== null
-              ? `${startingPrice} ₼ / gün`
-              : "Sorğu ilə"}
+              ? `${startingPrice} ₼ / ${t.day}`
+              : t.byRequest}
           </strong>
         </div>
 
         <a href="#booking">
-          Rezervasiya
+          {t.booking}
           <ArrowRight size={15} />
         </a>
       </div>

@@ -30,6 +30,10 @@ import {
 import { useState } from "react";
 
 import type { Car } from "@/data/cars";
+import {
+  translateCarValue,
+  useCarbonCopy,
+} from "@/lib/carbon-locale";
 
 import CarbonNavbar from "@/components/CarbonNavbar";
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -162,6 +166,268 @@ const faqs = [
   },
 ];
 
+const transferText = {
+  az: {
+    back: "Transfer avtomobillərinə qayıt",
+    driverOnly: "Avtomobil yalnız sürücü ilə təqdim olunur",
+    person: "nəfər",
+    engine: "mühərrik",
+    baggage: "baqaj",
+    prices: "TRANSFER QİYMƏTLƏRİ",
+    chooseRoute1: "İstiqaməti",
+    chooseRoute2: " seçin.",
+    starts: "Başlayır",
+    request: "Müraciət et",
+    orderTransfer: "Transfer sifariş edin",
+    process: "01 / PROSES",
+    beforeTrip1: "Səfərdən əvvəl",
+    beforeTrip2: " bilməli olduqlarınız.",
+    benefits: [
+      ["100% Təhlükəsizlik", "Kasko sığortalı və etibarlı avtomobillər."],
+      ["Təhlükəsiz ödənişlər", "Aydın və qorunan ödəniş prosesi."],
+      ["24/7 Dəstək", "Səfəriniz boyunca bizimlə əlaqə saxlaya bilərsiniz."],
+    ],
+    faqLabel: "02 / FAQ",
+    faqTitle1: "Tez-tez verilən",
+    faqTitle2: " suallar.",
+    faqIntro: "Transfer sifarişi ilə bağlı əsas məlumatlar.",
+    relatedLabel: "03 / TRANSFER PARKI",
+    other1: "Digər",
+    other2: " avtomobillər.",
+    viewAll: "Hamısına bax",
+    final1: "Haraya gedirsiniz?",
+    final2: " Sizi biz çatdıraq.",
+    contact: "Əlaqə saxla",
+    tabs: serviceTabs,
+    faqs,
+    routeNames: {
+      baku: ["Hava Limanı", "Bakı"],
+      seaBreeze: ["Sea Breeze", "Hava Limanı"],
+      qabala: ["Qəbələ", "Bakı"],
+      ismayilli: ["İsmayıllı", "Bakı"],
+      quba: ["Quba", "Bakı"],
+      shamaxi: ["Şamaxı", "Bakı"],
+      shaki: ["Şəki", "Bakı"],
+      shusha: ["Şuşa", "Bakı"],
+      lankaran: ["Lənkəran", "Bakı"],
+    },
+  },
+  en: {
+    back: "Back to transfer cars",
+    driverOnly: "The car is provided with a driver only",
+    person: "passengers",
+    engine: "engine",
+    baggage: "luggage",
+    prices: "TRANSFER PRICES",
+    chooseRoute1: "Choose",
+    chooseRoute2: " a route.",
+    starts: "Starts from",
+    request: "Send request",
+    orderTransfer: "Order a transfer",
+    process: "01 / PROCESS",
+    beforeTrip1: "What to know",
+    beforeTrip2: " before the trip.",
+    benefits: [
+      ["100% Safety", "Reliable cars with comprehensive insurance."],
+      ["Secure payments", "Clear and protected payment process."],
+      ["24/7 Support", "You can contact us throughout your trip."],
+    ],
+    faqLabel: "02 / FAQ",
+    faqTitle1: "Frequently asked",
+    faqTitle2: " questions.",
+    faqIntro: "Key information about transfer orders.",
+    relatedLabel: "03 / TRANSFER FLEET",
+    other1: "Other",
+    other2: " cars.",
+    viewAll: "View all",
+    final1: "Where are you going?",
+    final2: " We will take you there.",
+    contact: "Contact us",
+    tabs: [
+      {
+        ...serviceTabs[0],
+        label: "Arrive on time",
+        short: "Time",
+        title: "We plan your transfer time in advance.",
+        text:
+          "For your transfer, our team confirms the suitable time with you in advance. The driver is ready at the agreed time and your trip starts without delay.",
+        note:
+          "If your flight or pickup time changes, simply inform our team in advance.",
+      },
+      {
+        ...serviceTabs[1],
+        label: "What to provide",
+        short: "Details",
+        title: "The document process for transfer is minimal.",
+        text:
+          "Unlike self-drive rental, transfer service is provided with a driver. It is enough to share your contact details, pickup point and trip details correctly.",
+        note:
+          "For airport transfers, sharing your flight number helps organize pickup smoothly.",
+      },
+      {
+        ...serviceTabs[2],
+        label: "Payment",
+        short: "Payment",
+        title: "Transfer terms are confirmed in advance.",
+        text:
+          "The transfer price is based on the selected car and route. Reservation and payment details are shared by our team when the order is confirmed.",
+        note:
+          "Special routes, extra stops or different requests can affect the final price.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Is the driver included in the transfer price?",
+        a:
+          "Yes. Transfer cars are provided only with a driver, and the listed transfer service is designed for this format.",
+      },
+      {
+        q: "Is airport pickup available?",
+        a:
+          "Yes. Airport transfer can be arranged. Share your flight and contact details when ordering so pickup is organized smoothly.",
+      },
+      {
+        q: "Can I order a transfer to another destination?",
+        a:
+          "Yes. Contact our team for routes not listed. The route and price will be calculated separately.",
+      },
+      {
+        q: "Can the transfer time be changed later?",
+        a:
+          "When possible, time changes can be arranged. We recommend informing us as early as possible.",
+      },
+      {
+        q: "Is a deposit required for transfer?",
+        a:
+          "Reservation and payment terms are confirmed by our team according to the selected route and order.",
+      },
+      {
+        q: "Can we make an extra stop?",
+        a:
+          "Yes, it can be agreed in advance. Extra stops or route changes may affect the final price.",
+      },
+    ],
+    routeNames: {
+      baku: ["Airport", "Baku"],
+      seaBreeze: ["Sea Breeze", "Airport"],
+      qabala: ["Gabala", "Baku"],
+      ismayilli: ["Ismayilli", "Baku"],
+      quba: ["Guba", "Baku"],
+      shamaxi: ["Shamakhi", "Baku"],
+      shaki: ["Sheki", "Baku"],
+      shusha: ["Shusha", "Baku"],
+      lankaran: ["Lankaran", "Baku"],
+    },
+  },
+  ru: {
+    back: "Назад к трансферным авто",
+    driverOnly: "Автомобиль предоставляется только с водителем",
+    person: "пассажиров",
+    engine: "двигатель",
+    baggage: "багаж",
+    prices: "ЦЕНЫ НА ТРАНСФЕР",
+    chooseRoute1: "Выберите",
+    chooseRoute2: " направление.",
+    starts: "От",
+    request: "Отправить заявку",
+    orderTransfer: "Заказать трансфер",
+    process: "01 / ПРОЦЕСС",
+    beforeTrip1: "Что нужно знать",
+    beforeTrip2: " перед поездкой.",
+    benefits: [
+      ["100% безопасность", "Надежные автомобили с КАСКО."],
+      ["Безопасные платежи", "Понятный и защищенный процесс оплаты."],
+      ["Поддержка 24/7", "Вы можете связаться с нами во время поездки."],
+    ],
+    faqLabel: "02 / FAQ",
+    faqTitle1: "Частые",
+    faqTitle2: " вопросы.",
+    faqIntro: "Основная информация о заказе трансфера.",
+    relatedLabel: "03 / ТРАНСФЕРНЫЙ ПАРК",
+    other1: "Другие",
+    other2: " автомобили.",
+    viewAll: "Смотреть все",
+    final1: "Куда вы едете?",
+    final2: " Мы вас довезем.",
+    contact: "Связаться",
+    tabs: [
+      {
+        ...serviceTabs[0],
+        label: "Прибыть вовремя",
+        short: "Время",
+        title: "Мы заранее планируем время трансфера.",
+        text:
+          "Команда заранее уточняет удобное для вас время трансфера. Водитель будет готов в согласованное время, и поездка начнется без задержек.",
+        note:
+          "Если время рейса или встречи изменится, достаточно заранее сообщить нашей команде.",
+      },
+      {
+        ...serviceTabs[1],
+        label: "Что предоставить",
+        short: "Данные",
+        title: "Процесс документов для трансфера минимален.",
+        text:
+          "В отличие от аренды без водителя, трансфер предоставляется с водителем. Достаточно правильно указать контакты, точку встречи и детали поездки.",
+        note:
+          "Для трансфера из аэропорта номер рейса помогает организовать встречу спокойнее.",
+      },
+      {
+        ...serviceTabs[2],
+        label: "Оплата",
+        short: "Оплата",
+        title: "Условия трансфера уточняются заранее.",
+        text:
+          "Цена зависит от выбранного автомобиля и направления. Детали бронирования и оплаты команда сообщает при подтверждении заказа.",
+        note:
+          "Особый маршрут, дополнительная остановка или отдельные пожелания могут изменить финальную цену.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Входит ли водитель в стоимость трансфера?",
+        a:
+          "Да. Трансферные автомобили предоставляются только с водителем, и указанная услуга рассчитана на этот формат.",
+      },
+      {
+        q: "Возможна ли встреча в аэропорту?",
+        a:
+          "Да. Трансфер из аэропорта можно организовать. Для удобной встречи укажите номер рейса и контактные данные при заказе.",
+      },
+      {
+        q: "Можно заказать трансфер в другое направление?",
+        a:
+          "Да. Свяжитесь с нашей командой для направления вне списка. Маршрут и цена будут рассчитаны отдельно.",
+      },
+      {
+        q: "Можно изменить время трансфера позже?",
+        a:
+          "Если возможно, изменение времени организуется. Рекомендуем сообщать об изменениях как можно раньше.",
+      },
+      {
+        q: "Нужен ли депозит для трансфера?",
+        a:
+          "Условия бронирования и оплаты подтверждаются командой в зависимости от выбранного маршрута и заказа.",
+      },
+      {
+        q: "Можно сделать дополнительную остановку?",
+        a:
+          "Да, это можно согласовать заранее. Дополнительная остановка или изменение маршрута могут повлиять на итоговую цену.",
+      },
+    ],
+    routeNames: {
+      baku: ["Аэропорт", "Баку"],
+      seaBreeze: ["Sea Breeze", "Аэропорт"],
+      qabala: ["Габала", "Баку"],
+      ismayilli: ["Исмаиллы", "Баку"],
+      quba: ["Губа", "Баку"],
+      shamaxi: ["Шамахы", "Баку"],
+      shaki: ["Шеки", "Баку"],
+      shusha: ["Шуша", "Баку"],
+      lankaran: ["Ленкорань", "Баку"],
+    },
+  },
+} as const;
+
 function getStartingPrice(car: Car) {
   const prices = Object.values(
     car.transferPrices
@@ -179,6 +445,8 @@ export default function TransferDetailClient({
   car,
   relatedCars,
 }: Props) {
+  const { locale } = useCarbonCopy();
+  const t = transferText[locale];
   const [activeTab, setActiveTab] =
     useState("time");
 
@@ -189,9 +457,9 @@ export default function TransferDetailClient({
     useState(false);
 
   const active =
-    serviceTabs.find(
+    t.tabs.find(
       (tab) => tab.id === activeTab
-    ) ?? serviceTabs[0];
+    ) ?? t.tabs[0];
 
   const ActiveIcon = active.icon;
 
@@ -228,7 +496,7 @@ export default function TransferDetailClient({
               className="catalog-back"
             >
               <ArrowLeft size={13} />
-              Transfer avtomobillərinə qayıt
+              {t.back}
             </Link>
           </motion.div>
 
@@ -251,15 +519,14 @@ export default function TransferDetailClient({
               <div className="transfer-detail-label">
                 <span>CARBON TRANSFER</span>
                 <i />
-                <span>{car.category}</span>
+                <span>{translateCarValue(car.category, locale)}</span>
               </div>
 
               <h1>{car.title}</h1>
 
               <p className="transfer-driver-note">
                 <Check size={13} />
-                Avtomobil yalnız sürücü ilə
-                təqdim olunur
+                {t.driverOnly}
               </p>
 
               <div className="transfer-detail-image">
@@ -291,7 +558,7 @@ export default function TransferDetailClient({
                   <span>
                     <Users size={14} />
                     <strong>{car.seats}</strong>
-                    nəfər
+                    {t.person}
                   </span>
                 )}
 
@@ -299,14 +566,14 @@ export default function TransferDetailClient({
                   <span>
                     <Gauge size={14} />
                     <strong>{car.engine}</strong>
-                    mühərrik
+                    {t.engine}
                   </span>
                 )}
 
                 <span>
                   <Fuel size={14} />
                   <strong>
-                    {car.transmission}
+                    {translateCarValue(car.transmission, locale)}
                   </strong>
                 </span>
 
@@ -318,7 +585,7 @@ export default function TransferDetailClient({
                     <strong>
                       {car.baggage}
                     </strong>
-                    baqaj
+                    {t.baggage}
                   </span>
                 )}
               </div>
@@ -344,17 +611,17 @@ export default function TransferDetailClient({
               <div className="transfer-route-head">
                 <div>
                   <span>
-                    TRANSFER QİYMƏTLƏRİ
+                    {t.prices}
                   </span>
                   <h2>
-                    İstiqaməti
-                    <em> seçin.</em>
+                    {t.chooseRoute1}
+                    <em>{t.chooseRoute2}</em>
                   </h2>
                 </div>
 
                 {startingPrice !== null && (
                   <div className="transfer-start">
-                    <small>Başlayır</small>
+                    <small>{t.starts}</small>
                     <strong>
                       {startingPrice} ₼
                     </strong>
@@ -365,9 +632,12 @@ export default function TransferDetailClient({
               <div className="transfer-route-list">
                 {availableRoutes.map(
                   (
-                    { key, from, to },
+                    { key },
                     index
-                  ) => (
+                  ) => {
+                    const [from, to] = t.routeNames[key];
+
+                    return (
                     <motion.div
                       className="transfer-route-row"
                       key={key}
@@ -410,7 +680,8 @@ export default function TransferDetailClient({
                         ₼
                       </strong>
                     </motion.div>
-                  )
+                  );
+                  }
                 )}
               </div>
 
@@ -419,9 +690,9 @@ export default function TransferDetailClient({
                 className="transfer-apply"
               >
                 <span>
-                  Müraciət et
+                  {t.request}
                   <small>
-                    Transfer sifariş edin
+                    {t.orderTransfer}
                   </small>
                 </span>
 
@@ -436,16 +707,16 @@ export default function TransferDetailClient({
       <section className="transfer-process-section">
         <div className="transfer-detail-inner">
           <div className="transfer-section-heading">
-            <span>01 / PROSES</span>
+            <span>{t.process}</span>
 
             <h2>
-              Səfərdən əvvəl
-              <em> bilməli olduqlarınız.</em>
+              {t.beforeTrip1}
+              <em>{t.beforeTrip2}</em>
             </h2>
           </div>
 
           <div className="transfer-service-tabs">
-            {serviceTabs.map((tab) => {
+            {t.tabs.map((tab) => {
               const Icon = tab.icon;
 
               return (
@@ -543,31 +814,22 @@ export default function TransferDetailClient({
           <div className="transfer-benefit-grid">
             <div>
               <ShieldCheck size={19} />
-              <span>100% Təhlükəsizlik</span>
-              <p>
-                Kasko sığortalı və etibarlı
-                avtomobillər.
-              </p>
+              <span>{t.benefits[0][0]}</span>
+              <p>{t.benefits[0][1]}</p>
             </div>
 
             <div>
               <CreditCard size={19} />
               <span>
-                Təhlükəsiz ödənişlər
+                {t.benefits[1][0]}
               </span>
-              <p>
-                Aydın və qorunan ödəniş
-                prosesi.
-              </p>
+              <p>{t.benefits[1][1]}</p>
             </div>
 
             <div>
               <Headphones size={19} />
-              <span>24/7 Dəstək</span>
-              <p>
-                Səfəriniz boyunca bizimlə
-                əlaqə saxlaya bilərsiniz.
-              </p>
+              <span>{t.benefits[2][0]}</span>
+              <p>{t.benefits[2][1]}</p>
             </div>
           </div>
         </div>
@@ -577,21 +839,18 @@ export default function TransferDetailClient({
       <section className="transfer-faq-section">
         <div className="transfer-detail-inner">
           <div className="transfer-section-heading transfer-faq-heading">
-            <span>02 / FAQ</span>
+            <span>{t.faqLabel}</span>
 
             <h2>
-              Tez-tez verilən
-              <em> suallar.</em>
+              {t.faqTitle1}
+              <em>{t.faqTitle2}</em>
             </h2>
 
-            <p>
-              Transfer sifarişi ilə bağlı
-              əsas məlumatlar.
-            </p>
+            <p>{t.faqIntro}</p>
           </div>
 
           <div className="transfer-faq-list">
-            {faqs.map((faq, index) => {
+            {t.faqs.map((faq, index) => {
               const opened =
                 openFaq === index;
 
@@ -671,15 +930,15 @@ export default function TransferDetailClient({
         <section className="transfer-related">
           <div className="transfer-detail-inner">
             <div className="transfer-section-heading transfer-related-heading">
-              <span>03 / TRANSFER PARKI</span>
+              <span>{t.relatedLabel}</span>
 
               <h2>
-                Digər
-                <em> avtomobillər.</em>
+                {t.other1}
+                <em>{t.other2}</em>
               </h2>
 
               <Link href="/avtomobiller">
-                Hamısına bax
+                {t.viewAll}
                 <ArrowRight size={13} />
               </Link>
             </div>
@@ -715,7 +974,7 @@ export default function TransferDetailClient({
                       >
                         <div>
                           <span>
-                            {item.category}
+                            {translateCarValue(item.category, locale)}
                           </span>
 
                           <img
@@ -745,7 +1004,7 @@ export default function TransferDetailClient({
                           {price !== null && (
                             <p>
                               <small>
-                                Başlayır
+                                {t.starts}
                               </small>
                               <strong>
                                 {price} ₼
@@ -769,16 +1028,15 @@ export default function TransferDetailClient({
           <div>
             <span>CARBON TRANSFER</span>
             <h2>
-              Haraya gedirsiniz?
+              {t.final1}
               <em>
-                {" "}
-                Sizi biz çatdıraq.
+                {t.final2}
               </em>
             </h2>
           </div>
 
           <a href="tel:+994554840006">
-            Əlaqə saxla
+            {t.contact}
             <ArrowUpRight size={17} />
           </a>
         </div>

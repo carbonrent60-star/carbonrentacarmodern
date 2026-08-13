@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCarbonCopy } from "@/lib/carbon-locale";
 import {
   motion,
   AnimatePresence,
@@ -100,8 +101,13 @@ const journeys = [
 ];
 
 export default function CarbonSignature() {
+  const { copy } = useCarbonCopy();
+  const localizedJourneys = journeys.map((journey, index) => ({
+    ...journey,
+    ...copy.signature.journeys[index],
+  }));
   const [active, setActive] = useState(0);
-  const item = journeys[active];
+  const item = localizedJourneys[active];
   const Icon = item.icon;
 
   const pointerX = useMotionValue(50);
@@ -161,13 +167,13 @@ export default function CarbonSignature() {
           >
             <div>
               <span className="carbon-signature-kicker">
-                CARBON CONCIERGE
+                {copy.signature.kicker}
               </span>
 
               <h2>
-                Hara gedirsiniz?
+                {copy.signature.heading1}
                 <br />
-                <em>Seçimi biz daraldaq.</em>
+                <em>{copy.signature.heading2}</em>
               </h2>
             </div>
 
@@ -175,15 +181,14 @@ export default function CarbonSignature() {
               <span>04</span>
 
               <p>
-                Səfərin məqsədini seçin. Carbon sizə uyğun avtomobil
-                kateqoriyasını bir neçə saniyədə göstərsin.
+                {copy.signature.intro}
               </p>
             </div>
           </motion.div>
 
           <div className="carbon-concierge">
             <div className="carbon-concierge-nav">
-              {journeys.map((journey, index) => {
+              {localizedJourneys.map((journey, index) => {
                 const JourneyIcon = journey.icon;
                 const selected = index === active;
 
@@ -256,12 +261,12 @@ export default function CarbonSignature() {
                 >
                   <div className="carbon-concierge-stage-top">
                     <span>
-                      SEÇİM / {item.number}
+                      {copy.signature.selection} / {item.number}
                     </span>
 
                     <span className="carbon-concierge-status">
                       <i />
-                      CARBON MATCH
+                      {copy.signature.match}
                     </span>
                   </div>
 
@@ -274,7 +279,7 @@ export default function CarbonSignature() {
                   <p>{item.description}</p>
 
                   <div className="carbon-concierge-match">
-                    <span>TÖVSİYƏ EDİLƏN</span>
+                    <span>{copy.signature.recommended}</span>
 
                     <strong>{item.recommendation}</strong>
 
@@ -288,7 +293,7 @@ export default function CarbonSignature() {
                     href={item.href}
                     className="carbon-concierge-cta"
                   >
-                    Uyğun avtomobillərə bax
+                    {copy.signature.action}
 
                     <span>
                       <ArrowRight

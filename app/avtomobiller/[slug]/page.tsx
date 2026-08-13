@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { cars } from "@/data/cars";
+import { getCarsForSite } from "@/lib/supabase/cars";
 import CarDetailClient from "./CarDetailClient";
 
 export function generateStaticParams() {
@@ -14,14 +15,15 @@ export default async function CarPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const siteCars = await getCarsForSite();
 
-  const car = cars.find((item) => item.slug === slug);
+  const car = siteCars.find((item) => item.slug === slug);
 
   if (!car) {
     notFound();
   }
 
-  const relatedCars = cars
+  const relatedCars = siteCars
     .filter(
       (item) =>
         item.slug !== car.slug &&
