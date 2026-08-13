@@ -3,9 +3,12 @@ import { notFound } from "next/navigation";
 import CarbonNavbar from "../../../components/CarbonNavbar";
 import {
   blogPosts,
-  getBlogPost,
-  getRelatedBlogPosts,
 } from "../../data/blog";
+import {
+  getBlogPostForSite,
+  getBlogPostsForSite,
+  getRelatedBlogPostsForSite,
+} from "@/lib/supabase/blogs";
 import BlogArticleClient from "./BlogArticleClient";
 import "../blog.css";
 
@@ -21,7 +24,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = getBlogPost(slug);
+  const post = await getBlogPostForSite(slug);
 
   if (!post) {
     return {
@@ -46,7 +49,8 @@ export default async function BlogArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = getBlogPost(slug);
+  const posts = await getBlogPostsForSite();
+  const post = posts.find((item) => item.slug === slug) ?? null;
 
   if (!post) notFound();
 
@@ -55,7 +59,7 @@ export default async function BlogArticlePage({
       <CarbonNavbar light active="blog" />
       <BlogArticleClient
         post={post}
-        related={getRelatedBlogPosts(post.slug)}
+        related={getRelatedBlogPostsForSite(posts, post.slug)}
       />
     </>
   );

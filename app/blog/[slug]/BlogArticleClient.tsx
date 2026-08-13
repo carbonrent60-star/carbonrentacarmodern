@@ -229,6 +229,7 @@ export default function BlogArticleClient({
               {localizedRelated.slice(0, 3).map(
                 (item, index) => (
                   <motion.article
+                    className="ca-related-card"
                     key={item.slug}
                     initial={
                       reduceMotion
@@ -245,6 +246,11 @@ export default function BlogArticleClient({
                       delay: index * 0.06,
                       ease,
                     }}
+                    whileHover={
+                      reduceMotion
+                        ? undefined
+                        : { y: -7 }
+                    }
                   >
                     <Link
                       href={`/blog/${item.slug}`}
@@ -260,12 +266,26 @@ export default function BlogArticleClient({
                       </span>
                     </Link>
 
-                    <small>{item.category}</small>
+                    <div className="ca-related-meta">
+                      <small>{item.category}</small>
+                      <span>{item.readingTime}</span>
+                    </div>
 
                     <Link
                       href={`/blog/${item.slug}`}
+                      className="ca-related-title"
                     >
                       <h3>{item.title}</h3>
+                    </Link>
+
+                    <p>{item.description}</p>
+
+                    <Link
+                      href={`/blog/${item.slug}`}
+                      className="ca-related-read"
+                    >
+                      {ui.read}
+                      <ArrowRight size={13} />
                     </Link>
                   </motion.article>
                 ),

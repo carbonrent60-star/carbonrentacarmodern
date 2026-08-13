@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CarbonNavbar from "../../components/CarbonNavbar";
+import { getBlogPostsForSite } from "@/lib/supabase/blogs";
 import BlogClient from "./BlogClient";
 import "./blog.css";
 
@@ -9,11 +10,13 @@ export const metadata: Metadata = {
     "Avtomobil kirayəsi, sığorta, səyahət marşrutları və avtomobil baxımı haqqında Carbon Rent A Car məqalələri.",
 };
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const posts = await getBlogPostsForSite();
+
   return (
     <>
       <CarbonNavbar light active="blog" />
-      <BlogClient />
+      <BlogClient initialPosts={posts} />
     </>
   );
 }

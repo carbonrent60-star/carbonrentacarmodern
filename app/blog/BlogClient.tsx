@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import {
   blogPosts,
+  type BlogPost,
 } from "../data/blog";
 import {
   blogUi,
@@ -48,12 +49,16 @@ function ArticleImage({
   );
 }
 
-export default function BlogClient() {
+export default function BlogClient({
+  initialPosts = blogPosts,
+}: {
+  initialPosts?: BlogPost[];
+}) {
   const { locale } = useCarbonCopy();
   const ui = blogUi[locale];
   const posts = useMemo(
-    () => localizeBlogPosts(blogPosts, locale),
-    [locale],
+    () => localizeBlogPosts(initialPosts, locale),
+    [initialPosts, locale],
   );
   const [category, setCategory] = useState<string>(ui.all);
   const reduceMotion = useReducedMotion();
@@ -119,7 +124,7 @@ export default function BlogClient() {
               <div className="cj-issue">
                 <span>JOURNAL / 2026</span>
                 <strong>
-                  {String(blogPosts.length).padStart(2, "0")}
+                  {String(initialPosts.length).padStart(2, "0")}
                 </strong>
               </div>
             </div>
@@ -273,9 +278,7 @@ export default function BlogClient() {
                 <div className="cj-editorial-grid">
                   {stories.map((post, index) => (
                     <motion.article
-                      className={`cj-story cj-story-${
-                        index + 1
-                      }`}
+                      className="cj-story"
                       key={post.slug}
                       initial={
                         reduceMotion
@@ -298,6 +301,11 @@ export default function BlogClient() {
                         ),
                         ease,
                       }}
+                      whileHover={
+                        reduceMotion
+                          ? undefined
+                          : { y: -8 }
+                      }
                     >
                       <Link
                         href={`/blog/${post.slug}`}
@@ -309,10 +317,7 @@ export default function BlogClient() {
                         />
 
                         <span className="cj-story-number">
-                          {String(index + 2).padStart(
-                            2,
-                            "0",
-                          )}
+                          {String(index + 2).padStart(2, "0")}
                         </span>
 
                         <span className="cj-story-arrow">
@@ -321,14 +326,17 @@ export default function BlogClient() {
                       </Link>
 
                       <div className="cj-story-copy">
-                        <div className="cj-meta">
+                        <div className="cj-story-topline">
                           <span>{post.category}</span>
-                          <i />
-                          <span>{post.readingTime}</span>
+                          <span>
+                            <Clock3 size={12} />
+                            {post.readingTime}
+                          </span>
                         </div>
 
                         <Link
                           href={`/blog/${post.slug}`}
+                          className="cj-story-title"
                         >
                           <h3>{post.title}</h3>
                         </Link>
@@ -342,6 +350,7 @@ export default function BlogClient() {
 
                           <Link
                             href={`/blog/${post.slug}`}
+                            className="cj-story-read"
                           >
                             {ui.read}
                             <ArrowRight size={13} />

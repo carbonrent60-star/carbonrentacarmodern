@@ -13,6 +13,7 @@ import {
   KeyRound,
   LogOut,
   MapPinned,
+  Newspaper,
   Plus,
   Save,
   Settings2,
@@ -23,11 +24,15 @@ import {
 import "./admin.css";
 import {
   deleteCarAction,
+  deleteBlogAction,
   isAdminAuthenticated,
+  listAdminBlogs,
   listAdminCars,
   loginAction,
   logoutAction,
+  saveBlogAction,
   saveCarAction,
+  seedBlogsAction,
   seedCarsAction,
 } from "./actions";
 import {
@@ -36,6 +41,7 @@ import {
   transferPriceKeys,
 } from "@/lib/supabase/cars";
 import type { Car } from "@/data/cars";
+import type { AdminBlogPost } from "@/lib/supabase/blogs";
 
 type AdminCar = Car & {
   isActive?: boolean;
@@ -88,6 +94,7 @@ const adminErrorMessages: Record<string, string> = {
     "Şəkil yüklənmədi. Supabase Storage bucket və icazələrini yoxlayın.",
   "required-fields-missing": "Model adı, URL adı və brend sahələri mütləq doldurulmalıdır.",
   "image-required": "Avtomobil üçün əsas şəkil URL əlavə edin və ya şəkil yükləyin.",
+  "blog-body-required": "Məqalə mətni boş ola bilməz.",
   "database-save-failed": "Məlumat bazaya yazılmadı. Supabase cədvəlini və açarları yoxlayın.",
   "database-delete-failed": "Avtomobil silinmədi. Supabase bağlantısını yoxlayın.",
   "unknown-error": "Gözlənilməyən xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.",
@@ -416,6 +423,157 @@ function CarSummary({
   );
 }
 
+function blogBodyText(blog?: AdminBlogPost) {
+  return (
+    blog?.sections
+      .flatMap((section) => section.paragraphs)
+      .filter(Boolean)
+      .join("\n\n") ?? ""
+  );
+}
+
+function blogImagesText(blog?: AdminBlogPost) {
+  return blog?.images?.join("\n") ?? "";
+}
+
+function BlogForm({
+  blog,
+  index,
+  mode,
+}: {
+  blog?: AdminBlogPost;
+  index: number;
+  mode: "create" | "edit";
+}) {
+  const cover = blog?.image ?? "";
+
+  return (
+    <form action={saveBlogAction} className="admin-car-form admin-blog-form">
+      <div className="admin-blog-layout">
+        <aside className="admin-blog-preview">
+          <div className="admin-showroom-grid" />
+          <span className="admin-blog-preview-kicker">CARBON BLOG</span>
+          <strong>{blog?.title || "Yeni məqalə"}</strong>
+          <p>{blog?.description || "Məqalə təsviri burada görünəcək."}</p>
+          <div className="admin-blog-preview-image">
+            {cover ? (
+              <Image src={cover} alt={blog?.title || "Blog image"} fill sizes="(max-width: 900px) 100vw, 360px" />
+            ) : (
+              <Newspaper size={42} strokeWidth={1.35} />
+            )}
+          </div>
+          <div className="admin-blog-preview-meta">
+            <span>{blog?.category || "Kateqoriya"}</span>
+            <span>{blog?.readingTime || "Oxu vaxtı"}</span>
+          </div>
+        </aside>
+
+        <div className="admin-editor-main">
+          <FormSection eyebrow="01 / MƏQALƏ" title="Blog kartı və URL məlumatları" icon={<Newspaper size={18} />}>
+            <div className="admin-form-grid">
+              <Field label="Başlıq" name="blogTitle" defaultValue={blog?.title} placeholder="Bakıda avtomobil seçimi" />
+              <Field label="URL adı" name="blogSlug" defaultValue={blog?.slug} placeholder="bakida-avtomobil-secimi" />
+              <Field label="Kateqoriya" name="blogCategory" defaultValue={blog?.category} placeholder="İcarə məsləhətləri" />
+              <Field label="Tarix" name="blogDate" type="date" defaultValue={blog?.date} />
+              <Field label="Oxu vaxtı" name="blogReadingTime" defaultValue={blog?.readingTime} placeholder="5 dəq" />
+              <Field label="Sıralama" name="blogSortOrder" type="number" defaultValue={blog?.sortOrder ?? index + 1} />
+            </div>
+          </FormSection>
+
+          <FormSection eyebrow="02 / MƏZMUN" title="Məqalənin əsas mətni" icon={<Sparkles size={18} />}>
+            <div className="admin-blog-copy-grid">
+              <Field label="Kiçik üst yazı" name="blogEyebrow" defaultValue={blog?.eyebrow} placeholder="CARBON GUIDE" />
+              <label className="admin-field">
+                <span>Qısa təsvir</span>
+                <textarea name="blogDescription" rows={3} defaultValue={blog?.description ?? ""} />
+              </label>
+              <label className="admin-field admin-field-span">
+                <span>Giriş mətni</span>
+                <textarea name="blogIntro" rows={4} defaultValue={blog?.intro ?? ""} />
+              </label>
+              <Field
+                label="Bölmə başlığı"
+                name="blogSectionHeading"
+                defaultValue={blog?.sections[0]?.heading}
+                placeholder="Nələri nəzərə almaq lazımdır?"
+              />
+              <label className="admin-field admin-field-span admin-textarea-large">
+                <span>Əsas məqalə mətni</span>
+                <textarea
+                  name="blogBody"
+                  rows={10}
+                  placeholder="Abzasları boş sətirlə ayırın."
+                  defaultValue={blogBodyText(blog)}
+                />
+              </label>
+              <label className="admin-field admin-field-span">
+                <span>Sitat və ya vurğulu fikir</span>
+                <textarea name="blogQuote" rows={3} defaultValue={blog?.sections[0]?.quote ?? ""} />
+              </label>
+            </div>
+          </FormSection>
+
+          <FormSection eyebrow="03 / MEDİA" title="Blog şəkilləri və görünürlük" icon={<ImageUp size={18} />}>
+            <div className="admin-blog-copy-grid admin-blog-media-grid">
+              <Field label="Əsas şəkil URL" name="blogImage" defaultValue={cover} />
+              <label className="admin-field admin-field-span">
+                <span>Əlavə şəkillər</span>
+                <textarea
+                  name="blogImages"
+                  rows={4}
+                  placeholder="Hər sətrə bir şəkil URL-i yazın."
+                  defaultValue={blogImagesText(blog)}
+                />
+              </label>
+              <Toggle label="Saytda aktiv" name="blogIsActive" defaultChecked={blog?.isActive ?? true} />
+            </div>
+          </FormSection>
+        </div>
+      </div>
+
+      <div className="admin-actions">
+        <button type="submit" className="admin-primary-button">
+          <ButtonIcon>{mode === "create" ? <Plus size={16} /> : <Save size={16} />}</ButtonIcon>
+          {mode === "create" ? "Blog əlavə et" : "Məqaləni saxla"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function BlogSummary({
+  blog,
+  index,
+}: {
+  blog: AdminBlogPost;
+  index: number;
+}) {
+  return (
+    <summary>
+      <span>{String(index + 1).padStart(2, "0")}</span>
+      {blog.image ? (
+        <Image src={blog.image} alt={blog.title} width={130} height={80} />
+      ) : (
+        <i className="admin-car-placeholder">
+          <Newspaper size={22} />
+        </i>
+      )}
+      <div>
+        <strong>{blog.title}</strong>
+        <em>{blog.category} · {blog.date}</em>
+      </div>
+      <div className="admin-card-tags">
+        <i>{blog.readingTime}</i>
+        <i>{blog.isActive === false ? "Gizli" : "Aktiv"}</i>
+      </div>
+      <b className="admin-edit-pill">
+        Redaktə et
+        <ChevronDown size={14} />
+      </b>
+    </summary>
+  );
+}
+
 export default async function AdminPage({
   searchParams,
 }: {
@@ -476,9 +634,11 @@ export default async function AdminPage({
   }
 
   const result = await listAdminCars();
+  const blogResult = await listAdminBlogs();
   const rentalCount = result.cars.filter((car) => car.rentalVisible !== false).length;
   const transferCount = result.cars.filter((car) => car.transferAvailable).length;
   const weddingCount = result.cars.filter((car) => car.weddingAvailable).length;
+  const activeBlogCount = blogResult.blogs.filter((blog) => blog.isActive !== false).length;
 
   return (
     <main className="admin-shell">
@@ -502,6 +662,7 @@ export default async function AdminPage({
 
       {errorMessage ? <div className="admin-alert">{errorMessage}</div> : null}
       {result.error ? <div className="admin-alert">{result.error}</div> : null}
+      {blogResult.error ? <div className="admin-alert">{blogResult.error}</div> : null}
       {!result.configured ? (
         <div className="admin-alert">
           Yadda saxlama üçün Supabase env məlumatlarını əlavə edin: SUPABASE_URL,
@@ -512,6 +673,9 @@ export default async function AdminPage({
       {params.saved ? <div className="admin-success">Avtomobil yadda saxlanıldı.</div> : null}
       {params.seeded ? <div className="admin-success">Lokal avtomobillər Supabase bazasına köçürüldü.</div> : null}
       {params.deleted ? <div className="admin-success">Avtomobil silindi.</div> : null}
+      {params.blogSaved ? <div className="admin-success">Blog məqaləsi yadda saxlanıldı.</div> : null}
+      {params.blogsSeeded ? <div className="admin-success">Lokal blog məqalələri Supabase bazasına köçürüldü.</div> : null}
+      {params.blogDeleted ? <div className="admin-success">Blog məqaləsi silindi.</div> : null}
 
       <section className="admin-stats">
         <article>
@@ -534,65 +698,153 @@ export default async function AdminPage({
           <span>Toy</span>
           <strong>{weddingCount}</strong>
         </article>
+        <article>
+          <Newspaper size={18} />
+          <span>Aktiv blog</span>
+          <strong>{activeBlogCount}</strong>
+        </article>
       </section>
 
-      <section className="admin-panel">
-        <div className="admin-panel-heading">
+      <section className="admin-section-block">
+        <div className="admin-section-head">
           <div>
-            <p>BAZA</p>
-            <h2>Mövcud avtomobilləri bazaya köçür</h2>
-            <span>
-              Supabase cədvəlini yaratdıqdan sonra lokal avtomobil parkını bazaya köçürmək üçün istifadə edin.
-            </span>
+            <p>01 / AVTOMOBİLLƏR</p>
+            <h2>Avtomobil parkı</h2>
           </div>
-          <form action={seedCarsAction}>
-            <button type="submit" className="admin-secondary-button">
-              <Database size={16} />
-              Bazaya köçür
-            </button>
-          </form>
+          <span>Qiymətlər, texniki göstəricilər, şəkillər və görünürlük ayarları bir yerdə idarə olunur.</span>
         </div>
-      </section>
 
-      <details className="admin-panel admin-add-panel">
-        <summary className="admin-add-summary">
-          <div>
-            <p>YENİ</p>
-            <h2>Avtomobil əlavə et</h2>
-            <span>
-              Yeni avtomobil yaratmaq üçün bura klikləyin. Mövcud avtomobillər aşağıda redaktə olunur.
-            </span>
-          </div>
-          <b>
-            <Plus size={16} />
-            Yeni avtomobil
-          </b>
-        </summary>
-        <CarForm index={result.cars.length} mode="create" />
-      </details>
+        <div className="admin-section-grid">
+          <section className="admin-panel">
+            <div className="admin-panel-heading">
+              <div>
+                <p>BAZA</p>
+                <h2>Mövcud avtomobilləri bazaya köçür</h2>
+                <span>
+                  Supabase cədvəlini yaratdıqdan sonra lokal avtomobil parkını bazaya köçürmək üçün istifadə edin.
+                </span>
+              </div>
+              <form action={seedCarsAction}>
+                <button type="submit" className="admin-secondary-button">
+                  <Database size={16} />
+                  Bazaya köçür
+                </button>
+              </form>
+            </div>
+          </section>
 
-      <section className="admin-list-heading">
-        <div>
-          <p>PARK</p>
-          <h2>Mövcud avtomobillər</h2>
-        </div>
-        <span>Detalları açmaq üçün avtomobil sətrinə klikləyin.</span>
-      </section>
-
-      <section className="admin-list">
-        {result.cars.map((car, index) => (
-          <details key={car.id} className="admin-car-card">
-            <CarSummary car={car} index={index} />
-            <CarForm car={car} index={index} mode="edit" />
-            <form action={deleteCarAction} className="admin-delete-form">
-              <input name="id" type="hidden" value={car.id} readOnly />
-              <button type="submit">
-                <Trash2 size={15} />
-                Avtomobili sil
-              </button>
-            </form>
+          <details className="admin-panel admin-add-panel">
+            <summary className="admin-add-summary">
+              <div>
+                <p>YENİ</p>
+                <h2>Avtomobil əlavə et</h2>
+                <span>
+                  Yeni avtomobil yaratmaq üçün bura klikləyin. Mövcud avtomobillər aşağıda redaktə olunur.
+                </span>
+              </div>
+              <b>
+                <Plus size={16} />
+                Yeni avtomobil
+              </b>
+            </summary>
+            <CarForm index={result.cars.length} mode="create" />
           </details>
-        ))}
+        </div>
+
+        <section className="admin-list-heading">
+          <div>
+            <p>PARK</p>
+            <h2>Mövcud avtomobillər</h2>
+          </div>
+          <span>Detalları açmaq üçün avtomobil sətrinə klikləyin.</span>
+        </section>
+
+        <section className="admin-list">
+          {result.cars.map((car, index) => (
+            <details key={car.id} className="admin-car-card">
+              <CarSummary car={car} index={index} />
+              <CarForm car={car} index={index} mode="edit" />
+              <form action={deleteCarAction} className="admin-delete-form">
+                <input name="id" type="hidden" value={car.id} readOnly />
+                <button type="submit">
+                  <Trash2 size={15} />
+                  Avtomobili sil
+                </button>
+              </form>
+            </details>
+          ))}
+        </section>
+      </section>
+
+      <section className="admin-section-block">
+        <div className="admin-section-head admin-section-head-blog">
+          <div>
+            <p>02 / BLOG</p>
+            <h2>Blog məzmunu</h2>
+          </div>
+          <span>Məqalələr əlavə edin, mövcud yazıları redaktə edin və saytda hansı yazıların görünəcəyini seçin.</span>
+        </div>
+
+        <div className="admin-section-grid">
+          <section className="admin-panel">
+            <div className="admin-panel-heading">
+              <div>
+                <p>BLOQ BAZASI</p>
+                <h2>Mövcud blogları bazaya köçür</h2>
+                <span>
+                  Lokal blog məqalələrini Supabase cədvəlinə əlavə edir. Sonra yazıları paneldən idarə edə bilərsiniz.
+                </span>
+              </div>
+              <form action={seedBlogsAction}>
+                <button type="submit" className="admin-secondary-button">
+                  <Database size={16} />
+                  Blogları köçür
+                </button>
+              </form>
+            </div>
+          </section>
+
+          <details className="admin-panel admin-add-panel">
+            <summary className="admin-add-summary">
+              <div>
+                <p>YENİ MƏQALƏ</p>
+                <h2>Blog əlavə et</h2>
+                <span>
+                  Yeni məqalə yaratmaq üçün başlıq, şəkil, giriş və əsas mətn sahələrini doldurun.
+                </span>
+              </div>
+              <b>
+                <Plus size={16} />
+                Yeni blog
+              </b>
+            </summary>
+            <BlogForm index={blogResult.blogs.length} mode="create" />
+          </details>
+        </div>
+
+        <section className="admin-list-heading">
+          <div>
+            <p>MƏQALƏLƏR</p>
+            <h2>Mövcud bloglar</h2>
+          </div>
+          <span>Yazını açın, mətni dəyişin və saxlayın.</span>
+        </section>
+
+        <section className="admin-list admin-blog-list">
+          {blogResult.blogs.map((blog, index) => (
+            <details key={blog.slug} className="admin-car-card admin-blog-card">
+              <BlogSummary blog={blog} index={index} />
+              <BlogForm blog={blog} index={index} mode="edit" />
+              <form action={deleteBlogAction} className="admin-delete-form">
+                <input name="blogSlug" type="hidden" value={blog.slug} readOnly />
+                <button type="submit">
+                  <Trash2 size={15} />
+                  Blogu sil
+                </button>
+              </form>
+            </details>
+          ))}
+        </section>
       </section>
     </main>
   );

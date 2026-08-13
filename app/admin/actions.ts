@@ -5,7 +5,13 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cars as localCars, type Car, type CarCategory } from "@/data/cars";
+import { blogPosts as localBlogPosts, type BlogPost } from "@/app/data/blog";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  blogPostToRow,
+  rowToBlogPost,
+  type AdminBlogPost,
+} from "@/lib/supabase/blogs";
 import {
   carCategories,
   carToRow,
@@ -178,6 +184,46 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
   };
 }
 
+function paragraphsFromText(value: string) {
+  return value
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+}
+
+function readBlogFromForm(formData: FormData): AdminBlogPost {
+  const title = text(formData, "blogTitle");
+  const slug = text(formData, "blogSlug") || slugify(title);
+  const body = text(formData, "blogBody");
+  const quote = optionalText(formData, "blogQuote");
+  const imageList = text(formData, "blogImages")
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const section = {
+    heading: optionalText(formData, "blogSectionHeading") ?? undefined,
+    paragraphs: paragraphsFromText(body),
+    quote: quote ?? undefined,
+  };
+
+  return {
+    slug,
+    title,
+    description: text(formData, "blogDescription"),
+    image: text(formData, "blogImage"),
+    images: imageList.length ? imageList : undefined,
+    date: text(formData, "blogDate") || new Date().toISOString().slice(0, 10),
+    category: text(formData, "blogCategory") || "Blog",
+    readingTime: text(formData, "blogReadingTime") || "5 dəq",
+    eyebrow: text(formData, "blogEyebrow"),
+    intro: text(formData, "blogIntro"),
+    sections: [section],
+    sortOrder: numberValue(formData, "blogSortOrder") ?? 0,
+    isActive: boolValue(formData, "blogIsActive"),
+  };
+}
+
+
 export async function loginAction(formData: FormData) {
   const config = getAdminAuthConfig();
   const token = createAdminToken();
@@ -253,6 +299,55 @@ export async function listAdminCars() {
   };
 }
 
+export async function listAdminBlogs() {
+  const supabase = createSupabaseAdminClient();
+
+  if (!supabase) {
+    return {
+      configured: Boolean(getSupabaseAdminConfig()),
+      blogs: localBlogPosts.map((post, index) => ({
+        ...post,
+        sortOrder: index + 1,
+        isActive: true,
+      })),
+      source: "local" as const,
+      error: null,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("blog_posts")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("date", { ascending: false });
+
+  if (error) {
+    return {
+      configured: true,
+      blogs: localBlogPosts.map((post, index) => ({
+        ...post,
+        sortOrder: index + 1,
+        isActive: true,
+      })),
+      source: "local" as const,
+      error: error.message,
+    };
+  }
+
+  return {
+    configured: true,
+    blogs: data?.length
+      ? data.map((row) => rowToBlogPost(row as Parameters<typeof rowToBlogPost>[0]))
+      : localBlogPosts.map((post, index) => ({
+          ...post,
+          sortOrder: index + 1,
+          isActive: true,
+        })),
+    source: data?.length ? ("supabase" as const) : ("local" as const),
+    error: null,
+  };
+}
+
 export async function seedCarsAction() {
   if (!(await isAdminAuthenticated())) {
     redirect("/admin");
@@ -275,6 +370,38 @@ export async function seedCarsAction() {
   revalidatePath("/");
   revalidatePath("/avtomobiller");
   redirect("/admin?seeded=1");
+}
+
+export async function seedBlogsAction() {
+  if (!(await isAdminAuthenticated())) {
+    redirect("/admin");
+  }
+
+  try {
+    const supabase = requireAdminConfig();
+    const rows = localBlogPosts.map((post, index) =>
+      blogPostToRow(
+        {
+          ...post,
+          sortOrder: index + 1,
+          isActive: true,
+        },
+        index + 1
+      )
+    );
+    const { error } = await supabase.from("blog_posts").upsert(rows, {
+      onConflict: "slug",
+    });
+
+    if (error) {
+      throw new Error("database-save-failed");
+    }
+  } catch (error) {
+    adminErrorRedirect(normalizeAdminError(error));
+  }
+
+  revalidatePath("/blog");
+  redirect("/admin?blogsSeeded=1");
 }
 
 export async function saveCarAction(formData: FormData) {
@@ -329,6 +456,67 @@ export async function saveCarAction(formData: FormData) {
   revalidatePath("/transfer");
   redirect("/admin?saved=1");
 }
+
+export async function saveBlogAction(formData: FormData) {
+  if (!(await isAdminAuthenticated())) {
+    redirect("/admin");
+  }
+
+  let savedSlug = "";
+
+  try {
+    const supabase = requireAdminConfig();
+    const blog = readBlogFromForm(formData);
+    savedSlug = blog.slug;
+
+    if (!blog.title || !blog.slug || !blog.image || !blog.intro) {
+      throw new Error("required-fields-missing");
+    }
+
+    if (!blog.sections[0]?.paragraphs.length) {
+      throw new Error("blog-body-required");
+    }
+
+    const { error } = await supabase.from("blog_posts").upsert(
+      blogPostToRow(blog, blog.sortOrder ?? 0),
+      {
+        onConflict: "slug",
+      }
+    );
+
+    if (error) {
+      throw new Error("database-save-failed");
+    }
+  } catch (error) {
+    adminErrorRedirect(normalizeAdminError(error));
+  }
+
+  revalidatePath("/blog");
+  revalidatePath(`/blog/${savedSlug}`);
+  redirect("/admin?blogSaved=1");
+}
+
+export async function deleteBlogAction(formData: FormData) {
+  if (!(await isAdminAuthenticated())) {
+    redirect("/admin");
+  }
+
+  try {
+    const slug = text(formData, "blogSlug");
+    const supabase = requireAdminConfig();
+    const { error } = await supabase.from("blog_posts").delete().eq("slug", slug);
+
+    if (error) {
+      throw new Error("database-delete-failed");
+    }
+  } catch (error) {
+    adminErrorRedirect(normalizeAdminError(error));
+  }
+
+  revalidatePath("/blog");
+  redirect("/admin?blogDeleted=1");
+}
+
 
 export async function deleteCarAction(formData: FormData) {
   if (!(await isAdminAuthenticated())) {
