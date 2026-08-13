@@ -1,0 +1,388 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { AnimatePresence, motion } from "motion/react";
+import { useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  BriefcaseBusiness,
+  ChevronDown,
+  Fuel,
+  Gauge,
+  Menu,
+  Search,
+  SlidersHorizontal,
+  Users,
+  X,
+} from "lucide-react";
+import { cars, getShortTermPrice } from "@/data/cars";
+
+const ease = [0.22, 1, 0.36, 1] as const;
+
+const categories = [
+  "Hamısı",
+  "Econom",
+  "Comfort",
+  "Business",
+  "SUV",
+  "Miniven",
+  "Sport",
+];
+
+export default function CarsPage() {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("Hamısı");
+  const [brand, setBrand] = useState("Hamısı");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const brands = useMemo(
+    () => ["Hamısı", ...Array.from(new Set(cars.map((car) => car.brand))).sort()],
+    []
+  );
+
+  const filteredCars = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("az");
+
+    return cars.filter((car) => {
+      const matchesSearch =
+        !query ||
+        car.title.toLocaleLowerCase("az").includes(query) ||
+        car.brand.toLocaleLowerCase("az").includes(query) ||
+        car.category.toLocaleLowerCase("az").includes(query);
+
+      const matchesCategory =
+        category === "Hamısı" || car.category === category;
+
+      const matchesBrand =
+        brand === "Hamısı" || car.brand === brand;
+
+      return matchesSearch && matchesCategory && matchesBrand;
+    });
+  }, [search, category, brand]);
+
+  const clearFilters = () => {
+    setSearch("");
+    setCategory("Hamısı");
+    setBrand("Hamısı");
+  };
+
+  return (
+    <main className="catalog-page">
+      <header className="catalog-nav">
+        <Link href="/" className="catalog-logo" aria-label="Carbon Rent A Car">
+          <Image
+            src="/images/carbon-logo.webp"
+            alt="Carbon Rent A Car"
+            width={180}
+            height={65}
+            priority
+          />
+        </Link>
+
+        <nav className="catalog-desktop-nav">
+          <Link href="/">Əsas səhifə</Link>
+          <Link href="/avtomobiller" className="active">
+            Avtomobillər
+          </Link>
+          <Link href="/#faq">FAQ</Link>
+          <Link href="/#about">Haqqımızda</Link>
+          <Link href="/#contact">Əlaqə</Link>
+        </nav>
+
+        <div className="catalog-nav-actions">
+          <button className="catalog-language" type="button">
+            AZ
+            <ChevronDown size={13} />
+          </button>
+
+          <Link href="/#contact" className="catalog-contact">
+            Əlaqə saxla
+            <ArrowUpRight size={15} />
+          </Link>
+
+          <button
+            type="button"
+            className="catalog-menu-button"
+            onClick={() => setMenuOpen((value) => !value)}
+            aria-label="Menyu"
+          >
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              className="catalog-mobile-menu"
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease }}
+            >
+              <Link href="/">Əsas səhifə</Link>
+              <Link href="/avtomobiller">Avtomobillər</Link>
+              <Link href="/#faq">FAQ</Link>
+              <Link href="/#about">Haqqımızda</Link>
+              <Link href="/#contact">Əlaqə</Link>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+
+      <section className="catalog-hero">
+        <motion.div
+          className="catalog-hero-inner"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease }}
+        >
+          <Link href="/" className="catalog-back">
+            <ArrowLeft size={14} />
+            Əsas səhifə
+          </Link>
+
+          <div className="catalog-title-row">
+            <div>
+              <span className="catalog-kicker">CARBON FLEET</span>
+
+              <h1>
+                Avtomobilini
+                <br />
+                <span>özün seç.</span>
+              </h1>
+            </div>
+
+            <p>
+              Gündəlik şəhər avtomobillərindən premium və biznes modellərinə
+              qədər Carbon parkından sizə uyğun avtomobili seçin.
+            </p>
+          </div>
+        </motion.div>
+      </section>
+
+      <section className="catalog-content">
+        <div className="catalog-controls">
+          <div className="catalog-search">
+            <Search size={17} strokeWidth={1.7} />
+
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Avtomobil axtar..."
+              aria-label="Avtomobil axtar"
+            />
+
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Axtarışı təmizlə"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+
+          <div className="category-tabs">
+            {categories.map((item) => (
+              <button
+                type="button"
+                key={item}
+                onClick={() => setCategory(item)}
+                className={category === item ? "active" : ""}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className={`filter-toggle ${filtersOpen ? "active" : ""}`}
+            onClick={() => setFiltersOpen((value) => !value)}
+          >
+            <SlidersHorizontal size={15} />
+            Filtrlər
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {filtersOpen && (
+            <motion.div
+              className="filter-panel"
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -8 }}
+              transition={{ duration: 0.35, ease }}
+            >
+              <div className="filter-group">
+                <span>Marka</span>
+
+                <div className="brand-filter">
+                  {brands.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setBrand(item)}
+                      className={brand === item ? "active" : ""}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                className="clear-filters"
+                type="button"
+                onClick={clearFilters}
+              >
+                Filtrləri sıfırla
+                <X size={14} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="catalog-results-head">
+          <div>
+            <strong>{filteredCars.length}</strong>
+            <span> avtomobil tapıldı</span>
+          </div>
+
+          {(category !== "Hamısı" ||
+            brand !== "Hamısı" ||
+            search.trim() !== "") && (
+            <button type="button" onClick={clearFilters}>
+              Hamısını göstər
+            </button>
+          )}
+        </div>
+
+        <motion.div layout className="catalog-grid">
+          <AnimatePresence mode="popLayout">
+            {filteredCars.map((car, index) => {
+              const price = getShortTermPrice(car);
+
+              return (
+                <motion.article
+                  layout
+                  key={car.id}
+                  className="catalog-card"
+                  initial={{ opacity: 0, scale: 0.97, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, y: 10 }}
+                  transition={{
+                    duration: 0.4,
+                    delay: Math.min(index * 0.025, 0.15),
+                    ease,
+                  }}
+                >
+                  <Link
+                    href={`/avtomobiller/${car.slug}`}
+                    className="catalog-card-visual"
+                  >
+                    <div className="catalog-card-badges">
+                      <span>{car.category}</span>
+
+                      {car.transferAvailable && (
+                        <span className="dark">Transfer</span>
+                      )}
+                    </div>
+
+                    <motion.img
+                      src={car.thumbnail}
+                      alt={car.title}
+                      loading="lazy"
+                      whileHover={{ scale: 1.04 }}
+                      transition={{ duration: 0.7, ease }}
+                    />
+
+                    <motion.span
+                      className="catalog-open"
+                      whileHover={{ scale: 1.08, rotate: 4 }}
+                      whileTap={{ scale: 0.94 }}
+                    >
+                      <ArrowUpRight size={18} strokeWidth={1.6} />
+                    </motion.span>
+                  </Link>
+
+                  <div className="catalog-card-info">
+                    <div className="catalog-card-title">
+                      <div>
+                        <span>{car.brand}</span>
+                        <h2>{car.title}</h2>
+                      </div>
+
+                      <div className="catalog-price">
+                        {price !== null ? (
+                          <>
+                            <strong>{price} ₼</strong>
+                            <small>/ gün</small>
+                          </>
+                        ) : (
+                          <small>Qiymət üçün əlaqə</small>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="catalog-specs">
+                      {car.seats !== null && (
+                        <span>
+                          <Users size={14} />
+                          {car.seats} yer
+                        </span>
+                      )}
+
+                      <span>
+                        <Gauge size={14} />
+                        {car.transmission}
+                      </span>
+
+                      <span>
+                        <Fuel size={14} />
+                        {car.fuel}
+                      </span>
+
+                      {car.baggage !== null && (
+                        <span>
+                          <BriefcaseBusiness size={14} />
+                          {car.baggage}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </motion.article>
+              );
+            })}
+          </AnimatePresence>
+        </motion.div>
+
+        {filteredCars.length === 0 && (
+          <motion.div
+            className="catalog-empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <Search size={28} strokeWidth={1.3} />
+
+            <h2>Avtomobil tapılmadı</h2>
+
+            <p>
+              Axtarış sözünü və ya seçilmiş filtrləri dəyişməyə çalışın.
+            </p>
+
+            <button type="button" onClick={clearFilters}>
+              Bütün avtomobilləri göstər
+              <ArrowRight size={15} />
+            </button>
+          </motion.div>
+        )}
+      </section>
+    </main>
+  );
+}

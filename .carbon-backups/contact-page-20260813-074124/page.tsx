@@ -1,0 +1,402 @@
+"use client";
+
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import CarCard from "@/components/CarCard";
+import CarbonNavbar from "@/components/CarbonNavbar";
+import RentalGuide from "@/components/RentalGuide";
+import HomeExperience from "@/components/HomeExperience";
+import CarbonSignature from "@/components/CarbonSignature";
+import { featuredCars } from "@/data/cars";
+import {
+  ArrowDown,
+  ArrowRight,
+  Gem,
+  Headphones,
+  ShieldCheck,
+  CarFront,
+  Phone,
+} from "lucide-react";
+
+const ease = [0.22, 1, 0.36, 1] as const;
+
+const fadeUp = {
+  hidden: {
+    opacity: 0,
+    y: 24,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+  },
+};
+
+export default function Home() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setReady(true);
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return (
+    <main>
+      <section className="hero">
+        <motion.div
+          className="hero-media"
+          initial={{
+            opacity: 0,
+            scale: 1.08,
+          }}
+          animate={
+            ready
+              ? {
+                  opacity: 1,
+                  scale: 1,
+                }
+              : {}
+          }
+          transition={{
+            duration: 1.8,
+            ease,
+          }}
+        >
+          <video
+            className="hero-video"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+          >
+            <source src="/videos/hero.mp4" type="video/mp4" />
+          </video>
+        </motion.div>
+
+        <motion.div
+          className="hero-overlay"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
+        />
+
+        <CarbonNavbar
+          home
+          ready={ready}
+        />
+
+        <motion.div
+          className="hero-content"
+          initial="hidden"
+          animate={ready ? "visible" : "hidden"}
+        >
+          <motion.div
+            className="eyebrow"
+            variants={fadeUp}
+            transition={{
+              duration: 0.7,
+              delay: 0.45,
+              ease,
+            }}
+          >
+            <motion.span
+              initial={{ scaleX: 0 }}
+              animate={ready ? { scaleX: 1 } : {}}
+              transition={{
+                duration: 0.7,
+                delay: 0.6,
+                ease,
+              }}
+              style={{ transformOrigin: "left" }}
+            />
+            BAKIDA AVTOMOBİL İCARƏSİ
+          </motion.div>
+
+          <div className="hero-title-wrap">
+            <motion.h1
+              className="hero-title-line"
+              initial={{
+                opacity: 0,
+                y: 65,
+              }}
+              animate={
+                ready
+                  ? {
+                      opacity: 1,
+                      y: 0,
+                    }
+                  : {}
+              }
+              transition={{
+                duration: 0.9,
+                delay: 0.52,
+                ease,
+              }}
+            >
+              Yolunu seç.
+            </motion.h1>
+
+            <motion.h1
+              className="hero-title-line hero-title-muted"
+              initial={{
+                opacity: 0,
+                y: 70,
+              }}
+              animate={
+                ready
+                  ? {
+                      opacity: 1,
+                      y: 0,
+                    }
+                  : {}
+              }
+              transition={{
+                duration: 1,
+                delay: 0.65,
+                ease,
+              }}
+            >
+              Qalanını biz həll edək.
+            </motion.h1>
+          </div>
+
+          <motion.p
+            variants={fadeUp}
+            transition={{
+              duration: 0.75,
+              delay: 0.82,
+              ease,
+            }}
+          >
+            Premium avtomobillər, rahat icarə prosesi və hər səfər üçün
+            etibarlı seçim.
+          </motion.p>
+
+          <motion.div
+            className="hero-actions"
+            variants={fadeUp}
+            transition={{
+              duration: 0.75,
+              delay: 0.94,
+              ease,
+            }}
+          >
+            <motion.a
+              className="primary-button"
+              href="#cars"
+              whileHover={{
+                y: -3,
+                scale: 1.015,
+              }}
+              whileTap={{
+                scale: 0.975,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 350,
+                damping: 25,
+              }}
+            >
+              <span className="hero-cta-copy">
+                <span className="hero-cta-kicker">KOLLEKSİYA</span>
+                <strong>Avtomobil seç</strong>
+              </span>
+
+              <motion.span
+                className="button-icon hero-cta-icon"
+                whileHover={{ x: 3, rotate: -4 }}
+              >
+                <CarFront
+                  className="hero-cta-car"
+                  size={19}
+                  strokeWidth={1.65}
+                />
+              </motion.span>
+            </motion.a>
+
+            <motion.a
+              className="secondary-button"
+              href="#contact"
+              whileHover={{
+                y: -3,
+                backgroundColor: "rgba(255,255,255,.1)",
+              }}
+              whileTap={{
+                scale: 0.975,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 350,
+                damping: 25,
+              }}
+            >
+              <span className="hero-cta-contact-icon">
+                <Phone size={15} strokeWidth={1.65} />
+              </span>
+
+              <span className="hero-cta-copy">
+                <span className="hero-cta-kicker">DƏSTƏK</span>
+                <strong>Bizimlə əlaqə</strong>
+              </span>
+
+              <span className="hero-cta-secondary-arrow">
+                <ArrowRight size={15} strokeWidth={1.7} />
+              </span>
+            </motion.a>
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          className="hero-bottom"
+          initial={{
+            opacity: 0,
+            y: 18,
+          }}
+          animate={
+            ready
+              ? {
+                  opacity: 1,
+                  y: 0,
+                }
+              : {}
+          }
+          transition={{
+            duration: 0.8,
+            delay: 1.05,
+            ease,
+          }}
+        >
+          <div className="benefits">
+            <motion.div
+              className="benefit"
+              whileHover={{ y: -3 }}
+              transition={{
+                type: "spring",
+                stiffness: 350,
+                damping: 25,
+              }}
+            >
+              <Headphones size={24} strokeWidth={1.4} />
+
+              <div>
+                <strong>24/7</strong>
+                <span>Dəstək</span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="benefit"
+              whileHover={{ y: -3 }}
+              transition={{
+                type: "spring",
+                stiffness: 350,
+                damping: 25,
+              }}
+            >
+              <Gem size={24} strokeWidth={1.4} />
+
+              <div>
+                <strong>Premium</strong>
+                <span>Avtomobil seçimi</span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="benefit benefit-third"
+              whileHover={{ y: -3 }}
+              transition={{
+                type: "spring",
+                stiffness: 350,
+                damping: 25,
+              }}
+            >
+              <ShieldCheck size={25} strokeWidth={1.4} />
+
+              <div>
+                <strong>Tam sığortalı</strong>
+                <span>Güvənli icarə</span>
+              </div>
+            </motion.div>
+          </div>
+
+          <a href="#cars" className="scroll-indicator">
+            <span>Avtomobillərə bax</span>
+
+            <motion.div
+              animate={{
+                y: [0, 5, 0],
+              }}
+              transition={{
+                type: "tween",
+                duration: 1.8,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              <ArrowDown size={16} strokeWidth={1.6} />
+            </motion.div>
+          </a>
+        </motion.div>
+      </section>
+
+      <section className="fleet-intro" id="cars">
+        <div className="fleet-inner">
+          <motion.div
+            className="fleet-top"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+          >
+            <span className="section-label">CARBON FLEET</span>
+            <span className="section-number">01</span>
+          </motion.div>
+
+          <div className="fleet-heading">
+            <motion.h2
+              initial={{ opacity: 0, y: 35 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.4 }}
+              transition={{ duration: 0.8, ease }}
+            >
+              Hər yol üçün
+              <br />
+              <span>doğru avtomobil.</span>
+            </motion.h2>
+
+            <motion.div
+              className="fleet-heading-side"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: 0.1, ease }}
+            >
+              <p>
+                Şəhər səfərlərindən xüsusi günlərə qədər, ehtiyacınıza uyğun
+                avtomobili Carbon kolleksiyasından seçin.
+              </p>
+
+              <a href="/avtomobiller" className="text-link">
+                Bütün avtomobillər
+                <ArrowRight size={15} strokeWidth={1.6} />
+              </a>
+            </motion.div>
+          </div>
+
+          <div className="car-grid">
+            {featuredCars.map((car, index) => (
+              <CarCard key={car.id} car={car} index={index} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <CarbonSignature />
+      <RentalGuide />
+      <HomeExperience />
+    </main>
+  );
+}

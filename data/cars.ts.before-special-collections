@@ -1,0 +1,943 @@
+export type CarCategory =
+  | "Econom"
+  | "Comfort"
+  | "Business"
+  | "SUV"
+  | "Miniven"
+  | "Sport";
+
+export type Car = {
+  id: string;
+  slug: string;
+  brand: string;
+  title: string;
+  category: CarCategory;
+
+  seats: number | null;
+  baggage: number | null;
+  smallBaggage: number | null;
+
+  thumbnail: string;
+
+  fuel: string;
+  engine: string | null;
+  transmission: string;
+
+  weddingAvailable?: boolean;
+  weddingPrice?: number | null;
+  weddingDescription?: string | null;
+
+  transferAvailable: boolean;
+
+  transferPrices: {
+    baku: number | null;
+    seaBreeze: number | null;
+    qabala: number | null;
+    ismayilli: number | null;
+    quba: number | null;
+    shamaxi: number | null;
+    shaki: number | null;
+    shusha: number | null;
+    lankaran: number | null;
+  };
+
+  rentalPrices: {
+    days1to3: number | null;
+    days4to7: number | null;
+    days8to15: number | null;
+    days16to24: number | null;
+    days25to30: number | null;
+    days30plus: number | null;
+  };
+};
+
+export const cars: Car[] = [
+  {
+    id: "mercedes-e-class",
+    slug: "mercedes-e-class",
+    brand: "Mercedes-Benz",
+    title: "Mercedes E Class",
+    category: "Business",
+    seats: 5,
+    baggage: 2,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/9COLZXFQGbphA5FQIU3hVyFBdos.png",
+    fuel: "Dizel",
+    engine: "2.0",
+    transmission: "Avtomat",
+    transferAvailable: true,
+    transferPrices: {
+      baku: 60,
+      seaBreeze: 90,
+      qabala: 300,
+      ismayilli: 250,
+      quba: 260,
+      shamaxi: 290,
+      shaki: 350,
+      shusha: 400,
+      lankaran: 300,
+    },
+    rentalPrices: {
+      days1to3: 200,
+      days4to7: 190,
+      days8to15: 170,
+      days16to24: 160,
+      days25to30: 140,
+      days30plus: 120,
+    },
+  },
+
+  {
+    id: "hyundai-sonata",
+    slug: "hyundai-sonata",
+    brand: "Hyundai",
+    title: "Hyundai Sonata",
+    category: "Comfort",
+    seats: 5,
+    baggage: 1,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/OdmwmaWg2Ntr12BJvdbb5Lhmwg.png",
+    fuel: "Benzin",
+    engine: "2.0",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 70,
+      days4to7: 65,
+      days8to15: 60,
+      days16to24: 55,
+      days25to30: 50,
+      days30plus: 49,
+    },
+  },
+
+  {
+    id: "hyundai-elantra",
+    slug: "hyundai-elantra",
+    brand: "Hyundai",
+    title: "Hyundai Elantra",
+    category: "Econom",
+    seats: 5,
+    baggage: 1,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/maM9cTbwVdrFi8zmyg2rqFSHVDY.png",
+    fuel: "Benzin",
+    engine: "1.8",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: 25,
+      seaBreeze: 40,
+      qabala: 140,
+      ismayilli: 130,
+      quba: 130,
+      shamaxi: 110,
+      shaki: 190,
+      shusha: 280,
+      lankaran: 190,
+    },
+    rentalPrices: {
+      days1to3: 55,
+      days4to7: 50,
+      days8to15: 45,
+      days16to24: 40,
+      days25to30: 39,
+      days30plus: 39,
+    },
+  },
+
+  {
+    id: "hyundai-tucson",
+    slug: "hyundai-tucson",
+    brand: "Hyundai",
+    title: "Hyundai Tucson",
+    category: "Econom",
+    seats: null,
+    baggage: 5,
+    smallBaggage: 5,
+    thumbnail:
+      "https://framerusercontent.com/images/9QFHfH3Ufi7MUZUg2zVhBNXhuto.png",
+    fuel: "Benzin",
+    engine: null,
+    transmission: "Avtomat",
+    transferAvailable: true,
+    transferPrices: {
+      baku: 35,
+      seaBreeze: 50,
+      qabala: 180,
+      ismayilli: 170,
+      quba: 180,
+      shamaxi: 160,
+      shaki: 220,
+      shusha: 380,
+      lankaran: 200,
+    },
+    rentalPrices: {
+      days1to3: null,
+      days4to7: null,
+      days8to15: null,
+      days16to24: null,
+      days25to30: null,
+      days30plus: 35,
+    },
+  },
+
+  {
+    id: "hyundai-santa-fe",
+    slug: "hyundai-santa-fe",
+    brand: "Hyundai",
+    title: "Hyundai Santa Fe",
+    category: "SUV",
+    seats: 7,
+    baggage: 2,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/yi1NOXrtKnafS4egK3Zc52ICWbA.png",
+    fuel: "Benzin",
+    engine: "2.2",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: 35,
+      seaBreeze: 50,
+      qabala: 180,
+      ismayilli: 170,
+      quba: 180,
+      shamaxi: 160,
+      shaki: 220,
+      shusha: 380,
+      lankaran: 200,
+    },
+    rentalPrices: {
+      days1to3: 80,
+      days4to7: 75,
+      days8to15: 70,
+      days16to24: 65,
+      days25to30: 60,
+      days30plus: 59,
+    },
+  },
+
+  {
+    id: "kia-sportage",
+    slug: "kia-sportage",
+    brand: "Kia",
+    title: "Kia Sportage",
+    category: "SUV",
+    seats: 5,
+    baggage: 2,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/4J3XX1BSPCRdou9HC4L7rXBQgfY.png",
+    fuel: "Benzin",
+    engine: "2.0",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: 35,
+      seaBreeze: 50,
+      qabala: 180,
+      ismayilli: 170,
+      quba: 180,
+      shamaxi: 160,
+      shaki: 220,
+      shusha: 380,
+      lankaran: 200,
+    },
+    rentalPrices: {
+      days1to3: 70,
+      days4to7: 65,
+      days8to15: 60,
+      days16to24: 55,
+      days25to30: 50,
+      days30plus: 49,
+    },
+  },
+
+  {
+    id: "mercedes-vito",
+    slug: "mercedes-vito",
+    brand: "Mercedes-Benz",
+    title: "Mercedes Vito",
+    category: "Miniven",
+    seats: 7,
+    baggage: 3,
+    smallBaggage: 3,
+    thumbnail:
+      "https://framerusercontent.com/images/DxdFILnig0N3JzebhJcGmbofjog.png",
+    fuel: "Dizel",
+    engine: "2.2",
+    transmission: "Avtomat",
+    transferAvailable: true,
+    transferPrices: {
+      baku: 35,
+      seaBreeze: 60,
+      qabala: 180,
+      ismayilli: 170,
+      quba: 180,
+      shamaxi: 160,
+      shaki: 250,
+      shusha: 380,
+      lankaran: 200,
+    },
+    rentalPrices: {
+      days1to3: 130,
+      days4to7: 120,
+      days8to15: 110,
+      days16to24: 100,
+      days25to30: 90,
+      days30plus: 89,
+    },
+  },
+
+  {
+    id: "kia-sorento",
+    slug: "kia-sorento",
+    brand: "Kia",
+    title: "Kia Sorento",
+    category: "SUV",
+    seats: 7,
+    baggage: 2,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/KCQFLzPns47NobRGNOHhlCwsNk.png",
+    fuel: "Benzin",
+    engine: "2.4",
+    transmission: "Avtomat",
+    transferAvailable: true,
+    transferPrices: {
+      baku: 35,
+      seaBreeze: 50,
+      qabala: 180,
+      ismayilli: 170,
+      quba: 180,
+      shamaxi: 160,
+      shaki: 220,
+      shusha: 380,
+      lankaran: 200,
+    },
+    rentalPrices: {
+      days1to3: 80,
+      days4to7: 75,
+      days8to15: 70,
+      days16to24: 65,
+      days25to30: 60,
+      days30plus: 59,
+    },
+  },
+
+  {
+    id: "mercedes-viano",
+    slug: "mercedes-viano",
+    brand: "Mercedes-Benz",
+    title: "Mercedes Viano",
+    category: "Miniven",
+    seats: 7,
+    baggage: 3,
+    smallBaggage: 3,
+    thumbnail:
+      "https://framerusercontent.com/images/CIM1EWq0mVN5RpCoyrOXj7jfYA.png",
+    fuel: "Benzin",
+    engine: "2.2",
+    transmission: "Avtomat",
+    transferAvailable: true,
+    transferPrices: {
+      baku: 35,
+      seaBreeze: 60,
+      qabala: 180,
+      ismayilli: 170,
+      quba: 180,
+      shamaxi: 160,
+      shaki: 250,
+      shusha: 380,
+      lankaran: 200,
+    },
+    rentalPrices: {
+      days1to3: 140,
+      days4to7: 130,
+      days8to15: 120,
+      days16to24: 110,
+      days25to30: 100,
+      days30plus: 99,
+    },
+  },
+
+  {
+    id: "mercedes-maybach",
+    slug: "mercedes-s-class-maybach",
+    brand: "Mercedes-Benz",
+    title: "Mercedes S Class Maybach",
+    category: "Business",
+    seats: 4,
+    baggage: 1,
+    smallBaggage: 2,
+    thumbnail:
+      "https://framerusercontent.com/images/Oa53EGplhOIuKsMkq1dzN4hADsY.png",
+    fuel: "Benzin",
+    engine: "6.0",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 230,
+      days4to7: 220,
+      days8to15: 200,
+      days16to24: 190,
+      days25to30: 170,
+      days30plus: 150,
+    },
+  },
+
+  {
+    id: "mercedes-s-class",
+    slug: "mercedes-s-class",
+    brand: "Mercedes-Benz",
+    title: "Mercedes S Class",
+    category: "Business",
+    seats: 5,
+    baggage: 1,
+    smallBaggage: 2,
+    thumbnail:
+      "https://framerusercontent.com/images/VCinvJuZnhOTNAZyjBZ9iwlLWw.png",
+    fuel: "Benzin",
+    engine: "3.5",
+    transmission: "Avtomat",
+    transferAvailable: true,
+    transferPrices: {
+      baku: 110,
+      seaBreeze: 160,
+      qabala: 500,
+      ismayilli: 480,
+      quba: 480,
+      shamaxi: 380,
+      shaki: 550,
+      shusha: 800,
+      lankaran: 550,
+    },
+    rentalPrices: {
+      days1to3: 230,
+      days4to7: 220,
+      days8to15: 200,
+      days16to24: 190,
+      days25to30: 170,
+      days30plus: 150,
+    },
+  },
+
+  {
+    id: "bmw-f90",
+    slug: "bmw-f90",
+    brand: "BMW",
+    title: "BMW F90",
+    category: "Sport",
+    seats: 5,
+    baggage: 2,
+    smallBaggage: 2,
+    thumbnail:
+      "https://framerusercontent.com/images/nB9xGEwby2TnqAH0MCr0vT4Yp0.png",
+    fuel: "Benzin",
+    engine: "2.0 Turbo Twin",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 180,
+      days4to7: 170,
+      days8to15: 150,
+      days16to24: 140,
+      days25to30: 120,
+      days30plus: 100,
+    },
+  },
+
+  {
+    id: "bmw-f36-m4",
+    slug: "bmw-f36-m4",
+    brand: "BMW",
+    title: "BMW F36 M4",
+    category: "Sport",
+    seats: 5,
+    baggage: 1,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/bX6ZsnnlqKfmipDHD4g0q0CDKs.png",
+    fuel: "Benzin",
+    engine: "2.0 Turbo Twin",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 130,
+      days4to7: 120,
+      days8to15: 110,
+      days16to24: 100,
+      days25to30: 90,
+      days30plus: 89,
+    },
+  },
+
+  {
+    id: "bmw-f10-mtech",
+    slug: "bmw-f10-mtech",
+    brand: "BMW",
+    title: "BMW F10 Mtech",
+    category: "Sport",
+    seats: 5,
+    baggage: 1,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/VW6HUAFuIXT09w1OKq405TAcwgg.png",
+    fuel: "Benzin",
+    engine: "2.0 Turbo Twin",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 130,
+      days4to7: 120,
+      days8to15: 110,
+      days16to24: 100,
+      days25to30: 90,
+      days30plus: 89,
+    },
+  },
+
+  {
+    id: "bmw-f10-m5",
+    slug: "bmw-f10-m5",
+    brand: "BMW",
+    title: "BMW F10 M5",
+    category: "Sport",
+    seats: 5,
+    baggage: 5,
+    smallBaggage: 5,
+    thumbnail:
+      "https://framerusercontent.com/images/OdRqLo2JRKYXeJ4h9ykzj8LxB1I.png",
+    fuel: "Benzin",
+    engine: "2.0",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 120,
+      days4to7: 110,
+      days8to15: 100,
+      days16to24: 90,
+      days25to30: 80,
+      days30plus: 79,
+    },
+  },
+
+  {
+    id: "ford-mustang",
+    slug: "ford-mustang",
+    brand: "Ford",
+    title: "Ford Mustang",
+    category: "Sport",
+    seats: 4,
+    baggage: 0,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/Qbr9I5849o6PndrODhA5dtXfWSg.png",
+    fuel: "Benzin",
+    engine: "2.3",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 180,
+      days4to7: 170,
+      days8to15: 150,
+      days16to24: 140,
+      days25to30: 120,
+      days30plus: 100,
+    },
+  },
+
+  {
+    id: "defender",
+    slug: "defender",
+    brand: "Land Rover",
+    title: "Defender",
+    category: "Business",
+    seats: 5,
+    baggage: 3,
+    smallBaggage: 3,
+    thumbnail:
+      "https://framerusercontent.com/images/mEVaGQnKymQ2AsvA88unfq2Ju8.png",
+    fuel: "Benzin",
+    engine: "2.0",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 400,
+      days4to7: 390,
+      days8to15: 370,
+      days16to24: 360,
+      days25to30: 340,
+      days30plus: 320,
+    },
+  },
+
+  {
+    id: "mercedes-g-class",
+    slug: "mercedes-g-class",
+    brand: "Mercedes-Benz",
+    title: "Mercedes G Class",
+    category: "Business",
+    seats: 5,
+    baggage: 2,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/GbcHmNYDhM4jYtZV94jFFsHmlY.png",
+    fuel: "Benzin",
+    engine: "5.0",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 240,
+      days4to7: 230,
+      days8to15: 210,
+      days16to24: 200,
+      days25to30: 180,
+      days30plus: 160,
+    },
+  },
+
+  {
+    id: "range-rover-vogue",
+    slug: "range-rover-vogue",
+    brand: "Land Rover",
+    title: "Range Rover Vogue",
+    category: "Business",
+    seats: 5,
+    baggage: 4,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/mDHr5dLj8NvZy8cic5Wl1Hd262w.png",
+    fuel: "Benzin",
+    engine: "3.0",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 230,
+      days4to7: 220,
+      days8to15: 200,
+      days16to24: 190,
+      days25to30: 170,
+      days30plus: 150,
+    },
+  },
+
+  {
+    id: "toyota-prado",
+    slug: "toyota-prado",
+    brand: "Toyota",
+    title: "Toyota Prado",
+    category: "SUV",
+    seats: null,
+    baggage: 5,
+    smallBaggage: 5,
+    thumbnail:
+      "https://framerusercontent.com/images/VTizI8fQAxIrAl7OQGhlZZIgPEI.png",
+    fuel: "Benzin",
+    engine: null,
+    transmission: "Avtomat",
+    transferAvailable: true,
+    transferPrices: {
+      baku: 35,
+      seaBreeze: 45,
+      qabala: 45,
+      ismayilli: 180,
+      quba: 170,
+      shamaxi: 150,
+      shaki: 240,
+      shusha: 350,
+      lankaran: 220,
+    },
+    rentalPrices: {
+      days1to3: 110,
+      days4to7: 105,
+      days8to15: 100,
+      days16to24: 95,
+      days25to30: 90,
+      days30plus: 89,
+    },
+  },
+
+  {
+    id: "changan-q05",
+    slug: "changan-q05",
+    brand: "Changan",
+    title: "Changan Q05",
+    category: "SUV",
+    seats: 5,
+    baggage: 2,
+    smallBaggage: 5,
+    thumbnail:
+      "https://framerusercontent.com/images/jO32dxuQ1gZbyPE2fx1jdnbFj0.png",
+    fuel: "Benzin",
+    engine: null,
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 90,
+      days4to7: 85,
+      days8to15: 80,
+      days16to24: 75,
+      days25to30: 70,
+      days30plus: 69,
+    },
+  },
+
+  {
+    id: "kia-forte-2019",
+    slug: "kia-forte-2019",
+    brand: "Kia",
+    title: "Kia Forte",
+    category: "Econom",
+    seats: 5,
+    baggage: 1,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/Qql57YydnQKsIEBaPuFlzJxIE.png",
+    fuel: "Benzin",
+    engine: "2.0",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 55,
+      days4to7: 50,
+      days8to15: 45,
+      days16to24: 40,
+      days25to30: 39,
+      days30plus: 39,
+    },
+  },
+
+  {
+    id: "chevrolet-cruze",
+    slug: "chevrolet-cruze-2021",
+    brand: "Chevrolet",
+    title: "Chevrolet Cruze",
+    category: "Econom",
+    seats: 5,
+    baggage: 1,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/gzaGDIejOT1ogI4NYlsWisgBEmI.png",
+    fuel: "Benzin",
+    engine: "1.4",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 55,
+      days4to7: 50,
+      days8to15: 45,
+      days16to24: 40,
+      days25to30: 40,
+      days30plus: 39,
+    },
+  },
+
+  {
+    id: "hyundai-ix35",
+    slug: "hyundai-ix35-2019",
+    brand: "Hyundai",
+    title: "Hyundai Ix35",
+    category: "SUV",
+    seats: 5,
+    baggage: 1,
+    smallBaggage: 1,
+    thumbnail:
+      "https://framerusercontent.com/images/khiofnrAfeCDzUvsUMgm5vg7EM0.png",
+    fuel: "Benzin",
+    engine: "2.0",
+    transmission: "Avtomat",
+    transferAvailable: false,
+    transferPrices: {
+      baku: null,
+      seaBreeze: null,
+      qabala: null,
+      ismayilli: null,
+      quba: null,
+      shamaxi: null,
+      shaki: null,
+      shusha: null,
+      lankaran: null,
+    },
+    rentalPrices: {
+      days1to3: 70,
+      days4to7: 65,
+      days8to15: 60,
+      days16to24: 55,
+      days25to30: 50,
+      days30plus: 49,
+    },
+  },
+];
+
+export const featuredCars = [
+  cars.find((car) => car.slug === "mercedes-s-class"),
+  cars.find((car) => car.slug === "bmw-f90"),
+  cars.find((car) => car.slug === "range-rover-vogue"),
+].filter((car): car is Car => Boolean(car));
+
+export function getStartingPrice(car: Car) {
+  const prices = Object.values(car.rentalPrices).filter(
+    (price): price is number => typeof price === "number"
+  );
+
+  return prices.length ? Math.min(...prices) : null;
+}
+
+export function getShortTermPrice(car: Car) {
+  return (
+    car.rentalPrices.days1to3 ??
+    car.rentalPrices.days4to7 ??
+    car.rentalPrices.days8to15 ??
+    car.rentalPrices.days16to24 ??
+    car.rentalPrices.days25to30 ??
+    car.rentalPrices.days30plus
+  );
+}

@@ -1,0 +1,408 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "motion/react";
+import {
+  ArrowRight,
+  CalendarDays,
+  CarFront,
+  Check,
+  ChevronDown,
+  Clock3,
+  MapPin,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import { cars } from "@/data/cars";
+
+const ease = [0.22, 1, 0.36, 1] as const;
+
+function toLocalISO(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatDate(value: string) {
+  if (!value) return "Tarix seçin";
+
+  return new Intl.DateTimeFormat("az-AZ", {
+    day: "2-digit",
+    month: "short",
+  }).format(new Date(`${value}T12:00:00`));
+}
+
+export default function HomeBookingBar() {
+  const [carSlug, setCarSlug] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [pickup, setPickup] = useState<"office" | "delivery">("office");
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const today = new Date();
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const returnDate = new Date(today);
+    returnDate.setDate(returnDate.getDate() + 4);
+
+    setStartDate(toLocalISO(tomorrow));
+    setEndDate(toLocalISO(returnDate));
+
+    const timer = window.setTimeout(() => {
+      setReady(true);
+    }, 150);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const selectedCar = useMemo(
+    () => cars.find((car) => car.slug === carSlug),
+    [carSlug]
+  );
+
+  const duration = useMemo(() => {
+    if (!startDate || !endDate) return 0;
+
+    const start = new Date(`${startDate}T12:00:00`);
+    const end = new Date(`${endDate}T12:00:00`);
+
+    return Math.max(
+      0,
+      Math.round(
+        (end.getTime() - start.getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
+    );
+  }, [startDate, endDate]);
+
+  const minStart = useMemo(() => {
+    const now = new Date();
+    return toLocalISO(now);
+  }, []);
+
+  const minEnd = startDate || minStart;
+
+  const reservationHref = useMemo(() => {
+    if (!carSlug) return "#cars";
+    if (!startDate || !endDate || duration < 1) return "#cars";
+
+    const params = new URLSearchParams({
+      car: carSlug,
+      start: startDate,
+      end: endDate,
+      pickup,
+      drivers: "1",
+    });
+
+    return `/rezervasiya?${params.toString()}`;
+  }, [
+    carSlug,
+    startDate,
+    endDate,
+    pickup,
+    duration,
+  ]);
+
+  const valid =
+    Boolean(carSlug) &&
+    Boolean(startDate) &&
+    Boolean(endDate) &&
+    duration > 0;
+
+  return (
+    <section
+      className="home-booking"
+      aria-label="Sürətli rezervasiya"
+    >
+      <motion.div
+        className="home-booking-shell"
+        initial={{
+          opacity: 0,
+          y: 42,
+        }}
+        animate={
+          ready
+            ? {
+                opacity: 1,
+                y: 0,
+              }
+            : {}
+        }
+        transition={{
+          duration: 0.9,
+          ease,
+        }}
+      >
+        <div className="home-booking-topline">
+          <div className="home-booking-topline-left">
+            <span className="home-booking-live">
+              <i />
+              REZERVASİYA
+            </span>
+
+            <span className="home-booking-separator" />
+
+            <span className="home-booking-status">
+              <Check size={12} strokeWidth={2} />
+              Sistem aktivdir
+            </span>
+          </div>
+
+          <div className="home-booking-index">
+            <span>CARBON</span>
+            <strong>01</strong>
+          </div>
+        </div>
+
+        <div className="home-booking-heading">
+          <div>
+            <span className="home-booking-eyebrow">
+              <Sparkles size={13} strokeWidth={1.65} />
+              SÜRƏTLİ SEÇİM
+            </span>
+
+            <h2>
+              Səfərinizi
+              <span> indi planlayın.</span>
+            </h2>
+          </div>
+
+          <p>
+            Avtomobili və tarixləri seçin. Carbon sizi birbaşa
+            rezervasiya səhifəsinə aparacaq.
+          </p>
+        </div>
+
+        <div className="home-booking-command">
+          <div className="home-booking-field home-booking-car">
+            <span className="home-booking-field-icon">
+              <CarFront size={18} strokeWidth={1.55} />
+            </span>
+
+            <label>
+              <small>AVTOMOBİL</small>
+
+              <span className="home-booking-select-wrap">
+                <select
+                  value={carSlug}
+                  onChange={(event) =>
+                    setCarSlug(event.target.value)
+                  }
+                  aria-label="Avtomobil seçin"
+                >
+                  <option value="">
+                    Avtomobil seçin
+                  </option>
+
+                  {cars.map((car) => (
+                    <option
+                      value={car.slug}
+                      key={car.slug}
+                    >
+                      {car.title}
+                    </option>
+                  ))}
+                </select>
+
+                <ChevronDown
+                  size={15}
+                  strokeWidth={1.55}
+                />
+              </span>
+            </label>
+          </div>
+
+          <div className="home-booking-field">
+            <span className="home-booking-field-icon">
+              <CalendarDays
+                size={18}
+                strokeWidth={1.55}
+              />
+            </span>
+
+            <label>
+              <small>GÖTÜRMƏ</small>
+
+              <span className="home-booking-date-wrap">
+                <strong>{formatDate(startDate)}</strong>
+
+                <input
+                  type="date"
+                  min={minStart}
+                  value={startDate}
+                  onChange={(event) => {
+                    const value = event.target.value;
+
+                    setStartDate(value);
+
+                    if (
+                      endDate &&
+                      value &&
+                      endDate <= value
+                    ) {
+                      const next = new Date(
+                        `${value}T12:00:00`
+                      );
+
+                      next.setDate(next.getDate() + 1);
+                      setEndDate(toLocalISO(next));
+                    }
+                  }}
+                  aria-label="Götürmə tarixi"
+                />
+              </span>
+            </label>
+          </div>
+
+          <div className="home-booking-field">
+            <span className="home-booking-field-icon">
+              <Clock3 size={18} strokeWidth={1.55} />
+            </span>
+
+            <label>
+              <small>QAYTARMA</small>
+
+              <span className="home-booking-date-wrap">
+                <strong>{formatDate(endDate)}</strong>
+
+                <input
+                  type="date"
+                  min={minEnd}
+                  value={endDate}
+                  onChange={(event) =>
+                    setEndDate(event.target.value)
+                  }
+                  aria-label="Qaytarma tarixi"
+                />
+              </span>
+            </label>
+          </div>
+
+          <div className="home-booking-field home-booking-pickup">
+            <span className="home-booking-field-icon">
+              <MapPin size={18} strokeWidth={1.55} />
+            </span>
+
+            <label>
+              <small>TƏHVİL</small>
+
+              <span className="home-booking-select-wrap">
+                <select
+                  value={pickup}
+                  onChange={(event) =>
+                    setPickup(
+                      event.target.value as
+                        | "office"
+                        | "delivery"
+                    )
+                  }
+                  aria-label="Təhvil üsulu"
+                >
+                  <option value="office">
+                    Carbon ofisi
+                  </option>
+
+                  <option value="delivery">
+                    Ünvanıma çatdırılma
+                  </option>
+                </select>
+
+                <ChevronDown
+                  size={15}
+                  strokeWidth={1.55}
+                />
+              </span>
+            </label>
+          </div>
+
+          <motion.a
+            className={`home-booking-submit ${
+              valid ? "is-ready" : ""
+            }`}
+            href={reservationHref}
+            onClick={(event) => {
+              if (!valid) {
+                event.preventDefault();
+
+                const select =
+                  document.querySelector<HTMLSelectElement>(
+                    ".home-booking-car select"
+                  );
+
+                select?.focus();
+              }
+            }}
+            whileHover={
+              valid
+                ? {
+                    y: -2,
+                  }
+                : {}
+            }
+            whileTap={
+              valid
+                ? {
+                    scale: 0.985,
+                  }
+                : {}
+            }
+          >
+            <span>
+              <small>
+                {valid
+                  ? `${duration} GÜN`
+                  : "DAVAM ET"}
+              </small>
+
+              <strong>
+                {valid
+                  ? "Rezervasiya et"
+                  : "Avtomobil seç"}
+              </strong>
+            </span>
+
+            <i>
+              <ArrowRight
+                size={18}
+                strokeWidth={1.7}
+              />
+            </i>
+          </motion.a>
+        </div>
+
+        <div className="home-booking-footer">
+          <div>
+            <ShieldCheck size={14} strokeWidth={1.55} />
+
+            <span>
+              Tam kasko
+              <b>·</b>
+              Şəffaf qiymət
+              <b>·</b>
+              24/7 dəstək
+            </span>
+          </div>
+
+          <span className="home-booking-selection">
+            {selectedCar ? (
+              <>
+                <i />
+                {selectedCar.title}
+              </>
+            ) : (
+              <>
+                <i />
+                Avtomobil gözlənilir
+              </>
+            )}
+          </span>
+        </div>
+      </motion.div>
+    </section>
+  );
+}

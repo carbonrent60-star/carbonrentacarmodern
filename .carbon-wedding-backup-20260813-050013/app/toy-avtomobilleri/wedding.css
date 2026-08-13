@@ -1,0 +1,1034 @@
+
+/* =========================================================
+   CARBON WEDDING — ROUTE LEVEL FOUNDATION
+   This file is imported directly by /toy-avtomobilleri.
+   ========================================================= */
+
+:root {
+  --carbon-brand: #931D4F;
+  --carbon-brand-rgb: 147, 29, 79;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.wedding-page,
+.wedding-detail-page {
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: #f3f2ee !important;
+  color: #111 !important;
+}
+
+.wedding-page *,
+.wedding-detail-page * {
+  box-sizing: border-box;
+}
+
+.wedding-page a,
+.wedding-detail-page a {
+  text-decoration: none;
+}
+
+.wedding-page button,
+.wedding-detail-page button,
+.wedding-page input,
+.wedding-detail-page input {
+  font: inherit;
+}
+
+.wedding-page img,
+.wedding-detail-page img {
+  max-width: 100%;
+}
+
+/* =========================================================
+   CARBON — WEDDING COLLECTION
+   ========================================================= */
+
+.wedding-page,
+.wedding-detail-page {
+  min-height: 100vh;
+  background: #f3f2ee;
+  color: #111;
+}
+
+.wedding-inner {
+  width: calc(100% - 96px);
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.wedding-nav {
+  width: 100%;
+  min-height: 84px;
+  padding: 0 48px;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  background: rgba(243,242,238,.94);
+  display: grid;
+  grid-template-columns: 210px 1fr 210px;
+  align-items: center;
+  position: relative;
+  z-index: 50;
+}
+
+.wedding-logo img {
+  width: 145px;
+  height: auto;
+  display: block;
+}
+
+.wedding-nav nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(20px, 2.5vw, 42px);
+}
+
+.wedding-nav nav a {
+  position: relative;
+  color: #777;
+  font-size: 10px;
+  transition: color 180ms ease;
+}
+
+.wedding-nav nav a:hover,
+.wedding-nav nav a.active {
+  color: #111;
+}
+
+.wedding-nav nav a.active::after {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--carbon-brand);
+  position: absolute;
+  left: 50%;
+  bottom: -11px;
+  transform: translateX(-50%);
+}
+
+.wedding-nav-cta {
+  min-height: 40px;
+  padding: 0 17px;
+  justify-self: end;
+  border: 1px solid rgba(0,0,0,.12);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #111;
+  font-size: 9px;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.wedding-nav-cta:hover {
+  background: #111;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.wedding-hero {
+  padding: 65px 0 105px;
+}
+
+.wedding-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 85px;
+  color: #777;
+  font-size: 9px;
+}
+
+.wedding-back:hover {
+  color: var(--carbon-brand);
+}
+
+.wedding-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1.5fr) minmax(260px,.5fr);
+  gap: 80px;
+  align-items: end;
+}
+
+.wedding-kicker,
+.wedding-section-top > div > span,
+.wedding-faq-heading > span {
+  display: block;
+  margin-bottom: 18px;
+  color: var(--carbon-brand);
+  font-size: 7px;
+  font-weight: 650;
+  letter-spacing: .16em;
+}
+
+.wedding-hero h1 {
+  max-width: 980px;
+  margin: 0;
+  font-size: clamp(64px,7.2vw,112px);
+  line-height: .88;
+  letter-spacing: -.068em;
+  font-weight: 500;
+}
+
+.wedding-hero h1 em,
+.wedding-info h2 em,
+.wedding-section-top h2 em,
+.wedding-faq-heading h2 em,
+.wedding-final h2 em {
+  color: #aaa;
+  font-style: normal;
+  font-weight: 300;
+}
+
+.wedding-hero-copy {
+  padding-bottom: 5px;
+}
+
+.wedding-hero-copy > p {
+  max-width: 330px;
+  margin: 0 0 38px;
+  color: #777;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.wedding-hero-copy > div {
+  padding-top: 22px;
+  border-top: 1px solid rgba(0,0,0,.13);
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.wedding-hero-copy > div span {
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: -.05em;
+}
+
+.wedding-hero-copy > div small {
+  padding-bottom: 3px;
+  color: #999;
+  font-size: 7px;
+  letter-spacing: .12em;
+}
+
+.wedding-catalog {
+  padding: 105px 0 125px;
+  background: #fff;
+}
+
+.wedding-section-top {
+  display: grid;
+  grid-template-columns: 1fr 330px;
+  gap: 50px;
+  align-items: end;
+  margin-bottom: 65px;
+}
+
+.wedding-section-top h2,
+.wedding-faq-heading h2 {
+  margin: 0;
+  font-size: clamp(45px,4.7vw,72px);
+  line-height: .95;
+  letter-spacing: -.055em;
+  font-weight: 500;
+}
+
+.wedding-section-top > p {
+  margin: 0;
+  color: #888;
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.wedding-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 14px;
+}
+
+.wedding-card {
+  min-height: 610px;
+  padding: 25px;
+  background: #f3f2ee;
+  color: #111;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition:
+    transform 300ms cubic-bezier(.22,1,.36,1),
+    box-shadow 300ms ease;
+}
+
+.wedding-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 25px 65px rgba(0,0,0,.08);
+}
+
+.wedding-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #aaa;
+  font-size: 7px;
+  letter-spacing: .1em;
+}
+
+.wedding-card-type {
+  padding: 7px 10px;
+  background: rgba(147,29,79,.08);
+  color: var(--carbon-brand);
+}
+
+.wedding-card-image {
+  height: 330px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wedding-card-image img {
+  width: 94%;
+  height: 82%;
+  position: relative;
+  z-index: 2;
+  object-fit: contain;
+  transition: transform 500ms cubic-bezier(.22,1,.36,1);
+  filter:
+    drop-shadow(0 24px 18px rgba(0,0,0,.11))
+    drop-shadow(0 5px 4px rgba(0,0,0,.05));
+}
+
+.wedding-card:hover .wedding-card-image img {
+  transform: scale(1.035) translateY(-3px);
+}
+
+.wedding-car-shadow {
+  width: 58%;
+  height: 7%;
+  position: absolute;
+  left: 50%;
+  bottom: 20%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(0,0,0,.13);
+  filter: blur(20px);
+}
+
+.wedding-card-content {
+  margin-top: auto;
+}
+
+.wedding-card-title {
+  padding: 21px 0;
+  border-top: 1px solid rgba(0,0,0,.1);
+  border-bottom: 1px solid rgba(0,0,0,.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wedding-card-title small {
+  display: block;
+  margin-bottom: 5px;
+  color: #999;
+  font-size: 7px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.wedding-card-title h3 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -.035em;
+  font-weight: 550;
+}
+
+.wedding-card-title svg {
+  color: var(--carbon-brand);
+  transition: transform 200ms ease;
+}
+
+.wedding-card:hover .wedding-card-title svg {
+  transform: translateX(4px);
+}
+
+.wedding-card-specs {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  color: #888;
+  font-size: 8px;
+}
+
+.wedding-card-specs span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wedding-card-price {
+  padding-top: 17px;
+  border-top: 1px solid rgba(0,0,0,.1);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.wedding-card-price span {
+  color: #999;
+  font-size: 8px;
+}
+
+.wedding-card-price strong {
+  font-size: 25px;
+  letter-spacing: -.04em;
+  font-weight: 600;
+}
+
+.wedding-info {
+  padding: 115px 0;
+  background: #171717;
+  color: white;
+}
+
+.wedding-info-grid {
+  display: grid;
+  grid-template-columns: 140px minmax(0,1fr) 330px;
+  gap: 50px;
+  align-items: start;
+}
+
+.wedding-info-grid > span {
+  padding-top: 8px;
+  color: #c97b9b;
+  font-size: 7px;
+  letter-spacing: .15em;
+}
+
+.wedding-info h2 {
+  max-width: 680px;
+  margin: 0;
+  font-size: clamp(50px,5vw,78px);
+  line-height: .95;
+  letter-spacing: -.06em;
+  font-weight: 500;
+}
+
+.wedding-info-grid > p {
+  margin: 8px 0 30px;
+  color: #999;
+  font-size: 10px;
+  line-height: 1.75;
+}
+
+.wedding-info-grid > a {
+  grid-column: 3;
+  min-height: 54px;
+  padding: 0 18px;
+  border: 1px solid #444;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  font-size: 9px;
+}
+
+
+/* WEDDING DETAIL */
+
+.wedding-detail-hero {
+  padding: 55px 0 110px;
+}
+
+.wedding-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1.15fr) minmax(390px,.85fr);
+  gap: clamp(50px,7vw,110px);
+  align-items: start;
+}
+
+.wedding-detail-visual {
+  min-width: 0;
+}
+
+.wedding-detail-meta {
+  display: flex;
+  justify-content: space-between;
+  color: #999;
+  font-size: 7px;
+  letter-spacing: .12em;
+}
+
+.wedding-detail-meta span:first-child {
+  color: var(--carbon-brand);
+}
+
+.wedding-detail-image {
+  height: 470px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.wedding-detail-image img {
+  width: 105%;
+  height: 90%;
+  position: relative;
+  z-index: 2;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 30px 23px rgba(0,0,0,.13))
+    drop-shadow(0 6px 5px rgba(0,0,0,.05));
+}
+
+.wedding-detail-specs {
+  padding: 18px 0;
+  border-top: 1px solid rgba(0,0,0,.12);
+  border-bottom: 1px solid rgba(0,0,0,.12);
+  display: flex;
+  gap: 27px;
+  flex-wrap: wrap;
+}
+
+.wedding-detail-specs span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #999;
+  font-size: 8px;
+}
+
+.wedding-detail-specs strong {
+  color: #222;
+  font-weight: 600;
+}
+
+.wedding-detail-summary {
+  padding-top: 5px;
+}
+
+.wedding-detail-summary h1 {
+  margin: 15px 0 20px;
+  font-size: clamp(52px,5.2vw,82px);
+  line-height: .92;
+  letter-spacing: -.065em;
+  font-weight: 500;
+}
+
+.wedding-detail-summary > p {
+  max-width: 430px;
+  margin: 0 0 38px;
+  color: #777;
+  font-size: 10px;
+  line-height: 1.75;
+}
+
+.wedding-price-panel {
+  padding: 25px 0;
+  border-top: 1px solid rgba(0,0,0,.12);
+  border-bottom: 1px solid rgba(0,0,0,.12);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.wedding-price-panel > span {
+  color: #999;
+  font-size: 8px;
+}
+
+.wedding-price-panel strong {
+  font-size: 35px;
+  letter-spacing: -.05em;
+  font-weight: 600;
+}
+
+.wedding-price-panel small {
+  margin-left: 6px;
+  color: #999;
+  font-size: 8px;
+}
+
+.wedding-includes {
+  padding: 17px 0;
+}
+
+.wedding-includes > div {
+  min-height: 63px;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.wedding-includes > div > svg {
+  color: var(--carbon-brand);
+}
+
+.wedding-includes span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #999;
+  font-size: 7px;
+}
+
+.wedding-includes strong {
+  color: #222;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.wedding-primary-cta {
+  min-height: 76px;
+  margin-top: 7px;
+  padding: 0 23px;
+  background: var(--carbon-brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    background 200ms ease;
+}
+
+.wedding-primary-cta:hover {
+  transform: translateY(-2px);
+  background: #821744;
+  box-shadow: 0 18px 45px rgba(147,29,79,.2);
+}
+
+.wedding-primary-cta > span {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.wedding-primary-cta small {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255,255,255,.6);
+  font-size: 7px;
+  font-weight: 400;
+}
+
+.wedding-experience {
+  padding: 110px 0 120px;
+  background: white;
+}
+
+.wedding-process-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  border-top: 1px solid #e6e6e3;
+  border-left: 1px solid #e6e6e3;
+}
+
+.wedding-process-grid > div {
+  min-height: 260px;
+  padding: 24px;
+  border-right: 1px solid #e6e6e3;
+  border-bottom: 1px solid #e6e6e3;
+  position: relative;
+}
+
+.wedding-process-grid > div > span {
+  color: #aaa;
+  font-size: 7px;
+}
+
+.wedding-process-grid svg {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  color: var(--carbon-brand);
+}
+
+.wedding-process-grid h3 {
+  margin: 110px 0 10px;
+  font-size: 15px;
+  font-weight: 550;
+}
+
+.wedding-process-grid p {
+  max-width: 220px;
+  margin: 0;
+  color: #999;
+  font-size: 8px;
+  line-height: 1.65;
+}
+
+.wedding-faq {
+  padding: 110px 0 120px;
+  background: #f3f2ee;
+}
+
+.wedding-faq-heading {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  margin-bottom: 55px;
+}
+
+.wedding-faq-list {
+  border-top: 1px solid rgba(0,0,0,.12);
+}
+
+.wedding-faq-item {
+  border-bottom: 1px solid rgba(0,0,0,.12);
+}
+
+.wedding-faq-item button {
+  width: 100%;
+  min-height: 90px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: grid;
+  grid-template-columns: 55px 1fr 45px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.wedding-faq-item button > span:first-child {
+  color: #aaa;
+  font-size: 7px;
+}
+
+.wedding-faq-item button strong {
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.wedding-faq-item button > span:last-child {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(0,0,0,.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--carbon-brand);
+}
+
+.wedding-faq-answer {
+  overflow: hidden;
+}
+
+.wedding-faq-answer p {
+  max-width: 760px;
+  padding: 0 55px 30px;
+  margin: 0;
+  color: #888;
+  font-size: 9px;
+  line-height: 1.75;
+}
+
+.wedding-related {
+  padding: 110px 0;
+  background: #fff;
+}
+
+.wedding-section-top > a {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #777;
+  font-size: 9px;
+}
+
+.wedding-related-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 14px;
+}
+
+.wedding-related-grid > a {
+  color: #111;
+}
+
+.wedding-related-grid > a > div {
+  height: 280px;
+  margin-bottom: 20px;
+  background: #f3f2ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.wedding-related-grid img {
+  width: 90%;
+  height: 80%;
+  object-fit: contain;
+  transition: transform 350ms ease;
+}
+
+.wedding-related-grid a:hover img {
+  transform: scale(1.035);
+}
+
+.wedding-related-grid small {
+  color: #999;
+  font-size: 7px;
+}
+
+.wedding-related-grid h3 {
+  margin: 5px 0 9px;
+  font-size: 18px;
+  font-weight: 550;
+}
+
+.wedding-related-grid p {
+  margin: 0;
+  font-size: 9px;
+}
+
+.wedding-related-grid p strong {
+  font-size: 14px;
+}
+
+.wedding-related-grid p span {
+  color: #999;
+}
+
+.wedding-final {
+  padding: 95px 0;
+  background: #171717;
+  color: #fff;
+}
+
+.wedding-final-inner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 50px;
+}
+
+.wedding-final-inner > div > svg {
+  margin-bottom: 25px;
+  color: #c97b9b;
+}
+
+.wedding-final h2 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(50px,5.5vw,82px);
+  line-height: .92;
+  letter-spacing: -.06em;
+  font-weight: 500;
+}
+
+.wedding-final-inner > a {
+  min-width: 170px;
+  min-height: 53px;
+  padding: 0 17px;
+  border: 1px solid #444;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+}
+
+
+@media (max-width: 1050px) {
+  .wedding-nav {
+    grid-template-columns: 170px 1fr 170px;
+    padding: 0 30px;
+  }
+
+  .wedding-nav nav {
+    gap: 17px;
+  }
+
+  .wedding-detail-grid {
+    grid-template-columns: 1fr 410px;
+    gap: 40px;
+  }
+
+  .wedding-detail-image {
+    height: 390px;
+  }
+
+  .wedding-process-grid {
+    grid-template-columns: repeat(2,1fr);
+  }
+}
+
+
+@media (max-width: 760px) {
+  .wedding-inner {
+    width: calc(100% - 36px);
+  }
+
+  .wedding-nav {
+    min-height: 72px;
+    padding: 0 18px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .wedding-nav nav {
+    display: none;
+  }
+
+  .wedding-logo img {
+    width: 125px;
+  }
+
+  .wedding-nav-cta {
+    min-height: 38px;
+    padding: 0 12px;
+  }
+
+  .wedding-hero {
+    padding: 42px 0 75px;
+  }
+
+  .wedding-back {
+    margin-bottom: 55px;
+  }
+
+  .wedding-hero-grid,
+  .wedding-section-top,
+  .wedding-info-grid,
+  .wedding-detail-grid,
+  .wedding-faq-heading {
+    display: block;
+  }
+
+  .wedding-hero h1 {
+    font-size: 58px;
+  }
+
+  .wedding-hero-copy {
+    margin-top: 40px;
+  }
+
+  .wedding-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wedding-card {
+    min-height: 500px;
+  }
+
+  .wedding-card-image {
+    height: 260px;
+  }
+
+  .wedding-catalog,
+  .wedding-experience,
+  .wedding-faq,
+  .wedding-related {
+    padding: 78px 0;
+  }
+
+  .wedding-section-top > p,
+  .wedding-section-top > a {
+    margin-top: 25px;
+  }
+
+  .wedding-info {
+    padding: 80px 0;
+  }
+
+  .wedding-info h2 {
+    margin-top: 25px;
+    font-size: 51px;
+  }
+
+  .wedding-info-grid > p {
+    margin-top: 30px;
+  }
+
+  .wedding-info-grid > a {
+    margin-top: 25px;
+  }
+
+  .wedding-detail-hero {
+    padding: 42px 0 75px;
+  }
+
+  .wedding-detail-image {
+    height: 320px;
+  }
+
+  .wedding-detail-summary {
+    margin-top: 55px;
+  }
+
+  .wedding-detail-summary h1 {
+    font-size: 55px;
+  }
+
+  .wedding-process-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wedding-process-grid > div {
+    min-height: 210px;
+  }
+
+  .wedding-process-grid h3 {
+    margin-top: 75px;
+  }
+
+  .wedding-faq-heading h2 {
+    font-size: 47px;
+  }
+
+  .wedding-faq-heading > span {
+    margin-bottom: 20px;
+  }
+
+  .wedding-faq-item button {
+    grid-template-columns: 35px 1fr 40px;
+    gap: 8px;
+  }
+
+  .wedding-faq-item button strong {
+    font-size: 10px;
+  }
+
+  .wedding-faq-answer p {
+    padding: 0 45px 25px 35px;
+  }
+
+  .wedding-related-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wedding-related-grid > a > div {
+    height: 330px;
+  }
+
+  .wedding-final-inner {
+    display: block;
+  }
+
+  .wedding-final h2 {
+    font-size: 49px;
+  }
+
+  .wedding-final-inner > a {
+    margin-top: 35px;
+  }
+}
