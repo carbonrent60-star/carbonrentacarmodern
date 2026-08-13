@@ -6,13 +6,15 @@ import {
   Phone,
 } from "lucide-react";
 import CarbonNavbar from "@/components/CarbonNavbar";
+import { createPageMetadata } from "@/lib/seo";
 import "../legal.css";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Şərtlər və Qaydalar | Carbon Rent A Car",
   description:
     "Carbon Rent A Car avtomobil kirayəsi, rezervasiya, ödəniş, depozit, sığorta və istifadə şərtləri.",
-};
+  path: "/sertler",
+});
 
 export default function TermsPage() {
   return (

@@ -8,17 +8,19 @@ import CarbonAutoTranslator from "@/components/CarbonAutoTranslator";
 import CarbonLanguageProvider, {
   type CarbonLocale,
 } from "@/components/CarbonLanguageProvider";
+import { createPageMetadata } from "@/lib/seo";
 
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Carbon Rent A Car | Avtomobil İcarəsi",
   description:
-    "Bakıda premium və rahat avtomobil icarəsi. Carbon Rent A Car ilə avtomobilinizi asanlıqla seçin.",
-};
+    "Bakıda premium və rahat avtomobil icarəsi. Carbon Rent A Car ilə gündəlik icarə, transfer və xüsusi gün avtomobillərini rahat seçin.",
+  path: "/",
+});
 
 const locales: CarbonLocale[] = ["az", "en", "ru"];
 

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { getCarForSite } from "@/lib/supabase/cars";
+import { createPageMetadata } from "@/lib/seo";
 import ReservationCheckout from "./ReservationCheckout";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Rezervasiya | Carbon Rent A Car",
   description:
     "Carbon avtomobil rezervasiyasını tamamlayın. Tarixləri, təhvil üsulunu və əlaqə məlumatlarınızı yoxlayın.",
-};
+  path: "/rezervasiya",
+});
 
 type Search = {
   car?: string | string[];

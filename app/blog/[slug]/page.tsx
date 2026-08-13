@@ -9,6 +9,7 @@ import {
   getBlogPostsForSite,
   getRelatedBlogPostsForSite,
 } from "@/lib/supabase/blogs";
+import { createPageMetadata } from "@/lib/seo";
 import BlogArticleClient from "./BlogArticleClient";
 import "../blog.css";
 
@@ -27,20 +28,22 @@ export async function generateMetadata({
   const post = await getBlogPostForSite(slug);
 
   if (!post) {
-    return {
+    return createPageMetadata({
       title: "Məqalə tapılmadı | Carbon Rent A Car",
-    };
+      description:
+        "Axtardığınız Carbon məqaləsi tapılmadı. Avtomobil icarəsi və səyahət bələdçiləri üçün blog səhifəsinə baxın.",
+      path: "/blog",
+      type: "article",
+    });
   }
 
-  return {
+  return createPageMetadata({
     title: `${post.title} | Carbon Rent A Car`,
     description: post.description,
-    openGraph: {
-      title: post.title,
-      description: post.description,
-      images: [post.image],
-    },
-  };
+    path: `/blog/${post.slug}`,
+    image: post.image,
+    type: "article",
+  });
 }
 
 export default async function BlogArticlePage({

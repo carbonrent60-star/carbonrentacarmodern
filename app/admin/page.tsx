@@ -40,6 +40,7 @@ import {
   rentalPriceKeys,
   transferPriceKeys,
 } from "@/lib/supabase/cars";
+import { createPageMetadata } from "@/lib/seo";
 import type { Car } from "@/data/cars";
 import type { AdminBlogPost } from "@/lib/supabase/blogs";
 
@@ -50,9 +51,13 @@ type AdminCar = Car & {
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Carbon İdarə Paneli",
-};
+  description:
+    "Carbon Rent A Car idarə paneli. Avtomobillər, şəkillər, qiymətlər və blog məzmunu üçün məxfi idarəetmə sahəsi.",
+  path: "/admin",
+  noIndex: true,
+});
 
 const rentalPriceLabels: Record<(typeof rentalPriceKeys)[number], string> = {
   days1to3: "1-3 gün",
