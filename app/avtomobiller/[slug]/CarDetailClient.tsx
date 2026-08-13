@@ -46,6 +46,7 @@ import {
 import {
   type Car,
   getShortTermPrice,
+  getTransferStartingPrice,
 } from "@/data/cars";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -57,6 +58,18 @@ const pricingTiers = [
   { key: "days16to24", label: "16–24 gün", min: 16, max: 24 },
   { key: "days25to30", label: "25–30 gün", min: 25, max: 30 },
   { key: "days30plus", label: "30+ gün", min: 31, max: Infinity },
+] as const;
+
+const transferRoutes = [
+  ["baku", "Airport / Bakı"],
+  ["seaBreeze", "Sea Breeze"],
+  ["qabala", "Qəbələ"],
+  ["ismayilli", "İsmayıllı"],
+  ["quba", "Quba"],
+  ["shamaxi", "Şamaxı"],
+  ["shaki", "Şəki"],
+  ["shusha", "Şuşa"],
+  ["lankaran", "Lənkəran"],
 ] as const;
 
 const pickupOptions = [
@@ -537,7 +550,9 @@ export default function CarDetailClient({
     [1, 0.96],
   );
 
-  const startingPrice = getShortTermPrice(car);
+  const startingPrice = car.transferAvailable
+    ? getTransferStartingPrice(car)
+    : getShortTermPrice(car);
 
   const specs = [
     {
@@ -560,6 +575,11 @@ export default function CarDetailClient({
       icon: Gauge,
       label: t.engine,
       value: car.engine ?? "—",
+    },
+    {
+      icon: CalendarDays,
+      label: "İl",
+      value: car.manufactureYear ? String(car.manufactureYear) : "—",
     },
     {
       icon: Luggage,
@@ -744,88 +764,160 @@ export default function CarDetailClient({
 
       <section className="carbon-price-experience">
         <div className="carbon-detail-container">
-          <motion.div
-            className="carbon-section-head-v3"
-            initial={{ opacity: 0, y: 25 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.35 }}
-            transition={{ duration: 0.7, ease }}
-          >
-            <div>
-              <span>FLEXIBLE RATE</span>
+          {car.transferAvailable ? (
+            <>
+              <motion.div
+                className="carbon-section-head-v3"
+                initial={{ opacity: 0, y: 25 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.35 }}
+                transition={{ duration: 0.7, ease }}
+              >
+                <div>
+                  <span>TRANSFER RATE</span>
 
-              <h2>
-                Daha uzun sürün.
-                <br />
-                <em>Daha yaxşı qiymət.</em>
-              </h2>
-            </div>
+                  <h2>
+                    Marşrutu seçin.
+                    <br />
+                    <em>Qiyməti görün.</em>
+                  </h2>
+                </div>
 
-            <p>
-              Günlük qiymət icarə müddətinə uyğun avtomatik
-              dəyişir. Aşağıdakı tariflər bu avtomobilin real
-              Carbon qiymət cədvəlindən götürülür.
-            </p>
-          </motion.div>
+                <p>
+                  Bu avtomobil transfer üçün aktivdir. Günlük
+                  icarə tarifləri əvəzinə marşrut üzrə transfer
+                  qiymətləri göstərilir.
+                </p>
+              </motion.div>
 
-          <div className="carbon-rate-grid">
-            {pricingTiers.map((tier, index) => {
-              const price = car.rentalPrices[tier.key];
-              const best =
-                price !== null &&
-                availableTiers.length > 0 &&
-                price ===
-                  Math.min(
-                    ...availableTiers.map(
-                      (item) =>
-                        car.rentalPrices[item.key] as number,
-                    ),
-                  );
+              <div className="carbon-rate-grid">
+                {transferRoutes.map(([key, label], index) => {
+                  const price = car.transferPrices[key];
 
-              return (
-                <motion.div
-                  key={tier.key}
-                  className={`carbon-rate-card ${
-                    best ? "best" : ""
-                  }`}
-                  initial={{ opacity: 0, y: 25 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{
-                    duration: 0.55,
-                    delay: index * 0.055,
-                    ease,
-                  }}
-                >
-                  <div className="carbon-rate-card-top">
-                    <span>
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-
-                    {best && <small>{t.bestRate}</small>}
-                  </div>
-
-                  <strong>{formatTierLabel(tier)}</strong>
-
-                  <div className="carbon-rate-value">
-                    {price !== null ? (
-                      <>
-                        <b>{price}</b>
+                  return (
+                    <motion.div
+                      key={key}
+                      className="carbon-rate-card"
+                      initial={{ opacity: 0, y: 25 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{
+                        duration: 0.55,
+                        delay: index * 0.055,
+                        ease,
+                      }}
+                    >
+                      <div className="carbon-rate-card-top">
                         <span>
-                          ₼
-                          <small>/ {t.day}</small>
+                          {String(index + 1).padStart(2, "0")}
                         </span>
-                      </>
-                    ) : (
-                      <b className="carbon-rate-na">—</b>
-                    )}
-                  </div>
+                      </div>
 
-                  <div className="carbon-rate-line" />
-                </motion.div>
-              );
-            })}
-          </div>
+                      <strong>{label}</strong>
+
+                      <div className="carbon-rate-value">
+                        {price !== null ? (
+                          <>
+                            <b>{price}</b>
+                            <span>₼</span>
+                          </>
+                        ) : (
+                          <b className="carbon-rate-na">—</b>
+                        )}
+                      </div>
+
+                      <div className="carbon-rate-line" />
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <>
+              <motion.div
+                className="carbon-section-head-v3"
+                initial={{ opacity: 0, y: 25 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.35 }}
+                transition={{ duration: 0.7, ease }}
+              >
+                <div>
+                  <span>FLEXIBLE RATE</span>
+
+                  <h2>
+                    Daha uzun sürün.
+                    <br />
+                    <em>Daha yaxşı qiymət.</em>
+                  </h2>
+                </div>
+
+                <p>
+                  Günlük qiymət icarə müddətinə uyğun avtomatik
+                  dəyişir. Aşağıdakı tariflər bu avtomobilin real
+                  Carbon qiymət cədvəlindən götürülür.
+                </p>
+              </motion.div>
+
+              <div className="carbon-rate-grid">
+                {pricingTiers.map((tier, index) => {
+                  const price = car.rentalPrices[tier.key];
+                  const best =
+                    price !== null &&
+                    availableTiers.length > 0 &&
+                    price ===
+                      Math.min(
+                        ...availableTiers.map(
+                          (item) =>
+                            car.rentalPrices[item.key] as number,
+                        ),
+                      );
+
+                  return (
+                    <motion.div
+                      key={tier.key}
+                      className={`carbon-rate-card ${
+                        best ? "best" : ""
+                      }`}
+                      initial={{ opacity: 0, y: 25 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{
+                        duration: 0.55,
+                        delay: index * 0.055,
+                        ease,
+                      }}
+                    >
+                      <div className="carbon-rate-card-top">
+                        <span>
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+
+                        {best && <small>{t.bestRate}</small>}
+                      </div>
+
+                      <strong>{formatTierLabel(tier)}</strong>
+
+                      <div className="carbon-rate-value">
+                        {price !== null ? (
+                          <>
+                            <b>{price}</b>
+                            <span>
+                              ₼
+                              <small>/ {t.day}</small>
+                            </span>
+                          </>
+                        ) : (
+                          <b className="carbon-rate-na">—</b>
+                        )}
+                      </div>
+
+                      <div className="carbon-rate-line" />
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -1014,7 +1106,9 @@ export default function CarDetailClient({
 
             <div className="carbon-related-grid-v3">
               {relatedCars.map((item, index) => {
-                const price = getShortTermPrice(item);
+                const price = item.transferAvailable
+                  ? getTransferStartingPrice(item)
+                  : getShortTermPrice(item);
 
                 return (
                   <motion.article
@@ -1061,7 +1155,9 @@ export default function CarDetailClient({
                         {price !== null ? (
                           <>
                             <strong>{price} ₼</strong>
-                            <span>/ {t.day}</span>
+                            <span>
+                              {item.transferAvailable ? " Transfer" : `/ ${t.day}`}
+                            </span>
                           </>
                         ) : (
                           <span>{t.byRequest}</span>
@@ -1082,7 +1178,7 @@ export default function CarDetailClient({
 
           <strong>
             {startingPrice !== null
-              ? `${startingPrice} ₼ / ${t.day}`
+              ? `${startingPrice} ₼${car.transferAvailable ? " transfer" : ` / ${t.day}`}`
               : t.byRequest}
           </strong>
         </div>

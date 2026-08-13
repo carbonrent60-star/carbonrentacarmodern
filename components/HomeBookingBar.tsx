@@ -1093,27 +1093,6 @@ export default function HomeBookingBar() {
           ease,
         }}
       >
-        <div className="home-booking-topline">
-          <div className="home-booking-topline-left">
-            <span className="home-booking-live">
-              <i />
-              {copy.bookingBar.reservation}
-            </span>
-
-            <span className="home-booking-separator" />
-
-            <span className="home-booking-status">
-              <Check size={12} strokeWidth={2} />
-              {copy.bookingBar.systemActive}
-            </span>
-          </div>
-
-          <div className="home-booking-index">
-            <span>CARBON</span>
-            <strong>01</strong>
-          </div>
-        </div>
-
         <div className="home-booking-heading">
           <div>
             <span className="home-booking-eyebrow">
@@ -1365,6 +1344,7 @@ export default function HomeBookingBar() {
             )}
           </span>
         </div>
+
       </motion.div>
 
       <CarPicker

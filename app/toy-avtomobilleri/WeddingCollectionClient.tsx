@@ -270,7 +270,7 @@ export default function WeddingCollectionClient() {
                     <div className="wedding-car-shadow" />
 
                     <motion.img
-                      src={car.thumbnail}
+                      src={car.weddingThumbnail ?? car.thumbnail}
                       alt={car.title}
                       initial={{
                         scale: 0.94,

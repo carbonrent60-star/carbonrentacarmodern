@@ -95,6 +95,7 @@ export function carStartingPrice(car: Car) {
 export function carSpecsDescription(car: Car, context = "icarə") {
   const specs = compactList([
     car.category,
+    car.manufactureYear ? `${car.manufactureYear} il` : null,
     car.seats ? `${car.seats} yer` : null,
     car.transmission,
     car.fuel,

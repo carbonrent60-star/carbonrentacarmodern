@@ -12,6 +12,7 @@ export type Car = {
   brand: string;
   title: string;
   category: CarCategory;
+  manufactureYear?: number | null;
 
   seats: number | null;
   baggage: number | null;
@@ -1225,4 +1226,3 @@ export function getTransferStartingPrice(car: Car) {
 
   return prices.length ? Math.min(...prices) : null;
 }
-

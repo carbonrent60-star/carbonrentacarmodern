@@ -12,6 +12,7 @@ import {
 import {
   ArrowRight,
   ArrowUpDown,
+  CalendarDays,
   CarFront,
   Check,
   ChevronDown,
@@ -56,22 +57,29 @@ const categories: CategoryFilter[] = [
 const ease = [0.22, 1, 0.36, 1] as const;
 
 function getPrice(car: Car) {
-  const prices = [
-    car.rentalPrices.days1to3,
-    car.rentalPrices.days4to7,
-    car.rentalPrices.days8to15,
-    car.rentalPrices.days16to24,
-    car.rentalPrices.days25to30,
-    car.rentalPrices.days30plus,
-  ].filter(
-    (price): price is number =>
-      typeof price === "number",
+  const source = car.transferAvailable ? car.transferPrices : car.rentalPrices;
+  const prices = Object.values(source).filter(
+    (price): price is number => typeof price === "number",
   );
 
   return prices.length ? Math.min(...prices) : null;
 }
 
 function getDisplayPrice(car: Car) {
+  if (car.transferAvailable) {
+    return (
+      car.transferPrices.baku ??
+      car.transferPrices.seaBreeze ??
+      car.transferPrices.qabala ??
+      car.transferPrices.ismayilli ??
+      car.transferPrices.quba ??
+      car.transferPrices.shamaxi ??
+      car.transferPrices.shaki ??
+      car.transferPrices.shusha ??
+      car.transferPrices.lankaran
+    );
+  }
+
   return (
     car.rentalPrices.days1to3 ??
     car.rentalPrices.days4to7 ??
@@ -129,53 +137,58 @@ export default function CarsClient() {
     };
   }, []);
 
-  const brands = useMemo(
-    () => Array.from(new Set(siteCars.map((car) => car.brand))).sort(),
+  const visibleCars = useMemo(
+    () => siteCars.filter((car) => car.rentalVisible !== false),
     [siteCars]
+  );
+
+  const brands = useMemo(
+    () => Array.from(new Set(visibleCars.map((car) => car.brand))).sort(),
+    [visibleCars]
   );
 
   const transmissions = useMemo(
     () =>
       Array.from(
-        new Set(siteCars.map((car) => car.transmission).filter(Boolean))
+        new Set(visibleCars.map((car) => car.transmission).filter(Boolean))
       ).sort(),
-    [siteCars]
+    [visibleCars]
   );
 
   const fuels = useMemo(
     () =>
-      Array.from(new Set(siteCars.map((car) => car.fuel).filter(Boolean))).sort(),
-    [siteCars]
+      Array.from(new Set(visibleCars.map((car) => car.fuel).filter(Boolean))).sort(),
+    [visibleCars]
   );
 
   const engines = useMemo(
     () =>
-      Array.from(new Set(siteCars.map((car) => car.engine).filter(Boolean))).sort(),
-    [siteCars]
+      Array.from(new Set(visibleCars.map((car) => car.engine).filter(Boolean))).sort(),
+    [visibleCars]
   );
 
   const seatOptions = useMemo(
     () =>
       Array.from(
         new Set(
-          siteCars
+          visibleCars
             .map((car) => car.seats)
             .filter((value): value is number => typeof value === "number")
         )
       ).sort((a, b) => a - b),
-    [siteCars]
+    [visibleCars]
   );
 
   const baggageOptions = useMemo(
     () =>
       Array.from(
         new Set(
-          siteCars
+          visibleCars
             .map((car) => car.baggage)
             .filter((value): value is number => typeof value === "number")
         )
       ).sort((a, b) => a - b),
-    [siteCars]
+    [visibleCars]
   );
 
   const filteredCars = useMemo(() => {
@@ -183,7 +196,7 @@ export default function CarsClient() {
       .trim()
       .toLocaleLowerCase("az");
 
-    const result = siteCars.filter((car) => {
+    const result = visibleCars.filter((car) => {
       const matchesSearch =
         !query ||
         car.title
@@ -289,7 +302,7 @@ export default function CarsClient() {
     transferOnly,
     weddingOnly,
     sort,
-    siteCars,
+    visibleCars,
   ]);
 
   const activeFilterCount =
@@ -306,18 +319,18 @@ export default function CarsClient() {
 
   const smallBaggageOptions = Array.from(
     new Set(
-      siteCars
+      visibleCars
         .map((car) => car.smallBaggage)
         .filter((value): value is number => typeof value === "number"),
     ),
   ).sort((a, b) => a - b);
 
-  const transferCount = siteCars.filter(
+  const transferCount = visibleCars.filter(
     (car) => car.transferAvailable,
   ).length;
 
   const categoryCount = new Set(
-    siteCars.map((car) => car.category),
+    visibleCars.map((car) => car.category),
   ).size;
 
   function clearFilters() {
@@ -1188,11 +1201,9 @@ export default function CarsClient() {
                     const price =
                       getDisplayPrice(car);
 
-                    const href =
-                      category === "TRANSFER" ||
-                      transferOnly
-                        ? `/transfer/${car.slug}`
-                        : `/avtomobiller/${car.slug}`;
+                    const href = car.transferAvailable
+                      ? `/transfer/${car.slug}`
+                      : `/avtomobiller/${car.slug}`;
 
                     return (
                       <motion.article
@@ -1331,7 +1342,9 @@ export default function CarsClient() {
                                       {price} ₼
                                     </strong>
                                     <span>
-                                      {copy.carsPage.perDay}
+                                      {car.transferAvailable
+                                        ? copy.car.transfer
+                                        : copy.carsPage.perDay}
                                     </span>
                                   </>
                                 ) : (
@@ -1359,6 +1372,15 @@ export default function CarsClient() {
                                 />
                                 {translateCarValue(car.fuel, locale)}
                               </span>
+
+                              {car.manufactureYear && (
+                                <span>
+                                  <CalendarDays
+                                    size={13}
+                                  />
+                                  {car.manufactureYear}
+                                </span>
+                              )}
 
                               <span>
                                 <Settings2

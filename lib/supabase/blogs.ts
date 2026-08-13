@@ -25,6 +25,24 @@ export type AdminBlogPost = BlogPost & {
   isActive?: boolean;
 };
 
+function cleanBlogSections(sections: BlogPost["sections"]) {
+  return (sections ?? []).map((section) => {
+    const cleaned: BlogPost["sections"][number] = {
+      paragraphs: (section.paragraphs ?? []).filter(Boolean),
+    };
+
+    if (section.heading) {
+      cleaned.heading = section.heading;
+    }
+
+    if (section.quote) {
+      cleaned.quote = section.quote;
+    }
+
+    return cleaned;
+  });
+}
+
 export function rowToBlogPost(row: BlogRow): AdminBlogPost {
   return {
     slug: row.slug,
@@ -55,7 +73,7 @@ export function blogPostToRow(post: AdminBlogPost, sortOrder = 0): BlogRow {
     reading_time: post.readingTime,
     eyebrow: post.eyebrow,
     intro: post.intro,
-    sections: post.sections,
+    sections: cleanBlogSections(post.sections),
     sort_order: sortOrder,
     is_active: post.isActive ?? true,
   };

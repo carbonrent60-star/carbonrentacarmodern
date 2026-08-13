@@ -59,6 +59,7 @@ export default async function CarPage({
     .filter(
       (item) =>
         item.slug !== car.slug &&
+        item.rentalVisible !== false &&
         (item.category === car.category || item.brand === car.brand)
     )
     .slice(0, 3);

@@ -43,6 +43,7 @@ import {
 import { createPageMetadata } from "@/lib/seo";
 import type { Car } from "@/data/cars";
 import type { AdminBlogPost } from "@/lib/supabase/blogs";
+import AdminImageField from "./AdminImageField";
 
 type AdminCar = Car & {
   isActive?: boolean;
@@ -100,6 +101,8 @@ const adminErrorMessages: Record<string, string> = {
   "required-fields-missing": "Model adı, URL adı və brend sahələri mütləq doldurulmalıdır.",
   "image-required": "Avtomobil üçün əsas şəkil URL əlavə edin və ya şəkil yükləyin.",
   "blog-body-required": "Məqalə mətni boş ola bilməz.",
+  "blog-table-missing":
+    "Supabase-də blog_posts cədvəli yaradılmayıb. supabase/migrations içindəki blog cədvəli SQL-ni Supabase SQL Editor-da bir dəfə işlədin.",
   "database-save-failed": "Məlumat bazaya yazılmadı. Supabase cədvəlini və açarları yoxlayın.",
   "database-delete-failed": "Avtomobil silinmədi. Supabase bağlantısını yoxlayın.",
   "unknown-error": "Gözlənilməyən xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.",
@@ -307,16 +310,13 @@ function CarForm({
 
           <FormSection eyebrow="03 / ŞƏKİLLƏR" title="Saytda istifadə olunan şəkillər" icon={<ImageUp size={18} />}>
             <div className="admin-media-grid">
-              <Field label="Əsas şəkil URL" name="thumbnail" defaultValue={thumbnail} />
-              <label className="admin-field admin-file-field">
-                <span>Əsas şəkil yüklə</span>
-                <span className="admin-file-control">
-                  <ImageUp size={16} />
-                  Fayl seç
-                  <small>PNG, JPG, WEBP · 50 MB</small>
-                </span>
-                <input name="imageFile" type="file" accept="image/*" />
-              </label>
+              <AdminImageField
+                label="Əsas şəkil"
+                name="thumbnail"
+                fileName="imageFile"
+                defaultValue={thumbnail}
+                title={title || "Avtomobil şəkli"}
+              />
               <Field
                 label="Toy şəkli URL"
                 name="weddingThumbnail"
@@ -520,7 +520,14 @@ function BlogForm({
 
           <FormSection eyebrow="03 / MEDİA" title="Blog şəkilləri və görünürlük" icon={<ImageUp size={18} />}>
             <div className="admin-blog-copy-grid admin-blog-media-grid">
-              <Field label="Əsas şəkil URL" name="blogImage" defaultValue={cover} />
+              <AdminImageField
+                label="Blog örtük şəkli"
+                name="blogImage"
+                fileName="blogImageFile"
+                defaultValue={cover}
+                title={blog?.title || "Blog şəkli"}
+                ratio="cover"
+              />
               <label className="admin-field admin-field-span">
                 <span>Əlavə şəkillər</span>
                 <textarea
@@ -651,18 +658,31 @@ export default async function AdminPage({
       <header className="admin-header">
         <div>
           <p>CARBON İDARƏ</p>
-          <h1>Park idarəsi.</h1>
+          <h1>İdarə paneli</h1>
+          <span className="admin-header-copy">
+            Avtomobil parkı, transfer ayarları, toy kolleksiyası, şəkillər və blog məzmunu üçün sadə idarəetmə mərkəzi.
+          </span>
           <div className="admin-source-pill">
             <Database size={14} />
             Mənbə: {result.source === "supabase" ? "Supabase" : "lokal ehtiyat"}
           </div>
         </div>
-        <form action={logoutAction}>
-          <button type="submit" className="admin-ghost-button">
-            <LogOut size={16} />
-            Çıxış
-          </button>
-        </form>
+        <aside className="admin-command-card">
+          <span>
+            <i />
+            Sistem aktivdir
+          </span>
+          <strong>Carbon əməliyyat masası</strong>
+          <p>
+            Şəkil seçin, önizləməyə baxın, məlumatları yoxlayın və yalnız sonra yadda saxlayın.
+          </p>
+          <form action={logoutAction}>
+            <button type="submit" className="admin-ghost-button">
+              <LogOut size={16} />
+              Çıxış
+            </button>
+          </form>
+        </aside>
       </header>
 
       {errorMessage ? <div className="admin-alert">{errorMessage}</div> : null}

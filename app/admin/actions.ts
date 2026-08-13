@@ -37,6 +37,13 @@ function normalizeAdminError(error: unknown) {
   return "unknown-error";
 }
 
+function isMissingSupabaseTable(error: { code?: string; message?: string }) {
+  return (
+    error.code === "PGRST205" ||
+    error.message?.toLowerCase().includes("could not find the table")
+  );
+}
+
 function createAdminToken() {
   const config = getAdminAuthConfig();
 
@@ -117,8 +124,13 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-async function getUploadedImageUrl(formData: FormData, slug: string) {
-  const file = formData.get("imageFile");
+async function getUploadedImageUrl(
+  formData: FormData,
+  fileKey: string,
+  folder: string,
+  slug: string
+) {
+  const file = formData.get(fileKey);
 
   if (!(file instanceof File) || file.size === 0) {
     return null;
@@ -131,7 +143,8 @@ async function getUploadedImageUrl(formData: FormData, slug: string) {
   const supabase = requireAdminConfig();
   const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
   const cleanExtension = extension.replace(/[^a-z0-9]/g, "") || "jpg";
-  const filePath = `cars/${slug}-${Date.now()}.${cleanExtension}`;
+  const cleanFolder = folder.replace(/[^a-z0-9-]/g, "") || "uploads";
+  const filePath = `${cleanFolder}/${slug}-${Date.now()}.${cleanExtension}`;
   const { error } = await supabase.storage
     .from(carImageBucket)
     .upload(filePath, file, {
@@ -196,15 +209,16 @@ function readBlogFromForm(formData: FormData): AdminBlogPost {
   const slug = text(formData, "blogSlug") || slugify(title);
   const body = text(formData, "blogBody");
   const quote = optionalText(formData, "blogQuote");
+  const sectionHeading = optionalText(formData, "blogSectionHeading");
   const imageList = text(formData, "blogImages")
     .split(/\r?\n|,/)
     .map((item) => item.trim())
     .filter(Boolean);
   const section = {
-    heading: optionalText(formData, "blogSectionHeading") ?? undefined,
     paragraphs: paragraphsFromText(body),
-    quote: quote ?? undefined,
-  };
+    ...(sectionHeading ? { heading: sectionHeading } : {}),
+    ...(quote ? { quote } : {}),
+  } satisfies BlogPost["sections"][number];
 
   return {
     slug,
@@ -394,6 +408,11 @@ export async function seedBlogsAction() {
     });
 
     if (error) {
+      console.error("seedBlogsAction failed", error);
+      if (isMissingSupabaseTable(error)) {
+        throw new Error("blog-table-missing");
+      }
+
       throw new Error("database-save-failed");
     }
   } catch (error) {
@@ -420,7 +439,12 @@ export async function saveCarAction(formData: FormData) {
       throw new Error("required-fields-missing");
     }
 
-    const uploadedUrl = await getUploadedImageUrl(formData, car.slug);
+    const uploadedUrl = await getUploadedImageUrl(
+      formData,
+      "imageFile",
+      "cars",
+      car.slug
+    );
     const thumbnail = uploadedUrl ?? car.thumbnail;
 
     if (!thumbnail) {
@@ -443,6 +467,7 @@ export async function saveCarAction(formData: FormData) {
     });
 
     if (error) {
+      console.error("saveCarAction failed", error);
       throw new Error("database-save-failed");
     }
   } catch (error) {
@@ -469,22 +494,41 @@ export async function saveBlogAction(formData: FormData) {
     const blog = readBlogFromForm(formData);
     savedSlug = blog.slug;
 
-    if (!blog.title || !blog.slug || !blog.image || !blog.intro) {
+    const uploadedUrl = await getUploadedImageUrl(
+      formData,
+      "blogImageFile",
+      "blogs",
+      blog.slug
+    );
+    const blogWithImage = {
+      ...blog,
+      image: uploadedUrl ?? blog.image,
+    };
+
+    if (
+      !blogWithImage.title ||
+      !blogWithImage.slug ||
+      !blogWithImage.image ||
+      !blogWithImage.intro
+    ) {
       throw new Error("required-fields-missing");
     }
 
-    if (!blog.sections[0]?.paragraphs.length) {
+    if (!blogWithImage.sections[0]?.paragraphs.length) {
       throw new Error("blog-body-required");
     }
 
-    const { error } = await supabase.from("blog_posts").upsert(
-      blogPostToRow(blog, blog.sortOrder ?? 0),
-      {
-        onConflict: "slug",
-      }
-    );
+    const blogRow = blogPostToRow(blogWithImage, blogWithImage.sortOrder ?? 0);
+    const { error } = await supabase.from("blog_posts").upsert(blogRow, {
+      onConflict: "slug",
+    });
 
     if (error) {
+      console.error("saveBlogAction failed", error);
+      if (isMissingSupabaseTable(error)) {
+        throw new Error("blog-table-missing");
+      }
+
       throw new Error("database-save-failed");
     }
   } catch (error) {

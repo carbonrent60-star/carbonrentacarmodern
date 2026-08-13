@@ -49,6 +49,13 @@ function normalizeCategory(category: string): CarCategory {
     : "Econom";
 }
 
+function inferManufactureYear(slug: string, title: string) {
+  const match = `${slug} ${title}`.match(/\b(19\d{2}|20\d{2})\b/);
+  const year = match ? Number(match[1]) : null;
+
+  return year && year >= 1990 && year <= 2035 ? year : null;
+}
+
 export function rowToCar(row: CarRow): Car {
   const transferPrices = readObject(row.transfer_prices);
   const rentalPrices = readObject(row.rental_prices);
@@ -59,6 +66,7 @@ export function rowToCar(row: CarRow): Car {
     brand: row.brand,
     title: row.title,
     category: normalizeCategory(row.category),
+    manufactureYear: inferManufactureYear(row.slug, row.title),
     seats: row.seats,
     baggage: row.baggage,
     smallBaggage: row.small_baggage,

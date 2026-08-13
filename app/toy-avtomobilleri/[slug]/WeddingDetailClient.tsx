@@ -240,7 +240,10 @@ export default function WeddingDetailClient({
 
               <div className="wedding-detail-image">
                 <div className="wedding-car-shadow" />
-                <img src={car.thumbnail} alt={car.title} />
+                <img
+                  src={car.weddingThumbnail ?? car.thumbnail}
+                  alt={car.title}
+                />
               </div>
 
               <div className="wedding-detail-specs">
@@ -468,7 +471,7 @@ export default function WeddingDetailClient({
                 >
                   <div>
                     <img
-                      src={item.thumbnail}
+                      src={item.weddingThumbnail ?? item.thumbnail}
                       alt={item.title}
                     />
                   </div>
