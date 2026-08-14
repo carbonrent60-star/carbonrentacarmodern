@@ -20,6 +20,7 @@ import {
   transferPriceKeys,
 } from "@/lib/supabase/cars";
 import { getAdminAuthConfig, getSupabaseAdminConfig } from "@/lib/supabase/config";
+import type { CarRow } from "@/lib/supabase/database.types";
 
 const adminCookieName = "carbon_admin";
 const carImageBucket = "carbon-car-images";
@@ -35,6 +36,50 @@ function normalizeAdminError(error: unknown) {
   }
 
   return "unknown-error";
+}
+
+function isMissingManufactureYearColumn(error: { code?: string; message?: string }) {
+  const message = error.message?.toLowerCase() ?? "";
+
+  return (
+    error.code === "PGRST204" ||
+    message.includes("manufacture_year") ||
+    message.includes("schema cache")
+  );
+}
+
+function withoutManufactureYear(row: CarRow) {
+  const compatibleRow = { ...row } as Partial<CarRow>;
+  delete compatibleRow.manufacture_year;
+
+  return compatibleRow;
+}
+
+async function upsertCarRows(
+  supabase: ReturnType<typeof requireAdminConfig>,
+  rows: CarRow | CarRow[]
+) {
+  const { error } = await supabase.from("cars").upsert(rows, {
+    onConflict: "id",
+  });
+
+  if (!error) {
+    return null;
+  }
+
+  if (!isMissingManufactureYearColumn(error)) {
+    return error;
+  }
+
+  const compatibleRows = Array.isArray(rows)
+    ? rows.map((row) => withoutManufactureYear(row))
+    : withoutManufactureYear(rows);
+
+  const retry = await supabase.from("cars").upsert(compatibleRows, {
+    onConflict: "id",
+  });
+
+  return retry.error;
 }
 
 function isMissingSupabaseTable(error: { code?: string; message?: string }) {
@@ -371,9 +416,7 @@ export async function seedCarsAction() {
   try {
     const supabase = requireAdminConfig();
     const rows = localCars.map((car, index) => carToRow(car, index + 1));
-    const { error } = await supabase.from("cars").upsert(rows, {
-      onConflict: "id",
-    });
+    const error = await upsertCarRows(supabase, rows);
 
     if (error) {
       throw new Error("database-save-failed");
@@ -471,9 +514,7 @@ export async function saveCarAction(formData: FormData) {
       is_active: car.isActive,
     };
 
-    const { error } = await supabase.from("cars").upsert(row, {
-      onConflict: "id",
-    });
+    const error = await upsertCarRows(supabase, row);
 
     if (error) {
       console.error("saveCarAction failed", error);
