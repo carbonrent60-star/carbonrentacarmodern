@@ -251,6 +251,36 @@ export default function HomeClient() {
 
             <motion.a
               className="secondary-button"
+              href="/avtomobil-sec"
+              whileHover={{
+                y: -3,
+                backgroundColor: "rgba(255,255,255,.1)",
+              }}
+              whileTap={{
+                scale: 0.975,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 350,
+                damping: 25,
+              }}
+            >
+              <span className="hero-cta-contact-icon">
+                <CarFront size={15} strokeWidth={1.65} />
+              </span>
+
+              <span className="hero-cta-copy">
+                <span className="hero-cta-kicker">{copy.hero.aiKicker}</span>
+                <strong>{copy.hero.aiChoose}</strong>
+              </span>
+
+              <span className="hero-cta-secondary-arrow">
+                <ArrowRight size={15} strokeWidth={1.7} />
+              </span>
+            </motion.a>
+
+            <motion.a
+              className="secondary-button"
               href="/elaqe"
               whileHover={{
                 y: -3,

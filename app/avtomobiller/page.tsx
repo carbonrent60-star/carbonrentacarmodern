@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
+import StructuredData from "@/components/StructuredData";
+import { getCarsForSite } from "@/lib/supabase/cars";
 import CarsClient from "./CarsClient";
-import { createPageMetadata } from "@/lib/seo";
+import {
+  carCollectionJsonLd,
+  faqJsonLd,
+  createPageMetadata,
+} from "@/lib/seo";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Avtomobillər | Carbon Rent A Car",
@@ -17,6 +23,40 @@ export const metadata: Metadata = createPageMetadata({
   ],
 });
 
-export default function CarsPage() {
-  return <CarsClient />;
+export default async function CarsPage() {
+  const cars = (await getCarsForSite()).filter(
+    (car) => car.rentalVisible !== false
+  );
+
+  return (
+    <>
+      <StructuredData
+        data={[
+          carCollectionJsonLd({
+            title: "Bakıda kirayə avtomobillər",
+            path: "/avtomobiller",
+            cars,
+          }),
+          faqJsonLd([
+            {
+              question: "Bakıda avtomobil icarəsi qiymətləri necə hesablanır?",
+              answer:
+                "Qiymət avtomobil modelinə, icarə müddətinə, mövsümə və əlavə xidmətlərə görə dəyişir. Hər avtomobil səhifəsində başlanğıc qiymətlər göstərilir.",
+            },
+            {
+              question: "Avtomobillər sığortalıdır?",
+              answer:
+                "Carbon Rent A Car parkındakı avtomobillər saz, təmiz və sığortalı şəkildə təqdim olunur. Şərtlər rezervasiya zamanı dəqiqləşdirilir.",
+            },
+            {
+              question: "Uzunmüddətli avtomobil icarəsi mümkündür?",
+              answer:
+                "Bəli, həftəlik və aylıq icarə üçün uyğun modellər və xüsusi qiymət aralıqları mövcuddur.",
+            },
+          ]),
+        ]}
+      />
+      <CarsClient />
+    </>
+  );
 }

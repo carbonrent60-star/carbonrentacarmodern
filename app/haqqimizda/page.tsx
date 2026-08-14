@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import CarbonNavbar from "@/components/CarbonNavbar";
-import { createPageMetadata } from "@/lib/seo";
+import StructuredData from "@/components/StructuredData";
+import {
+  aboutPageJsonLd,
+  createPageMetadata,
+} from "@/lib/seo";
 import AboutClient from "./AboutClient";
 import "./about.css";
 
@@ -20,6 +24,7 @@ export const metadata: Metadata = createPageMetadata({
 export default function AboutPage() {
   return (
     <>
+      <StructuredData data={aboutPageJsonLd()} />
       <CarbonNavbar light active="about" />
       <AboutClient />
     </>

@@ -5,6 +5,7 @@
     "contactUs": "Contact us",
     "home": "Home",
     "cars": "Cars",
+    "chooseCar": "Choose a car",
     "weddingCars": "Wedding cars",
     "blog": "Blog",
     "about": "About us",
@@ -19,6 +20,7 @@
   "nav": {
     "home": "Home",
     "cars": "Cars",
+    "chooseCar": "Choose a car",
     "weddingCars": "Wedding cars",
     "blog": "Blog",
     "about": "About us",

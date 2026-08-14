@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import CarbonNavbar from "@/components/CarbonNavbar";
-import { createPageMetadata } from "@/lib/seo";
+import StructuredData from "@/components/StructuredData";
+import {
+  contactPageJsonLd,
+  createPageMetadata,
+} from "@/lib/seo";
 import ContactClient from "./ContactClient";
 import "./contact.css";
 
@@ -20,6 +24,7 @@ export const metadata: Metadata = createPageMetadata({
 export default function ContactPage() {
   return (
     <>
+      <StructuredData data={contactPageJsonLd()} />
       <CarbonNavbar light active="contact" />
       <ContactClient />
     </>

@@ -8,7 +8,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import {useTranslations} from "next-intl";
+import {useLocale, useTranslations} from "next-intl";
 import CarbonLanguageSwitcher from "./CarbonLanguageSwitcher";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -17,7 +17,7 @@ type CarbonNavbarProps = {
   home?: boolean;
   ready?: boolean;
   light?: boolean;
-  active?: "cars" | "wedding" | "transfer" | "blog" | "contact" | "about";
+  active?: "cars" | "wedding" | "transfer" | "blog" | "contact" | "about" | "ai";
 };
 
 export default function CarbonNavbar({
@@ -27,11 +27,19 @@ export default function CarbonNavbar({
   active,
 }: CarbonNavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const locale = useLocale();
   const t = useTranslations("nav");
+  const chooseCarLabel =
+    locale === "en"
+      ? "Choose a car"
+      : locale === "ru"
+        ? "Подобрать авто"
+        : "Avtomobil seç";
 
   const links = home
     ? [
         [t("cars"), "#cars", "cars"],
+        [chooseCarLabel, "/avtomobil-sec", "ai"],
         [t("weddingCars"), "/toy-avtomobilleri", "wedding"],
         [t("blog"), "/blog", "blog"],
         [t("about"), "/haqqimizda", "about"],
@@ -41,6 +49,7 @@ export default function CarbonNavbar({
     : [
         [t("home"), "/", ""],
         [t("cars"), "/avtomobiller", "cars"],
+        [chooseCarLabel, "/avtomobil-sec", "ai"],
         [t("weddingCars"), "/toy-avtomobilleri", "wedding"],
         [t("blog"), "/blog", "blog"],
         [t("about"), "/haqqimizda", "about"],
