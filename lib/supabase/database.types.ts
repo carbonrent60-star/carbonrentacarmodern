@@ -12,6 +12,7 @@ export type CarRow = {
   brand: string;
   title: string;
   category: string;
+  manufacture_year: number | null;
   seats: number | null;
   baggage: number | null;
   small_baggage: number | null;

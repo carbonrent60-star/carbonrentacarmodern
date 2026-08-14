@@ -4,6 +4,7 @@ create table if not exists public.cars (
   brand text not null,
   title text not null,
   category text not null,
+  manufacture_year integer check (manufacture_year is null or manufacture_year between 1990 and 2035),
   seats integer,
   baggage integer,
   small_baggage integer,

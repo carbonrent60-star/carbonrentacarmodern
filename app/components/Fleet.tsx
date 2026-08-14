@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cars } from "../data/cars";
 
 export default function Fleet() {
@@ -24,16 +25,16 @@ export default function Fleet() {
               seçilmiş avtomobillər.
             </p>
 
-            <a href="/avtomobiller">
+            <Link href="/avtomobiller">
               Bütün avtomobillər
               <span>↗</span>
-            </a>
+            </Link>
           </div>
         </div>
 
         <div className="car-grid">
           {cars.map((car, index) => (
-            <a
+            <Link
               className="car-card"
               href={`/avtomobiller/${car.slug}`}
               key={car.id}
@@ -71,7 +72,7 @@ export default function Fleet() {
                 <span>{car.fuel}</span>
                 <span>{car.seats} yer</span>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

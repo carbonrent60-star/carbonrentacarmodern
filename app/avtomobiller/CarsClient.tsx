@@ -1514,10 +1514,10 @@ export default function CarsClient() {
               <em>Avtomobili biz tapaq.</em>
             </h2>
 
-            <a href="/#contact">
+            <Link href="/#contact">
               Carbon ilə əlaqə
               <ArrowRight size={15} />
-            </a>
+            </Link>
           </motion.div>
         </div>
       </section>

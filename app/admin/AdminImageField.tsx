@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import { ImageUp, Link2, UploadCloud, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -30,12 +32,6 @@ export default function AdminImageField({
   const hasPreview = Boolean(previewSource);
 
   useEffect(() => {
-    setUrl(defaultValue ?? "");
-    setPreview(defaultValue ?? "");
-    setSelectedFile("");
-  }, [defaultValue]);
-
-  useEffect(() => {
     return () => {
       if (preview.startsWith("blob:")) {
         URL.revokeObjectURL(preview);
@@ -45,7 +41,7 @@ export default function AdminImageField({
 
   const shortFileName = useMemo(() => {
     if (!selectedFile) {
-      return "Fayl seçilməyib";
+      return "Şəkil seçilməyib";
     }
 
     return selectedFile.length > 28
@@ -111,7 +107,7 @@ export default function AdminImageField({
         />
         <UploadCloud size={17} />
         <span>
-          Fayl seç
+          Şəkil seç
           <small>{shortFileName}</small>
         </span>
         <em>{hint}</em>
@@ -131,7 +127,7 @@ export default function AdminImageField({
           }}
         >
           <X size={14} />
-          Təmizlə
+          Şəkli sil
         </button>
       ) : null}
     </div>

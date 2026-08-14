@@ -62,6 +62,21 @@ function formatDate(
   }).format(fromISO(value));
 }
 
+function getDefaultBookingDates() {
+  const today = new Date();
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const returnDate = new Date(today);
+  returnDate.setDate(returnDate.getDate() + 4);
+
+  return {
+    start: toLocalISO(tomorrow),
+    end: toLocalISO(returnDate),
+  };
+}
+
 function formatLongDate(
   value: string,
   localeCode: string,
@@ -261,6 +276,7 @@ function DateRangePicker({
   const [phase, setPhase] = useState<"start" | "end">("start");
   const [draftStart, setDraftStart] = useState<string | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!open) return;
 
@@ -280,6 +296,7 @@ function DateRangePicker({
     setPhase("start");
     setDraftStart(null);
   }, [open, startDate, minDate]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSelect = (value: string) => {
     /*
@@ -579,6 +596,7 @@ function CarPicker({
     });
   }, [rentalCars, category, search]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!open) return;
 
@@ -681,6 +699,7 @@ function CarPicker({
       );
     };
   }, [open, anchorRef]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!open) return;
@@ -936,8 +955,8 @@ export default function HomeBookingBar() {
   const { copy, localeCode } = useCarbonCopy();
   const [availableCars, setAvailableCars] = useState<Car[]>(cars);
   const [carSlug, setCarSlug] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => getDefaultBookingDates().start);
+  const [endDate, setEndDate] = useState(() => getDefaultBookingDates().end);
   const [pickup, setPickup] =
     useState<"office" | "delivery">("office");
 
@@ -963,17 +982,6 @@ export default function HomeBookingBar() {
   }, []);
 
   useEffect(() => {
-    const today = new Date();
-
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const returnDate = new Date(today);
-    returnDate.setDate(returnDate.getDate() + 4);
-
-    setStartDate(toLocalISO(tomorrow));
-    setEndDate(toLocalISO(returnDate));
-
     const timer = window.setTimeout(() => {
       setReady(true);
     }, 150);

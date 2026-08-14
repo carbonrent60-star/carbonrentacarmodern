@@ -177,6 +177,7 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
     brand: text(formData, "brand"),
     title,
     category: carCategories.includes(category) ? category : "Econom",
+    manufactureYear: numberValue(formData, "manufactureYear"),
     seats: numberValue(formData, "seats"),
     baggage: numberValue(formData, "baggage"),
     smallBaggage: numberValue(formData, "smallBaggage"),
@@ -445,7 +446,14 @@ export async function saveCarAction(formData: FormData) {
       "cars",
       car.slug
     );
+    const uploadedWeddingUrl = await getUploadedImageUrl(
+      formData,
+      "weddingImageFile",
+      "wedding-cars",
+      car.slug
+    );
     const thumbnail = uploadedUrl ?? car.thumbnail;
+    const weddingThumbnail = uploadedWeddingUrl ?? car.weddingThumbnail;
 
     if (!thumbnail) {
       throw new Error("image-required");
@@ -456,6 +464,7 @@ export async function saveCarAction(formData: FormData) {
         {
           ...car,
           thumbnail,
+          weddingThumbnail,
         },
         car.sortOrder
       ),

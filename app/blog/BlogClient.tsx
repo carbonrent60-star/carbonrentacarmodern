@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AnimatePresence,
@@ -63,10 +63,6 @@ export default function BlogClient({
   const [category, setCategory] = useState<string>(ui.all);
   const reduceMotion = useReducedMotion();
 
-  useEffect(() => {
-    setCategory(ui.all);
-  }, [ui.all]);
-
   const categories = useMemo(
     () => [
       ui.all,
@@ -76,12 +72,15 @@ export default function BlogClient({
     ],
     [posts, ui.all],
   );
+  const activeCategory = categories.includes(category)
+    ? category
+    : ui.all;
 
   const visible =
-    category === ui.all || !categories.includes(category)
+    activeCategory === ui.all
       ? posts
       : posts.filter(
-          (post) => post.category === category,
+          (post) => post.category === activeCategory,
         );
 
   const featured = visible[0];
@@ -141,7 +140,7 @@ export default function BlogClient({
 
             <div className="cj-filters">
               {categories.map((item) => {
-                const active = category === item;
+                const active = activeCategory === item;
 
                 return (
                   <button
@@ -175,7 +174,7 @@ export default function BlogClient({
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={category}
+          key={activeCategory}
           initial={
             reduceMotion
               ? false
