@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cars } from "@/data/cars";
+import StructuredData from "@/components/StructuredData";
 import { getCarsForSite } from "@/lib/supabase/cars";
 import {
+  breadcrumbJsonLd,
+  carJsonLd,
   carOgImage,
   carSpecsDescription,
   createPageMetadata,
@@ -38,6 +41,13 @@ export async function generateMetadata({
     description: carSpecsDescription(car),
     path: `/avtomobiller/${car.slug}`,
     image: carOgImage(car),
+    keywords: [
+      `${car.brand} ${car.title} icarəsi`,
+      `${car.title} rent a car Bakı`,
+      `${car.brand} icarəsi Bakı`,
+      `${car.category} avtomobil icarəsi`,
+      `${car.title} qiyməti`,
+    ],
   });
 }
 
@@ -64,5 +74,21 @@ export default async function CarPage({
     )
     .slice(0, 3);
 
-  return <CarDetailClient car={car} relatedCars={relatedCars} />;
+  const path = `/avtomobiller/${car.slug}`;
+
+  return (
+    <>
+      <StructuredData
+        data={[
+          breadcrumbJsonLd([
+            { name: "Ana səhifə", path: "/" },
+            { name: "Avtomobillər", path: "/avtomobiller" },
+            { name: car.title, path },
+          ]),
+          carJsonLd(car, path),
+        ]}
+      />
+      <CarDetailClient car={car} relatedCars={relatedCars} />
+    </>
+  );
 }

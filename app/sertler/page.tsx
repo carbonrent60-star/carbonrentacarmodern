@@ -14,6 +14,12 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Carbon Rent A Car avtomobil kirayəsi, rezervasiya, ödəniş, depozit, sığorta və istifadə şərtləri.",
   path: "/sertler",
+  keywords: [
+    "avtomobil icarəsi şərtləri",
+    "rent a car qaydaları",
+    "avtomobil depozit qaydaları",
+    "kirayə avtomobil sığorta şərtləri",
+  ],
 });
 
 export default function TermsPage() {

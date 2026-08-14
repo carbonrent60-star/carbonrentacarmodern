@@ -7,6 +7,14 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Bakıda premium avtomobil icarəsi, transfer xidməti və toy avtomobilləri. Carbon Rent A Car ilə avtomobil seçimi, rezervasiya və təhvil prosesi rahat və şəffafdır.",
   path: "/",
+  keywords: [
+    "Bakıda premium avtomobil icarəsi",
+    "rent a car Bakı",
+    "Bakı maşın icarəsi",
+    "Carbon Rent A Car",
+    "hava limanı transferi",
+    "toy avtomobilləri Bakı",
+  ],
 });
 
 export default function HomePage() {

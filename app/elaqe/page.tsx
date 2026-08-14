@@ -9,6 +9,12 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Carbon Rent A Car ilə əlaqə saxlayın, ümumi sorğu göndərin, rəyinizi paylaşın və ya şikayət müraciəti yaradın.",
   path: "/elaqe",
+  keywords: [
+    "Carbon Rent A Car əlaqə",
+    "avtomobil icarəsi əlaqə",
+    "Bakı rent a car telefon",
+    "avtomobil rezervasiya dəstəyi",
+  ],
 });
 
 export default function ContactPage() {

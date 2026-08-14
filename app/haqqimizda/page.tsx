@@ -9,6 +9,12 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Carbon Rent A Car haqqında — müasir, etibarlı və premium avtomobil icarəsi xidməti.",
   path: "/haqqimizda",
+  keywords: [
+    "Carbon Rent A Car haqqında",
+    "etibarlı avtomobil icarəsi şirkəti",
+    "Bakı rent a car şirkəti",
+    "premium avtomobil icarəsi komandası",
+  ],
 });
 
 export default function AboutPage() {

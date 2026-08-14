@@ -9,6 +9,11 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Carbon Rent A Car şəxsi məlumatların toplanması, istifadəsi və qorunması haqqında məxfilik siyasəti.",
   path: "/mexfilik-siyaseti",
+  keywords: [
+    "Carbon məxfilik siyasəti",
+    "rent a car şəxsi məlumatlar",
+    "avtomobil rezervasiya məxfilik",
+  ],
 });
 
 export default function PrivacyPage() {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CarbonNavbar from "../../../components/CarbonNavbar";
+import StructuredData from "@/components/StructuredData";
 import {
   blogPosts,
 } from "../../data/blog";
@@ -9,7 +10,11 @@ import {
   getBlogPostsForSite,
   getRelatedBlogPostsForSite,
 } from "@/lib/supabase/blogs";
-import { createPageMetadata } from "@/lib/seo";
+import {
+  articleJsonLd,
+  breadcrumbJsonLd,
+  createPageMetadata,
+} from "@/lib/seo";
 import BlogArticleClient from "./BlogArticleClient";
 import "../blog.css";
 
@@ -43,6 +48,13 @@ export async function generateMetadata({
     path: `/blog/${post.slug}`,
     image: post.image,
     type: "article",
+    keywords: [
+      post.title,
+      post.category,
+      post.eyebrow,
+      "avtomobil icarəsi məsləhətləri",
+      "rent a car blog Bakı",
+    ],
   });
 }
 
@@ -59,6 +71,22 @@ export default async function BlogArticlePage({
 
   return (
     <>
+      <StructuredData
+        data={[
+          breadcrumbJsonLd([
+            { name: "Ana səhifə", path: "/" },
+            { name: "Blog", path: "/blog" },
+            { name: post.title, path: `/blog/${post.slug}` },
+          ]),
+          articleJsonLd({
+            title: post.title,
+            description: post.description,
+            image: post.image,
+            path: `/blog/${post.slug}`,
+            date: post.date,
+          }),
+        ]}
+      />
       <CarbonNavbar light active="blog" />
       <BlogArticleClient
         post={post}

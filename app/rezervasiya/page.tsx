@@ -8,6 +8,12 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Carbon avtomobil rezervasiyasını tamamlayın. Tarixləri, təhvil üsulunu və əlaqə məlumatlarınızı yoxlayın.",
   path: "/rezervasiya",
+  keywords: [
+    "avtomobil rezervasiya Bakı",
+    "maşın bron etmək",
+    "rent a car booking Baku",
+    "online avtomobil rezervasiyası",
+  ],
 });
 
 type Search = {

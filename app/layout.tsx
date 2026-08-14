@@ -4,11 +4,16 @@ import {cookies} from "next/headers";
 import {NextIntlClientProvider} from "next-intl";
 import "./globals.css";
 import CarbonFooter from "@/components/CarbonFooter";
+import StructuredData from "@/components/StructuredData";
 import CarbonAutoTranslator from "@/components/CarbonAutoTranslator";
 import CarbonLanguageProvider, {
   type CarbonLocale,
 } from "@/components/CarbonLanguageProvider";
-import { createPageMetadata } from "@/lib/seo";
+import {
+  createPageMetadata,
+  organizationJsonLd,
+  websiteJsonLd,
+} from "@/lib/seo";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -20,6 +25,13 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Bakıda premium və rahat avtomobil icarəsi. Carbon Rent A Car ilə gündəlik icarə, transfer və xüsusi gün avtomobillərini rahat seçin.",
   path: "/",
+  keywords: [
+    "Bakıda avtomobil icarəsi",
+    "Carbon Rent A Car Bakı",
+    "premium rent a car Baku",
+    "hava limanı transferi Bakı",
+    "toy avtomobili Bakı",
+  ],
 });
 
 const locales: CarbonLocale[] = ["az", "en", "ru"];
@@ -55,6 +67,7 @@ export default async function RootLayout({
           messages={messages}
         >
           <CarbonLanguageProvider initialLocale={locale}>
+            <StructuredData data={[organizationJsonLd(), websiteJsonLd()]} />
             <CarbonAutoTranslator />
             {children}
 

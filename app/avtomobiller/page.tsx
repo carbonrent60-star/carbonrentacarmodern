@@ -7,6 +7,14 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Carbon avtomobil parkını kəşf edin: ekonom, biznes, SUV, sport və transfer avtomobilləri. Yanacaq, oturacaq, mühərrik və qiymətə görə uyğun avtomobili seçin.",
   path: "/avtomobiller",
+  keywords: [
+    "avtomobil parkı Bakı",
+    "kirayə maşın siyahısı",
+    "ekonom avtomobil icarəsi Bakı",
+    "biznes avtomobil icarəsi Bakı",
+    "SUV icarəsi Bakı",
+    "sport avtomobil icarəsi",
+  ],
 });
 
 export default function CarsPage() {

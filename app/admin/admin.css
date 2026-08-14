@@ -1471,6 +1471,7 @@ kbd {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 180ms ease;
 }
 
 .admin-image-field-car .admin-image-preview img {
@@ -1566,9 +1567,14 @@ kbd {
   white-space: nowrap;
 }
 
-.admin-image-clear {
+.admin-image-tools {
   grid-column: 2;
-  width: fit-content;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-image-tools button {
   min-height: 32px;
   padding: 0 10px;
   border: 1px solid var(--admin-line);
@@ -1581,6 +1587,18 @@ kbd {
   font: inherit;
   font-size: 12px;
   cursor: pointer;
+}
+
+.admin-image-tools button:hover,
+.admin-image-tools button.is-active {
+  border-color: rgba(178, 15, 87, .24);
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+}
+
+.admin-image-tools button:disabled {
+  opacity: .55;
+  cursor: wait;
 }
 
 @media (max-width: 1100px) {
@@ -1678,7 +1696,7 @@ kbd {
 
   .admin-image-url-field,
   .admin-upload-dropzone,
-  .admin-image-clear {
+  .admin-image-tools {
     grid-column: 1;
   }
 

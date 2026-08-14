@@ -10,6 +10,14 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Avtomobil kirayəsi, sığorta, səyahət marşrutları və avtomobil baxımı haqqında Carbon Rent A Car məqalələri.",
   path: "/blog",
+  keywords: [
+    "avtomobil icarəsi blog",
+    "kirayə məsləhətləri",
+    "avtomobil sığortası",
+    "avtomobil baxımı",
+    "Bakı səyahət marşrutları",
+    "rent a car guide Baku",
+  ],
 });
 
 export default async function BlogPage() {
