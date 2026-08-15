@@ -113,9 +113,6 @@ export default function CarsClient() {
   const [minSmallBaggage, setMinSmallBaggage] = useState<number | null>(null);
   const [engine, setEngine] = useState("Hamısı");
 
-  const [weddingOnly, setWeddingOnly] =
-    useState(false);
-
   const [transferOnly, setTransferOnly] =
     useState(false);
 
@@ -217,10 +214,13 @@ export default function CarsClient() {
           .includes(query);
 
       const matchesCategory =
-        category === "Hamısı" ||
-        (category === "TRANSFER"
+        transferOnly
           ? car.transferAvailable
-          : car.category === category);
+          : category === "Hamısı"
+            ? !car.transferAvailable
+            : category === "TRANSFER"
+          ? car.transferAvailable
+          : car.category === category;
 
       const matchesBrand =
         selectedBrand === "Hamısı" ||
@@ -257,10 +257,6 @@ export default function CarsClient() {
         engine === "Hamısı" ||
         car.engine === engine;
 
-      const matchesWedding =
-        !weddingOnly ||
-        car.weddingAvailable;
-
       return (
         matchesSearch &&
         matchesCategory &&
@@ -271,8 +267,7 @@ export default function CarsClient() {
         matchesBaggage &&
         matchesSmallBaggage &&
         matchesEngine &&
-        matchesTransfer &&
-        matchesWedding
+        matchesTransfer
       );
     });
 
@@ -307,7 +302,6 @@ export default function CarsClient() {
     minSmallBaggage,
     engine,
     transferOnly,
-    weddingOnly,
     sort,
     visibleCars,
   ]);
@@ -321,8 +315,7 @@ export default function CarsClient() {
     (minBaggage !== null ? 1 : 0) +
     (minSmallBaggage !== null ? 1 : 0) +
     (engine !== "Hamısı" ? 1 : 0) +
-    (transferOnly ? 1 : 0) +
-    (weddingOnly ? 1 : 0);
+    (transferOnly ? 1 : 0);
 
   const smallBaggageOptions = Array.from(
     new Set(
@@ -351,7 +344,6 @@ export default function CarsClient() {
     setMinSmallBaggage(null);
     setEngine("Hamısı");
     setTransferOnly(false);
-    setWeddingOnly(false);
     setSort("recommended");
   }
 
@@ -1016,21 +1008,12 @@ export default function CarsClient() {
                         <ArrowRight size={15} />
                       </button>
 
-                      <button
-                        type="button"
-                        className={`fleet-v6-service ${
-                          weddingOnly ? "active" : ""
-                        }`}
-                        onClick={() =>
-                          setWeddingOnly(
-                            (value) => !value,
-                          )
-                        }
+                      <Link
+                        href="/toy-avtomobilleri"
+                        className="fleet-v6-service"
                       >
                         <span className="fleet-v6-service-check">
-                          {weddingOnly && (
-                            <Check size={13} />
-                          )}
+                          <Sparkles size={13} />
                         </span>
 
                         <div>
@@ -1043,7 +1026,7 @@ export default function CarsClient() {
                         </div>
 
                         <Sparkles size={15} />
-                      </button>
+                      </Link>
 
                     </div>
 
