@@ -471,6 +471,11 @@ kbd {
   box-shadow: 0 10px 24px rgba(163, 22, 85, .16);
 }
 
+.admin-primary-button.is-saved {
+  background: #17653e;
+  box-shadow: 0 10px 24px rgba(28, 135, 78, .16);
+}
+
 .admin-secondary-button {
   padding: 0 12px;
   border-color: var(--admin-line);
@@ -1456,6 +1461,97 @@ kbd {
   background: rgba(28, 135, 78, .08);
   color: #17653e;
   animation: adminTabPanelIn 180ms var(--admin-ease) both;
+}
+
+.admin-floating-toast {
+  width: min(390px, calc(100vw - 28px));
+  min-height: 72px;
+  padding: 14px 12px 14px 14px;
+  position: fixed;
+  z-index: 140;
+  right: 18px;
+  top: 18px;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 10px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 32px;
+  gap: 12px;
+  align-items: center;
+  background: rgba(255, 255, 255, .94);
+  color: var(--admin-text);
+  box-shadow: 0 24px 70px rgba(20, 20, 20, .18);
+  backdrop-filter: blur(18px);
+  pointer-events: auto;
+  animation: adminToastIn 260ms var(--admin-ease) both;
+}
+
+.admin-floating-toast.is-success {
+  border-color: rgba(28, 135, 78, .22);
+}
+
+.admin-floating-toast.is-error {
+  border-color: rgba(177, 38, 72, .24);
+}
+
+.admin-floating-toast-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(28, 135, 78, .1);
+  color: #17653e;
+}
+
+.admin-floating-toast.is-error .admin-floating-toast-icon {
+  background: rgba(177, 38, 72, .09);
+  color: #9b173d;
+}
+
+.admin-floating-toast strong,
+.admin-floating-toast small {
+  display: block;
+}
+
+.admin-floating-toast strong {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.admin-floating-toast small {
+  margin-top: 3px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.admin-floating-toast button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--admin-line);
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .68);
+  color: var(--admin-muted);
+  cursor: pointer;
+}
+
+.admin-floating-toast button:hover {
+  color: var(--admin-text);
+  background: #fff;
+}
+
+@keyframes adminToastIn {
+  from {
+    opacity: 0;
+    transform: translate3d(12px, -8px, 0) scale(.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
 }
 
 .admin-confirm-layer {

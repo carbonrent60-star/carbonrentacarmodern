@@ -26,6 +26,7 @@ import {
   Settings,
   Trash2,
   X,
+  CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
@@ -81,6 +82,12 @@ type EditorState =
   | { type: "blog"; mode: "create" | "edit"; blog?: AdminBlogPost; index: number }
   | null;
 type CarTableMode = "fleet" | "wedding";
+type AdminToast = {
+  id: number;
+  type: "success" | "error";
+  title: string;
+  text?: string;
+};
 
 const categoryLabels: Record<string, string> = {
   Econom: "Ekonom",
@@ -441,7 +448,7 @@ function AdminDashboardClient({
   const [layout, setLayout] = useState<"list" | "grid">("list");
   const [cars, setCars] = useState(() => carsResult.cars);
   const [blogs, setBlogs] = useState(() => blogsResult.blogs);
-  const [localNotice, setLocalNotice] = useState<string | null>(null);
+  const [toast, setToast] = useState<AdminToast | null>(null);
 
   const rentalCount = cars.filter((car) => car.rentalVisible !== false).length;
   const transferCars = cars.filter((car) => car.transferAvailable);
@@ -453,6 +460,16 @@ function AdminDashboardClient({
   useEffect(() => {
     window.localStorage.setItem("carbon-admin-sidebar", collapsed ? "collapsed" : "expanded");
   }, [collapsed]);
+
+  useEffect(() => {
+    if (!toast) return;
+
+    const timer = window.setTimeout(() => {
+      setToast(null);
+    }, 3800);
+
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -491,7 +508,12 @@ function AdminDashboardClient({
       return next.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
     });
     setEditor({ type: "car", mode: "edit", car, index: car.sortOrder ?? cars.length });
-    setLocalNotice("Avtomobil yadda saxlanıldı.");
+    setToast({
+      id: Date.now(),
+      type: "success",
+      title: "Avtomobil yadda saxlanıldı",
+      text: "Dəyişikliklər saytda yenilənir.",
+    });
   };
 
   const upsertBlog = (blog: AdminBlogPost) => {
@@ -504,19 +526,32 @@ function AdminDashboardClient({
       return next.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
     });
     setEditor({ type: "blog", mode: "edit", blog, index: blog.sortOrder ?? blogs.length });
-    setLocalNotice("Blog məqaləsi yadda saxlanıldı.");
+    setToast({
+      id: Date.now(),
+      type: "success",
+      title: "Blog məqaləsi yadda saxlanıldı",
+      text: "Məzmun yeniləndi.",
+    });
   };
 
   const removeCar = (id: string) => {
     setCars((items) => items.filter((item) => item.id !== id));
     setEditor(null);
-    setLocalNotice("Avtomobil silindi.");
+    setToast({
+      id: Date.now(),
+      type: "success",
+      title: "Avtomobil silindi",
+    });
   };
 
   const removeBlog = (slug: string) => {
     setBlogs((items) => items.filter((item) => item.slug !== slug));
     setEditor(null);
-    setLocalNotice("Blog məqaləsi silindi.");
+    setToast({
+      id: Date.now(),
+      type: "success",
+      title: "Blog məqaləsi silindi",
+    });
   };
 
   const filteredCars = useMemo(() => {
@@ -667,11 +702,6 @@ function AdminDashboardClient({
 
         <div className="admin-content">
           <Alerts alerts={alerts} flags={flags} />
-          {localNotice ? (
-            <div className="admin-alert admin-alert-success">
-              {localNotice}
-            </div>
-          ) : null}
 
           {view === "overview" ? (
             <OverviewView
@@ -785,10 +815,45 @@ function AdminDashboardClient({
           onBlogSaved={upsertBlog}
           onCarDeleted={removeCar}
           onBlogDeleted={removeBlog}
+          onToast={(nextToast) =>
+            setToast({
+              ...nextToast,
+              id: Date.now(),
+            })
+          }
           onClose={() => setEditor(null)}
         />
       ) : null}
+
+      {toast ? (
+        <AdminToastMessage toast={toast} onClose={() => setToast(null)} />
+      ) : null}
     </main>
+  );
+}
+
+function AdminToastMessage({
+  toast,
+  onClose,
+}: {
+  toast: AdminToast;
+  onClose: () => void;
+}) {
+  return (
+    <div className={`admin-floating-toast is-${toast.type}`} role="status">
+      <span className="admin-floating-toast-icon">
+        {toast.type === "success" ? <CheckCircle2 size={18} /> : <X size={18} />}
+      </span>
+
+      <span>
+        <strong>{toast.title}</strong>
+        {toast.text ? <small>{toast.text}</small> : null}
+      </span>
+
+      <button type="button" onClick={onClose} aria-label="Bildirişi bağla">
+        <X size={14} />
+      </button>
+    </div>
   );
 }
 
@@ -1313,6 +1378,7 @@ function EditorDrawer({
   onBlogSaved,
   onCarDeleted,
   onBlogDeleted,
+  onToast,
   onClose,
 }: {
   editor: NonNullable<EditorState>;
@@ -1324,11 +1390,13 @@ function EditorDrawer({
   onBlogSaved: (blog: AdminBlogPost) => void;
   onCarDeleted: (id: string) => void;
   onBlogDeleted: (slug: string) => void;
+  onToast: (toast: Omit<AdminToast, "id">) => void;
   onClose: () => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [drawerError, setDrawerError] = useState<string | null>(null);
   const formId = editor.type === "car" ? "admin-car-editor-form" : "admin-blog-editor-form";
   const title =
@@ -1346,6 +1414,7 @@ function EditorDrawer({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setDrawerError(null);
+    setJustSaved(false);
     setIsSaving(true);
 
     const formData = new FormData(event.currentTarget);
@@ -1355,22 +1424,38 @@ function EditorDrawer({
         const result = await saveCarInlineAction(formData);
 
         if (!result.ok) {
-          setDrawerError(adminClientMessage(result.error));
+          const message = adminClientMessage(result.error);
+          setDrawerError(message);
+          onToast({
+            type: "error",
+            title: "Saxlanılmadı",
+            text: message,
+          });
           return;
         }
 
         onCarSaved(result.car);
+        setJustSaved(true);
+        window.setTimeout(() => setJustSaved(false), 1800);
         return;
       }
 
       const result = await saveBlogInlineAction(formData);
 
       if (!result.ok) {
-        setDrawerError(adminClientMessage(result.error));
+        const message = adminClientMessage(result.error);
+        setDrawerError(message);
+        onToast({
+          type: "error",
+          title: "Saxlanılmadı",
+          text: message,
+        });
         return;
       }
 
       onBlogSaved(result.blog);
+      setJustSaved(true);
+      window.setTimeout(() => setJustSaved(false), 1800);
     } finally {
       setIsSaving(false);
     }
@@ -1384,14 +1469,26 @@ function EditorDrawer({
         const id = editor.car?.id;
 
         if (!id) {
-          setDrawerError(adminClientMessage("database-delete-failed"));
+          const message = adminClientMessage("database-delete-failed");
+          setDrawerError(message);
+          onToast({
+            type: "error",
+            title: "Silinmədi",
+            text: message,
+          });
           return;
         }
 
         const result = await deleteCarInlineAction(id);
 
         if (!result.ok) {
-          setDrawerError(adminClientMessage(result.error));
+          const message = adminClientMessage(result.error);
+          setDrawerError(message);
+          onToast({
+            type: "error",
+            title: "Silinmədi",
+            text: message,
+          });
           return;
         }
 
@@ -1402,14 +1499,26 @@ function EditorDrawer({
       const slug = editor.blog?.slug;
 
       if (!slug) {
-        setDrawerError(adminClientMessage("database-delete-failed"));
+        const message = adminClientMessage("database-delete-failed");
+        setDrawerError(message);
+        onToast({
+          type: "error",
+          title: "Silinmədi",
+          text: message,
+        });
         return;
       }
 
       const result = await deleteBlogInlineAction(slug);
 
       if (!result.ok) {
-        setDrawerError(adminClientMessage(result.error));
+        const message = adminClientMessage(result.error);
+        setDrawerError(message);
+        onToast({
+          type: "error",
+          title: "Silinmədi",
+          text: message,
+        });
         return;
       }
 
@@ -1485,11 +1594,15 @@ function EditorDrawer({
           <button
             type="submit"
             form={formId}
-            className="admin-primary-button"
+            className={`admin-primary-button${justSaved ? " is-saved" : ""}`}
             disabled={isSaving || isDeleting}
           >
-            <Save size={15} />
-            {isSaving ? "Saxlanılır..." : "Dəyişiklikləri saxla"}
+            {justSaved ? <CheckCircle2 size={15} /> : <Save size={15} />}
+            {isSaving
+              ? "Saxlanılır..."
+              : justSaved
+                ? "Saxlanıldı"
+                : "Dəyişiklikləri saxla"}
           </button>
         </footer>
       </aside>
