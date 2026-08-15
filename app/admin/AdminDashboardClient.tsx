@@ -20,6 +20,7 @@ import {
   Newspaper,
   Plane,
   Plus,
+  Rows3,
   Save,
   Search,
   Settings,
@@ -66,7 +67,14 @@ type BlogsResult = {
 };
 
 type ViewKey = "overview" | "cars" | "transfer" | "weddings" | "blog" | "media" | "settings";
-type CarTab = "general" | "technical" | "images" | "prices" | "services" | "wedding";
+type CarTab =
+  | "general"
+  | "technical"
+  | "images"
+  | "prices"
+  | "variants"
+  | "services"
+  | "wedding";
 type BlogTab = "general" | "content" | "media" | "visibility";
 type EditorState =
   | { type: "car"; mode: "create" | "edit"; car?: AdminCar; index: number }
@@ -290,6 +298,12 @@ function carServices(car: AdminCar) {
     car.transferAvailable ? "Transfer" : null,
     car.weddingAvailable ? "Toy" : null,
   ].filter(Boolean) as string[];
+}
+
+function variantPriceLabel(car: AdminCar) {
+  const count = car.variants?.length ?? 0;
+
+  return count ? `${count} variant` : "Variant yoxdur";
 }
 
 function blogBodyText(blog?: AdminBlogPost) {
@@ -994,6 +1008,7 @@ function CarTable({
         <span>Kateqoriya</span>
         <span>İl</span>
         <span>{mode === "wedding" ? "Toy" : "İcarə"}</span>
+        <span>Variantlar</span>
         <span>Xidmətlər</span>
         <span>Status</span>
         <span />
@@ -1005,6 +1020,7 @@ function CarTable({
             <span>{categoryLabels[car.category] ?? car.category}</span>
             <span>{car.manufactureYear ?? "-"}</span>
             <span>{displayPrice(car, mode) ? `${displayPrice(car, mode)} ₼` : "-"}</span>
+            <span>{variantPriceLabel(car)}</span>
             <span className="admin-service-list">{carServices(car).join(", ") || "-"}</span>
             <StatusDot active={car.isActive} />
             <MoreHorizontal size={18} />
@@ -1040,6 +1056,9 @@ function CarGrid({
               <StatusDot active={car.isActive} />
             </span>
             <b>{startPrice(car) ? `${startPrice(car)} ₼ / gün` : "Qiymət yoxdur"}</b>
+            <span>
+              <i>{variantPriceLabel(car)}</i>
+            </span>
           </span>
         </button>
       ))}
@@ -1266,7 +1285,13 @@ function EditorDrawer({
         </header>
 
         {editor.type === "car" ? (
-          <CarEditorForm formId={formId} editor={editor} activeTab={carTab} onTab={onCarTab} />
+          <CarEditorForm
+            key={editor.car?.id ?? `new-${editor.index}`}
+            formId={formId}
+            editor={editor}
+            activeTab={carTab}
+            onTab={onCarTab}
+          />
         ) : (
           <BlogEditorForm formId={formId} editor={editor} activeTab={blogTab} onTab={onBlogTab} />
         )}
@@ -1349,6 +1374,8 @@ function CarEditorForm({
   onTab: (tab: CarTab) => void;
 }) {
   const car = editor.car;
+  const initialVariantCount = Math.max(car?.variants?.length ?? 0, 1);
+  const [variantCount, setVariantCount] = useState(initialVariantCount);
 
   return (
     <>
@@ -1357,12 +1384,14 @@ function CarEditorForm({
         <TabButton value="technical" active={activeTab} onClick={onTab}>Texniki</TabButton>
         <TabButton value="images" active={activeTab} onClick={onTab}>Şəkillər</TabButton>
         <TabButton value="prices" active={activeTab} onClick={onTab}>Qiymətlər</TabButton>
+        <TabButton value="variants" active={activeTab} onClick={onTab}>Variantlar</TabButton>
         <TabButton value="services" active={activeTab} onClick={onTab}>Xidmətlər</TabButton>
         <TabButton value="wedding" active={activeTab} onClick={onTab}>Toy</TabButton>
       </nav>
 
       <form id={formId} action={saveCarAction} className="admin-editor-form">
         <input name="id" type="hidden" defaultValue={car?.id ?? ""} />
+        <input name="variantCount" type="hidden" value={variantCount} readOnly />
 
         <section className={`admin-tab-panel${activeTab === "general" ? "" : " is-hidden"}`}>
           <div className="admin-form-grid">
@@ -1431,6 +1460,66 @@ function CarEditorForm({
               ))}
             </div>
           </div>
+        </section>
+
+        <section className={`admin-tab-panel${activeTab === "variants" ? "" : " is-hidden"}`}>
+          <div className="admin-mini-section">
+            <h3>İl / kuzov variantları</h3>
+            <p className="admin-muted-copy">
+              Eyni modelin fərqli il, kuzov və qiymətlərini əlavə edin. Boş variantlar saxlanılmayacaq.
+            </p>
+          </div>
+
+          {Array.from({ length: variantCount }, (_, index) => {
+            const variant = car?.variants?.[index];
+
+            return (
+              <div className="admin-variant-card" key={`${car?.id ?? "new"}-${index}`}>
+                <input name={`variant_${index}_id`} type="hidden" defaultValue={variant?.id ?? ""} />
+
+                <div className="admin-variant-card-head">
+                  <span>
+                    <Rows3 size={14} />
+                    Variant {index + 1}
+                  </span>
+                </div>
+
+                <div className="admin-form-grid">
+                  <Field label="Variant adı" name={`variant_${index}_label`} defaultValue={variant?.label} placeholder="W213 Facelift" />
+                  <Field label="İl" name={`variant_${index}_manufactureYear`} type="number" defaultValue={variant?.manufactureYear} placeholder="2021" />
+                  <Field label="Kuzov" name={`variant_${index}_bodyStyle`} defaultValue={variant?.bodyStyle} placeholder="W213 / F10 / SUV" />
+                  <Field label="Mühərrik" name={`variant_${index}_engine`} defaultValue={variant?.engine} placeholder="2.0" />
+                  <Field
+                    label="Variant şəkli (boş olsa əsas şəkil)"
+                    name={`variant_${index}_thumbnail`}
+                    defaultValue={variant?.thumbnail}
+                    placeholder="https://..."
+                    span
+                  />
+                </div>
+
+                <div className="admin-price-grid">
+                  {rentalPriceKeys.map((key) => (
+                    <PriceField
+                      key={key}
+                      label={rentalPriceLabels[key]}
+                      name={`variant_${index}_rental_${key}`}
+                      defaultValue={variant?.rentalPrices[key]}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          <button
+            type="button"
+            className="admin-secondary-button"
+            onClick={() => setVariantCount((count) => count + 1)}
+          >
+            <Plus size={14} />
+            Variant əlavə et
+          </button>
         </section>
 
         <section className={`admin-tab-panel${activeTab === "services" ? "" : " is-hidden"}`}>

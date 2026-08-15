@@ -27,7 +27,12 @@ import {
   X,
 } from "lucide-react";
 
-import { cars, type Car, type CarCategory } from "@/data/cars";
+import {
+  cars,
+  getShortTermPrice,
+  type Car,
+  type CarCategory,
+} from "@/data/cars";
 import { fetchPublicCars } from "@/lib/supabase/cars";
 import CarbonNavbar from "@/components/CarbonNavbar";
 import {
@@ -43,6 +48,8 @@ type SortType =
   | "price-high"
   | "name";
 
+type PriceMode = "rental" | "transfer";
+
 const categories: CategoryFilter[] = [
   "Hamısı",
   "Econom",
@@ -56,8 +63,13 @@ const categories: CategoryFilter[] = [
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-function getPrice(car: Car) {
-  const source = car.transferAvailable ? car.transferPrices : car.rentalPrices;
+function getPrice(car: Car, mode: PriceMode = "rental") {
+  if (mode === "rental") {
+    return getShortTermPrice(car);
+  }
+
+  const source =
+    mode === "transfer" ? car.transferPrices : car.rentalPrices;
   const prices = Object.values(source).filter(
     (price): price is number => typeof price === "number",
   );
@@ -65,8 +77,8 @@ function getPrice(car: Car) {
   return prices.length ? Math.min(...prices) : null;
 }
 
-function getDisplayPrice(car: Car) {
-  if (car.transferAvailable) {
+function getDisplayPrice(car: Car, mode: PriceMode = "rental") {
+  if (mode === "transfer") {
     return (
       car.transferPrices.baku ??
       car.transferPrices.seaBreeze ??
@@ -80,14 +92,7 @@ function getDisplayPrice(car: Car) {
     );
   }
 
-  return (
-    car.rentalPrices.days1to3 ??
-    car.rentalPrices.days4to7 ??
-    car.rentalPrices.days8to15 ??
-    car.rentalPrices.days16to24 ??
-    car.rentalPrices.days25to30 ??
-    car.rentalPrices.days30plus
-  );
+  return getShortTermPrice(car);
 }
 
 export default function CarsClient() {
@@ -192,6 +197,8 @@ export default function CarsClient() {
   );
 
   const filteredCars = useMemo(() => {
+    const priceMode: PriceMode =
+      category === "TRANSFER" || transferOnly ? "transfer" : "rental";
     const query = search
       .trim()
       .toLocaleLowerCase("az");
@@ -271,11 +278,11 @@ export default function CarsClient() {
 
     return [...result].sort((a, b) => {
       const aPrice =
-        getPrice(a) ??
+        getPrice(a, priceMode) ??
         Number.MAX_SAFE_INTEGER;
 
       const bPrice =
-        getPrice(b) ??
+        getPrice(b, priceMode) ??
         Number.MAX_SAFE_INTEGER;
 
       if (sort === "price-low")
@@ -1198,10 +1205,14 @@ export default function CarsClient() {
               <AnimatePresence mode="popLayout">
                 {filteredCars.map(
                   (car, index) => {
+                    const priceMode: PriceMode =
+                      category === "TRANSFER" || transferOnly
+                        ? "transfer"
+                        : "rental";
                     const price =
-                      getDisplayPrice(car);
+                      getDisplayPrice(car, priceMode);
 
-                    const href = car.transferAvailable
+                    const href = priceMode === "transfer"
                       ? `/transfer/${car.slug}`
                       : `/avtomobiller/${car.slug}`;
 
@@ -1342,7 +1353,7 @@ export default function CarsClient() {
                                       {price} ₼
                                     </strong>
                                     <span>
-                                      {car.transferAvailable
+                                      {priceMode === "transfer"
                                         ? copy.car.transfer
                                         : copy.carsPage.perDay}
                                     </span>
@@ -1354,6 +1365,21 @@ export default function CarsClient() {
                                 )}
                               </div>
                             </div>
+
+                            {car.variants?.length ? (
+                              <div className="fleet-v4-variants">
+                                {car.variants.slice(0, 3).map((variant) => (
+                                  <span key={variant.id}>
+                                    {[
+                                      variant.manufactureYear,
+                                      variant.bodyStyle,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" / ") || variant.label}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
 
                             <div className="fleet-v4-specs">
                               {car.seats !==

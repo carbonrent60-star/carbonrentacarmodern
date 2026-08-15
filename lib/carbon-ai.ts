@@ -96,6 +96,16 @@ const transferLabels: Record<keyof Car["transferPrices"], string> = {
   lankaran: "Lənkəran - Bakı",
 };
 
+type OpenAIResponseItem = {
+  type?: string;
+  content?: OpenAIResponseContent[];
+};
+
+type OpenAIResponseContent = {
+  type?: string;
+  text?: string;
+};
+
 function normalize(value: string) {
   return value
     .toLowerCase()
@@ -941,15 +951,17 @@ The result IDs MUST exactly match supplied car IDs.
     }
 
     const payload = await apiResponse.json();
+    const outputItems = Array.isArray(payload.output)
+      ? (payload.output as OpenAIResponseItem[])
+      : [];
 
     const output =
       payload.output_text ??
-      payload.output?.find(
-        (item: any) => item?.type === "message",
-      )?.content?.find(
-        (item: any) => item?.type === "output_text",
-      )?.text ??
-      payload.output?.[0]?.content?.[0]?.text;
+      outputItems
+        .find((item) => item.type === "message")
+        ?.content?.find((item) => item.type === "output_text")
+        ?.text ??
+      outputItems[0]?.content?.[0]?.text;
 
     if (!output) {
       return fallback;

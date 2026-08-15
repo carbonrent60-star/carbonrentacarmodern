@@ -52,6 +52,18 @@ export type Car = {
     days25to30: number | null;
     days30plus: number | null;
   };
+
+  variants?: CarVariant[];
+};
+
+export type CarVariant = {
+  id: string;
+  label: string;
+  manufactureYear: number | null;
+  bodyStyle: string | null;
+  engine: string | null;
+  thumbnail?: string | null;
+  rentalPrices: Car["rentalPrices"];
 };
 
 export const cars: Car[] = [
@@ -1189,7 +1201,12 @@ export const featuredCars = [
 ].filter((car): car is Car => Boolean(car));
 
 export function getStartingPrice(car: Car) {
-  const prices = Object.values(car.rentalPrices).filter(
+  const prices = [
+    ...Object.values(car.rentalPrices),
+    ...(car.variants ?? []).flatMap((variant) =>
+      Object.values(variant.rentalPrices)
+    ),
+  ].filter(
     (price): price is number => typeof price === "number"
   );
 
@@ -1197,14 +1214,27 @@ export function getStartingPrice(car: Car) {
 }
 
 export function getShortTermPrice(car: Car) {
-  return (
+  const prices = [
     car.rentalPrices.days1to3 ??
-    car.rentalPrices.days4to7 ??
-    car.rentalPrices.days8to15 ??
-    car.rentalPrices.days16to24 ??
-    car.rentalPrices.days25to30 ??
-    car.rentalPrices.days30plus
+      car.rentalPrices.days4to7 ??
+      car.rentalPrices.days8to15 ??
+      car.rentalPrices.days16to24 ??
+      car.rentalPrices.days25to30 ??
+      car.rentalPrices.days30plus,
+    ...(car.variants ?? []).map(
+      (variant) =>
+        variant.rentalPrices.days1to3 ??
+        variant.rentalPrices.days4to7 ??
+        variant.rentalPrices.days8to15 ??
+        variant.rentalPrices.days16to24 ??
+        variant.rentalPrices.days25to30 ??
+        variant.rentalPrices.days30plus
+    ),
+  ].filter(
+    (price): price is number => typeof price === "number"
   );
+
+  return prices.length ? Math.min(...prices) : null;
 }
 
 export const rentalCars = cars.filter(

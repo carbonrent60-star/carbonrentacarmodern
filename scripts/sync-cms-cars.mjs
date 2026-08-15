@@ -177,6 +177,7 @@ function carRow(row, sortOrder) {
       days25to30: numberOrNull(row["25-30"]),
       days30plus: numberOrNull(row["30+"]),
     },
+    variants: [],
     sort_order: sortOrder,
     is_active: true,
   };

@@ -28,6 +28,7 @@ export type CarRow = {
   transfer_available: boolean;
   transfer_prices: Json;
   rental_prices: Json;
+  variants: Json;
   sort_order: number;
   is_active: boolean;
   created_at?: string;

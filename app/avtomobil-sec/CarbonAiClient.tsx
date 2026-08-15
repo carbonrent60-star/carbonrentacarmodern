@@ -9,7 +9,7 @@ import {
   BadgeCheck,
   CalendarDays,
   CarFront,
-  CheckCircle2,
+  CircleAlert,
   Crown,
   GitCompare,
   Fuel,
@@ -22,6 +22,7 @@ import {
   Sparkles,
   SlidersHorizontal,
   Users,
+  ChevronDown,
 } from "lucide-react";
 
 import type {
@@ -308,104 +309,86 @@ function ResultCard({
         </div>
 
         {result.ai ? (
-          <div className="carbon-ai-verdict">
-            <div className="carbon-ai-verdict-head">
-              <div className="carbon-ai-verdict-icon">
-                <Sparkles
-                  size={18}
-                  strokeWidth={1.45}
-                />
+          <div className="carbon-ai-compact-verdict">
+            <div className="carbon-ai-compact-verdict-main">
+              <div className="carbon-ai-compact-ai-icon">
+                <Sparkles size={15} strokeWidth={1.6} />
               </div>
 
-              <div>
-                <span>CARBON AI VERDİKTİ</span>
-                <strong>{result.ai.bestFor}</strong>
-              </div>
+              <div className="carbon-ai-compact-ai-copy">
+                <div className="carbon-ai-compact-ai-label">
+                  <span>CARBON AI</span>
+                  <i />
+                  <strong>{result.ai.bestFor}</strong>
+                </div>
 
-              <div className="carbon-ai-verdict-score">
-                <small>FIT</small>
-                <b>{result.score}%</b>
+                <p>{result.ai.verdict}</p>
               </div>
             </div>
 
-            <p className="carbon-ai-verdict-text">
-              {result.ai.verdict}
-            </p>
+            <details className="carbon-ai-insight-details">
+              <summary>
+                <span>Ətraflı analiz</span>
+                <ChevronDown size={14} strokeWidth={1.6} />
+              </summary>
 
-            <div className="carbon-ai-insight-grid">
-              <div>
-                <span>ƏSAS ÜSTÜNLÜK</span>
-                <strong>
-                  {result.ai.mainAdvantage}
-                </strong>
+              <div className="carbon-ai-compact-insights">
+                <div>
+                  <span>ÜSTÜNLÜK</span>
+                  <p>{result.ai.mainAdvantage}</p>
+                </div>
+
+                <div>
+                  <span>BÜDCƏ</span>
+                  <p>{result.ai.budgetFit}</p>
+                </div>
+
+                <div>
+                  <span>TUTUM</span>
+                  <p>{result.ai.spaceFit}</p>
+                </div>
+
+                <div>
+                  <span>SƏFƏR</span>
+                  <p>{result.ai.tripFit}</p>
+                </div>
+
+                {result.ai.tradeOff ? (
+                  <div className="carbon-ai-compact-tradeoff">
+                    <span>NƏZƏRƏ ALIN</span>
+                    <p>{result.ai.tradeOff}</p>
+                  </div>
+                ) : null}
               </div>
-
-              <div>
-                <span>BÜDCƏ</span>
-                <strong>
-                  {result.ai.budgetFit}
-                </strong>
-              </div>
-
-              <div>
-                <span>TUTUM</span>
-                <strong>
-                  {result.ai.spaceFit}
-                </strong>
-              </div>
-
-              <div>
-                <span>SƏFƏRƏ UYĞUNLUQ</span>
-                <strong>
-                  {result.ai.tripFit}
-                </strong>
-              </div>
-            </div>
-
-            <div className="carbon-ai-tradeoff">
-              <span>NƏZƏRƏ ALIN</span>
-              <p>{result.ai.tradeOff}</p>
-            </div>
+            </details>
           </div>
         ) : null}
 
-        <div className="carbon-ai-reasons">
-          <div className="carbon-ai-mini-heading">
-            <span>FAKTİKİ UYĞUNLUQ</span>
-            <strong>Carbon sıralamasının səbəbləri</strong>
+        <details className="carbon-ai-fit-details">
+          <summary>
+            <span>Niyə bu seçim?</span>
+            <ChevronDown size={14} strokeWidth={1.6} />
+          </summary>
+
+          <div className="carbon-ai-fit-details-body">
+            {result.reasons.map((reason) => (
+              <div key={reason}>
+                <BadgeCheck size={13} strokeWidth={1.6} />
+                <span>{reason}</span>
+              </div>
+            ))}
+
+            {result.warnings.map((warning) => (
+              <div
+                key={warning}
+                className="is-warning"
+              >
+                <CircleAlert size={13} strokeWidth={1.6} />
+                <span>{warning}</span>
+              </div>
+            ))}
           </div>
-
-          <div className="carbon-ai-reason-list">
-            {result.reasons
-              .slice(0, featured ? 4 : 3)
-              .map((reason, reasonIndex) => (
-                <div key={reason}>
-                  <span>
-                    0{reasonIndex + 1}
-                  </span>
-
-                  <CheckCircle2
-                    size={16}
-                    strokeWidth={1.6}
-                  />
-
-                  <p>{reason}</p>
-                </div>
-              ))}
-
-            {result.warnings
-              .slice(0, 2)
-              .map((warning) => (
-                <div
-                  className="is-warning"
-                  key={warning}
-                >
-                  <span>!</span>
-                  <p>{warning}</p>
-                </div>
-              ))}
-          </div>
-        </div>
+        </details>
 
         <div className="carbon-ai-result-actions">
           <Link href={result.detailHref}>

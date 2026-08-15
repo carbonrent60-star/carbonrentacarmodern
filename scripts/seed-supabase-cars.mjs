@@ -64,6 +64,7 @@ function carToRow(car, sortOrder) {
     transfer_available: car.transferAvailable,
     transfer_prices: car.transferPrices,
     rental_prices: car.rentalPrices,
+    variants: car.variants ?? [],
     sort_order: sortOrder,
     is_active: true,
   };

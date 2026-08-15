@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
-import { cars as fallbackCars, type Car, type CarCategory } from "@/data/cars";
+import {
+  cars as fallbackCars,
+  type Car,
+  type CarCategory,
+  type CarVariant,
+} from "@/data/cars";
 import { getSupabasePublicConfig } from "./config";
 import type { CarRow, Json } from "./database.types";
 
@@ -41,6 +46,52 @@ function numberOrNull(value: unknown) {
 
 function readObject(value: Json | undefined) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
+function readVariants(value: Json | undefined): CarVariant[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item, index) => {
+      const variant = readObject(item);
+      const rentalPrices = readObject(variant.rentalPrices);
+      const label =
+        typeof variant.label === "string" && variant.label.trim()
+          ? variant.label.trim()
+          : `Variant ${index + 1}`;
+      const id =
+        typeof variant.id === "string" && variant.id.trim()
+          ? variant.id.trim()
+          : label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+      return {
+        id,
+        label,
+        manufactureYear: numberOrNull(variant.manufactureYear),
+        bodyStyle:
+          typeof variant.bodyStyle === "string" && variant.bodyStyle.trim()
+            ? variant.bodyStyle.trim()
+            : null,
+        engine:
+          typeof variant.engine === "string" && variant.engine.trim()
+            ? variant.engine.trim()
+            : null,
+        thumbnail:
+          typeof variant.thumbnail === "string" && variant.thumbnail.trim()
+            ? variant.thumbnail.trim()
+            : null,
+        rentalPrices: Object.fromEntries(
+          rentalPriceKeys.map((key) => [key, numberOrNull(rentalPrices[key])])
+        ) as Car["rentalPrices"],
+      };
+    })
+    .filter((variant) =>
+      Object.values(variant.rentalPrices).some(
+        (price) => typeof price === "number"
+      )
+    );
 }
 
 function normalizeCategory(category: string): CarCategory {
@@ -86,6 +137,7 @@ export function rowToCar(row: CarRow): Car {
     rentalPrices: Object.fromEntries(
       rentalPriceKeys.map((key) => [key, numberOrNull(rentalPrices[key])])
     ) as Car["rentalPrices"],
+    variants: readVariants(row.variants),
   };
 }
 
@@ -112,6 +164,7 @@ export function carToRow(car: Car, sortOrder = 0): CarRow {
     transfer_available: car.transferAvailable,
     transfer_prices: car.transferPrices,
     rental_prices: car.rentalPrices,
+    variants: car.variants ?? [],
     sort_order: sortOrder,
     is_active: true,
   };

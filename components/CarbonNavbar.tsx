@@ -38,7 +38,7 @@ export default function CarbonNavbar({
 
   const links = home
     ? [
-        [t("cars"), "#cars", "cars"],
+        [t("cars"), "/avtomobiller", "cars"],
         [chooseCarLabel, "/avtomobil-sec", "ai"],
         [t("weddingCars"), "/toy-avtomobilleri", "wedding"],
         [t("blog"), "/blog", "blog"],

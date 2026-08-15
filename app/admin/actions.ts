@@ -44,6 +44,7 @@ function isMissingManufactureYearColumn(error: { code?: string; message?: string
   return (
     error.code === "PGRST204" ||
     message.includes("manufacture_year") ||
+    message.includes("variants") ||
     message.includes("schema cache")
   );
 }
@@ -51,6 +52,7 @@ function isMissingManufactureYearColumn(error: { code?: string; message?: string
 function withoutManufactureYear(row: CarRow) {
   const compatibleRow = { ...row } as Partial<CarRow>;
   delete compatibleRow.manufacture_year;
+  delete compatibleRow.variants;
 
   return compatibleRow;
 }
@@ -154,6 +156,12 @@ function boolValue(formData: FormData, key: string) {
   return formData.get(key) === "on";
 }
 
+function readRentalPricesFromForm(formData: FormData, prefix: string) {
+  return Object.fromEntries(
+    rentalPriceKeys.map((key) => [key, numberValue(formData, `${prefix}_${key}`)])
+  ) as Car["rentalPrices"];
+}
+
 function slugify(value: string) {
   return value
     .trim()
@@ -212,9 +220,40 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
   const transferPrices = Object.fromEntries(
     transferPriceKeys.map((key) => [key, numberValue(formData, `transfer_${key}`)])
   ) as Car["transferPrices"];
-  const rentalPrices = Object.fromEntries(
-    rentalPriceKeys.map((key) => [key, numberValue(formData, `rental_${key}`)])
-  ) as Car["rentalPrices"];
+  const rentalPrices = readRentalPricesFromForm(formData, "rental");
+  const variantCount = numberValue(formData, "variantCount") ?? 0;
+  const variants = Array.from({ length: variantCount }, (_, index) => {
+    const label = text(formData, `variant_${index}_label`);
+    const manufactureYear = numberValue(formData, `variant_${index}_manufactureYear`);
+    const bodyStyle = optionalText(formData, `variant_${index}_bodyStyle`);
+    const engine = optionalText(formData, `variant_${index}_engine`);
+    const thumbnail = optionalText(formData, `variant_${index}_thumbnail`);
+    const variantPrices = readRentalPricesFromForm(formData, `variant_${index}_rental`);
+    const hasPrice = Object.values(variantPrices).some(
+      (price) => typeof price === "number"
+    );
+
+    if (!label && !manufactureYear && !bodyStyle && !engine && !hasPrice) {
+      return null;
+    }
+
+    const variantLabel =
+      label ||
+      [manufactureYear, bodyStyle].filter(Boolean).join(" / ") ||
+      `Variant ${index + 1}`;
+
+    return {
+      id:
+        text(formData, `variant_${index}_id`) ||
+        slugify(`${slug}-${variantLabel}`),
+      label: variantLabel,
+      manufactureYear,
+      bodyStyle,
+      engine,
+      thumbnail,
+      rentalPrices: variantPrices,
+    };
+  }).filter((variant): variant is NonNullable<typeof variant> => Boolean(variant));
 
   return {
     id: text(formData, "id") || slug,
@@ -238,6 +277,7 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
     transferAvailable: boolValue(formData, "transferAvailable"),
     transferPrices,
     rentalPrices,
+    variants,
     isActive: boolValue(formData, "isActive"),
     sortOrder: numberValue(formData, "sortOrder") ?? 0,
   };

@@ -729,7 +729,7 @@ kbd {
 .admin-table-head,
 .admin-table-row {
   display: grid;
-  grid-template-columns: minmax(280px, 1.45fr) minmax(110px, .55fr) 72px 98px minmax(160px, .7fr) 88px 34px;
+  grid-template-columns: minmax(240px, 1.35fr) minmax(96px, .5fr) 64px 88px 96px minmax(140px, .65fr) 78px 34px;
   gap: 16px;
   align-items: center;
 }
@@ -1263,6 +1263,38 @@ kbd {
 .admin-mini-section h3 {
   margin: 2px 0 0;
   font-size: 13px;
+}
+
+.admin-muted-copy {
+  margin: -4px 0 0;
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.admin-variant-card {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .72);
+}
+
+.admin-variant-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--admin-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-variant-card-head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .admin-price-grid {
