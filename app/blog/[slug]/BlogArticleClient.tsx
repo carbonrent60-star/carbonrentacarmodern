@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   motion,
@@ -123,7 +124,15 @@ export default function BlogArticleClient({
         }}
       >
         <figure className="ca-cover">
-          <img src={localizedPost.image} alt={localizedPost.title} />
+          <Image
+            src={localizedPost.image}
+            alt={localizedPost.title}
+            width={1920}
+            height={1080}
+            priority
+            quality={100}
+            sizes="100vw"
+          />
 
           <figcaption>
             <span>CARBON JOURNAL</span>
@@ -194,13 +203,17 @@ export default function BlogArticleClient({
 
                 {section.image && (
                   <figure className="ca-inline-image">
-                    <img
+                    <Image
                       src={section.image}
                       alt={
                         section.imageAlt ||
                         section.heading ||
                         localizedPost.title
                       }
+                      width={1600}
+                      height={900}
+                      quality={100}
+                      sizes="(max-width: 900px) 100vw, 760px"
                     />
                   </figure>
                 )}
@@ -256,9 +269,12 @@ export default function BlogArticleClient({
                       href={`/blog/${item.slug}`}
                       className="ca-related-image"
                     >
-                      <img
+                      <Image
                         src={item.image}
                         alt={item.title}
+                        fill
+                        quality={100}
+                        sizes="(max-width: 900px) 100vw, 33vw"
                       />
 
                       <span>

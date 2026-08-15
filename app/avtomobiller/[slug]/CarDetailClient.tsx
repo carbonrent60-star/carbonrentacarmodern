@@ -702,6 +702,7 @@ export default function CarDetailClient({
                     alt={car.title}
                     fill
                     priority
+                    quality={100}
                     sizes="(max-width: 1000px) 100vw, 65vw"
                   />
                 </motion.div>
@@ -881,6 +882,7 @@ export default function CarDetailClient({
                           src={image}
                           alt={`${car.title} ${variant.label}`}
                           fill
+                          quality={100}
                           sizes="(max-width: 900px) 100vw, 180px"
                         />
                       </div>
@@ -1067,6 +1069,7 @@ export default function CarDetailClient({
                   alt={car.title}
                   width={260}
                   height={150}
+                  quality={100}
                 />
               </div>
 
@@ -1121,6 +1124,7 @@ export default function CarDetailClient({
                         src={item.thumbnail}
                         alt={item.title}
                         fill
+                        quality={100}
                         sizes="(max-width: 800px) 100vw, 33vw"
                       />
 

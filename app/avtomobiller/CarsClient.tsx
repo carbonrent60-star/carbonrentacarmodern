@@ -1290,6 +1290,7 @@ export default function CarsClient() {
                                 }
                                 alt={car.title}
                                 fill
+                                quality={100}
                                 priority={
                                   index < 3
                                 }

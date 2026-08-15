@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   AnimatePresence,
@@ -44,7 +45,13 @@ function ArticleImage({
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.8, ease }}
     >
-      <img src={src} alt={alt} />
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        quality={100}
+        sizes="(max-width: 900px) 100vw, 50vw"
+      />
     </motion.div>
   );
 }

@@ -1777,6 +1777,7 @@ export default function ReservationCheckout({
                   alt={car.title}
                   fill
                   priority
+                  quality={100}
                   sizes="(max-width: 950px) 100vw, 420px"
                 />
 

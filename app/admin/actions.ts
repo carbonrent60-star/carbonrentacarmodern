@@ -507,68 +507,148 @@ export async function seedBlogsAction() {
   redirect("/admin?blogsSeeded=1");
 }
 
+async function saveCarRecord(formData: FormData) {
+  const supabase = requireAdminConfig();
+  const car = readCarFromForm(formData);
+
+  if (!car.title || !car.brand || !car.slug) {
+    throw new Error("required-fields-missing");
+  }
+
+  const uploadedUrl = await getUploadedImageUrl(
+    formData,
+    "imageFile",
+    "cars",
+    car.slug
+  );
+  const uploadedWeddingUrl = await getUploadedImageUrl(
+    formData,
+    "weddingImageFile",
+    "wedding-cars",
+    car.slug
+  );
+  const thumbnail = uploadedUrl ?? car.thumbnail;
+  const weddingThumbnail = uploadedWeddingUrl ?? car.weddingThumbnail;
+
+  if (!thumbnail) {
+    throw new Error("image-required");
+  }
+
+  const savedCar = {
+    ...car,
+    thumbnail,
+    weddingThumbnail,
+  };
+  const row = {
+    ...carToRow(savedCar, car.sortOrder),
+    is_active: car.isActive,
+  };
+
+  const error = await upsertCarRows(supabase, row);
+
+  if (error) {
+    console.error("saveCarRecord failed", error);
+    throw new Error("database-save-failed");
+  }
+
+  revalidatePath("/");
+  revalidatePath("/avtomobiller");
+  revalidatePath(`/avtomobiller/${savedCar.slug}`);
+  revalidatePath("/toy-avtomobilleri");
+  revalidatePath("/transfer");
+
+  return {
+    ...savedCar,
+    sortOrder: car.sortOrder,
+    isActive: car.isActive,
+  };
+}
+
+async function saveBlogRecord(formData: FormData) {
+  const supabase = requireAdminConfig();
+  const blog = readBlogFromForm(formData);
+
+  const uploadedUrl = await getUploadedImageUrl(
+    formData,
+    "blogImageFile",
+    "blogs",
+    blog.slug
+  );
+  const blogWithImage = {
+    ...blog,
+    image: uploadedUrl ?? blog.image,
+  };
+
+  if (
+    !blogWithImage.title ||
+    !blogWithImage.slug ||
+    !blogWithImage.image ||
+    !blogWithImage.intro
+  ) {
+    throw new Error("required-fields-missing");
+  }
+
+  if (!blogWithImage.sections[0]?.paragraphs.length) {
+    throw new Error("blog-body-required");
+  }
+
+  const blogRow = blogPostToRow(blogWithImage, blogWithImage.sortOrder ?? 0);
+  const { error } = await supabase.from("blog_posts").upsert(blogRow, {
+    onConflict: "slug",
+  });
+
+  if (error) {
+    console.error("saveBlogRecord failed", error);
+    if (isMissingSupabaseTable(error)) {
+      throw new Error("blog-table-missing");
+    }
+
+    throw new Error("database-save-failed");
+  }
+
+  revalidatePath("/blog");
+  revalidatePath(`/blog/${blogWithImage.slug}`);
+
+  return blogWithImage;
+}
+
+export async function saveCarInlineAction(formData: FormData) {
+  if (!(await isAdminAuthenticated())) {
+    return { ok: false as const, error: "unauthenticated" };
+  }
+
+  try {
+    const car = await saveCarRecord(formData);
+    return { ok: true as const, car };
+  } catch (error) {
+    return { ok: false as const, error: normalizeAdminError(error) };
+  }
+}
+
+export async function saveBlogInlineAction(formData: FormData) {
+  if (!(await isAdminAuthenticated())) {
+    return { ok: false as const, error: "unauthenticated" };
+  }
+
+  try {
+    const blog = await saveBlogRecord(formData);
+    return { ok: true as const, blog };
+  } catch (error) {
+    return { ok: false as const, error: normalizeAdminError(error) };
+  }
+}
+
 export async function saveCarAction(formData: FormData) {
   if (!(await isAdminAuthenticated())) {
     redirect("/admin");
   }
 
-  let savedSlug = "";
-
   try {
-    const supabase = requireAdminConfig();
-    const car = readCarFromForm(formData);
-    savedSlug = car.slug;
-
-    if (!car.title || !car.brand || !car.slug) {
-      throw new Error("required-fields-missing");
-    }
-
-    const uploadedUrl = await getUploadedImageUrl(
-      formData,
-      "imageFile",
-      "cars",
-      car.slug
-    );
-    const uploadedWeddingUrl = await getUploadedImageUrl(
-      formData,
-      "weddingImageFile",
-      "wedding-cars",
-      car.slug
-    );
-    const thumbnail = uploadedUrl ?? car.thumbnail;
-    const weddingThumbnail = uploadedWeddingUrl ?? car.weddingThumbnail;
-
-    if (!thumbnail) {
-      throw new Error("image-required");
-    }
-
-    const row = {
-      ...carToRow(
-        {
-          ...car,
-          thumbnail,
-          weddingThumbnail,
-        },
-        car.sortOrder
-      ),
-      is_active: car.isActive,
-    };
-
-    const error = await upsertCarRows(supabase, row);
-
-    if (error) {
-      console.error("saveCarAction failed", error);
-      throw new Error("database-save-failed");
-    }
+    await saveCarRecord(formData);
   } catch (error) {
     adminErrorRedirect(normalizeAdminError(error));
   }
 
-  revalidatePath("/");
-  revalidatePath("/avtomobiller");
-  revalidatePath(`/avtomobiller/${savedSlug}`);
-  revalidatePath("/toy-avtomobilleri");
-  revalidatePath("/transfer");
   redirect("/admin?saved=1");
 }
 
@@ -577,56 +657,12 @@ export async function saveBlogAction(formData: FormData) {
     redirect("/admin");
   }
 
-  let savedSlug = "";
-
   try {
-    const supabase = requireAdminConfig();
-    const blog = readBlogFromForm(formData);
-    savedSlug = blog.slug;
-
-    const uploadedUrl = await getUploadedImageUrl(
-      formData,
-      "blogImageFile",
-      "blogs",
-      blog.slug
-    );
-    const blogWithImage = {
-      ...blog,
-      image: uploadedUrl ?? blog.image,
-    };
-
-    if (
-      !blogWithImage.title ||
-      !blogWithImage.slug ||
-      !blogWithImage.image ||
-      !blogWithImage.intro
-    ) {
-      throw new Error("required-fields-missing");
-    }
-
-    if (!blogWithImage.sections[0]?.paragraphs.length) {
-      throw new Error("blog-body-required");
-    }
-
-    const blogRow = blogPostToRow(blogWithImage, blogWithImage.sortOrder ?? 0);
-    const { error } = await supabase.from("blog_posts").upsert(blogRow, {
-      onConflict: "slug",
-    });
-
-    if (error) {
-      console.error("saveBlogAction failed", error);
-      if (isMissingSupabaseTable(error)) {
-        throw new Error("blog-table-missing");
-      }
-
-      throw new Error("database-save-failed");
-    }
+    await saveBlogRecord(formData);
   } catch (error) {
     adminErrorRedirect(normalizeAdminError(error));
   }
 
-  revalidatePath("/blog");
-  revalidatePath(`/blog/${savedSlug}`);
   redirect("/admin?blogSaved=1");
 }
 
@@ -651,6 +687,26 @@ export async function deleteBlogAction(formData: FormData) {
   redirect("/admin?blogDeleted=1");
 }
 
+export async function deleteBlogInlineAction(slug: string) {
+  if (!(await isAdminAuthenticated())) {
+    return { ok: false as const, error: "unauthenticated" };
+  }
+
+  try {
+    const supabase = requireAdminConfig();
+    const { error } = await supabase.from("blog_posts").delete().eq("slug", slug);
+
+    if (error) {
+      throw new Error("database-delete-failed");
+    }
+  } catch (error) {
+    return { ok: false as const, error: normalizeAdminError(error) };
+  }
+
+  revalidatePath("/blog");
+  return { ok: true as const, slug };
+}
+
 
 export async function deleteCarAction(formData: FormData) {
   if (!(await isAdminAuthenticated())) {
@@ -672,4 +728,25 @@ export async function deleteCarAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/avtomobiller");
   redirect("/admin?deleted=1");
+}
+
+export async function deleteCarInlineAction(id: string) {
+  if (!(await isAdminAuthenticated())) {
+    return { ok: false as const, error: "unauthenticated" };
+  }
+
+  try {
+    const supabase = requireAdminConfig();
+    const { error } = await supabase.from("cars").delete().eq("id", id);
+
+    if (error) {
+      throw new Error("database-delete-failed");
+    }
+  } catch (error) {
+    return { ok: false as const, error: normalizeAdminError(error) };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/avtomobiller");
+  return { ok: true as const, id };
 }

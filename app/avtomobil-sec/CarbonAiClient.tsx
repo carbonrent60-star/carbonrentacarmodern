@@ -223,6 +223,7 @@ function ResultCard({
           src={result.car.thumbnail}
           alt={result.car.title}
           fill
+          quality={100}
           sizes={
             featured
               ? "(max-width: 900px) 100vw, 760px"

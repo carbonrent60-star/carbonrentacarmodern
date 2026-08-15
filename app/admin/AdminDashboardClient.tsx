@@ -28,13 +28,13 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import {
-  deleteBlogAction,
-  deleteCarAction,
+  deleteBlogInlineAction,
+  deleteCarInlineAction,
   logoutAction,
-  saveBlogAction,
-  saveCarAction,
+  saveBlogInlineAction,
+  saveCarInlineAction,
   seedBlogsAction,
   seedCarsAction,
 } from "./actions";
@@ -111,6 +111,25 @@ const transferPriceLabels: Record<(typeof transferPriceKeys)[number], string> = 
   shusha: "Şuşa - Bakı",
   lankaran: "Lənkəran - Bakı",
 };
+
+const adminClientMessages: Record<string, string> = {
+  unauthenticated: "Sessiya bitib. Səhifəni yeniləyib yenidən daxil olun.",
+  "missing-supabase-admin-env":
+    "Supabase server məlumatları tapılmadı. Env dəyərlərini yoxlayın.",
+  "image-too-large": "Şəkil çox böyükdür. Maksimum 50 MB şəkil yükləyin.",
+  "image-upload-failed": "Şəkil yüklənmədi. Storage ayarlarını yoxlayın.",
+  "required-fields-missing": "Mütləq sahələri doldurun.",
+  "image-required": "Əsas şəkil tələb olunur.",
+  "blog-body-required": "Məqalə mətni boş ola bilməz.",
+  "blog-table-missing": "blog_posts cədvəli Supabase-də tapılmadı.",
+  "database-save-failed": "Məlumat bazaya yazılmadı.",
+  "database-delete-failed": "Məlumat silinmədi.",
+  "unknown-error": "Gözlənilməyən xəta baş verdi.",
+};
+
+function adminClientMessage(code: string) {
+  return adminClientMessages[code] ?? adminClientMessages["unknown-error"];
+}
 
 const navGroups: Array<{
   label: string;
@@ -420,9 +439,10 @@ function AdminDashboardClient({
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortKey, setSortKey] = useState("sort");
   const [layout, setLayout] = useState<"list" | "grid">("list");
+  const [cars, setCars] = useState(() => carsResult.cars);
+  const [blogs, setBlogs] = useState(() => blogsResult.blogs);
+  const [localNotice, setLocalNotice] = useState<string | null>(null);
 
-  const cars = carsResult.cars;
-  const blogs = blogsResult.blogs;
   const rentalCount = cars.filter((car) => car.rentalVisible !== false).length;
   const transferCars = cars.filter((car) => car.transferAvailable);
   const weddingCars = cars.filter(
@@ -459,6 +479,44 @@ function AdminDashboardClient({
   const openBlogEditor = (blog?: AdminBlogPost, index = blogs.length) => {
     setBlogTab("general");
     setEditor({ type: "blog", mode: blog ? "edit" : "create", blog, index });
+  };
+
+  const upsertCar = (car: AdminCar) => {
+    setCars((items) => {
+      const exists = items.some((item) => item.id === car.id);
+      const next = exists
+        ? items.map((item) => (item.id === car.id ? car : item))
+        : [...items, car];
+
+      return next.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    });
+    setEditor({ type: "car", mode: "edit", car, index: car.sortOrder ?? cars.length });
+    setLocalNotice("Avtomobil yadda saxlanıldı.");
+  };
+
+  const upsertBlog = (blog: AdminBlogPost) => {
+    setBlogs((items) => {
+      const exists = items.some((item) => item.slug === blog.slug);
+      const next = exists
+        ? items.map((item) => (item.slug === blog.slug ? blog : item))
+        : [...items, blog];
+
+      return next.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    });
+    setEditor({ type: "blog", mode: "edit", blog, index: blog.sortOrder ?? blogs.length });
+    setLocalNotice("Blog məqaləsi yadda saxlanıldı.");
+  };
+
+  const removeCar = (id: string) => {
+    setCars((items) => items.filter((item) => item.id !== id));
+    setEditor(null);
+    setLocalNotice("Avtomobil silindi.");
+  };
+
+  const removeBlog = (slug: string) => {
+    setBlogs((items) => items.filter((item) => item.slug !== slug));
+    setEditor(null);
+    setLocalNotice("Blog məqaləsi silindi.");
   };
 
   const filteredCars = useMemo(() => {
@@ -609,6 +667,11 @@ function AdminDashboardClient({
 
         <div className="admin-content">
           <Alerts alerts={alerts} flags={flags} />
+          {localNotice ? (
+            <div className="admin-alert admin-alert-success">
+              {localNotice}
+            </div>
+          ) : null}
 
           {view === "overview" ? (
             <OverviewView
@@ -718,6 +781,10 @@ function AdminDashboardClient({
           blogTab={blogTab}
           onCarTab={setCarTab}
           onBlogTab={setBlogTab}
+          onCarSaved={upsertCar}
+          onBlogSaved={upsertBlog}
+          onCarDeleted={removeCar}
+          onBlogDeleted={removeBlog}
           onClose={() => setEditor(null)}
         />
       ) : null}
@@ -1242,6 +1309,10 @@ function EditorDrawer({
   blogTab,
   onCarTab,
   onBlogTab,
+  onCarSaved,
+  onBlogSaved,
+  onCarDeleted,
+  onBlogDeleted,
   onClose,
 }: {
   editor: NonNullable<EditorState>;
@@ -1249,9 +1320,16 @@ function EditorDrawer({
   blogTab: BlogTab;
   onCarTab: (tab: CarTab) => void;
   onBlogTab: (tab: BlogTab) => void;
+  onCarSaved: (car: AdminCar) => void;
+  onBlogSaved: (blog: AdminBlogPost) => void;
+  onCarDeleted: (id: string) => void;
+  onBlogDeleted: (slug: string) => void;
   onClose: () => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [drawerError, setDrawerError] = useState<string | null>(null);
   const formId = editor.type === "car" ? "admin-car-editor-form" : "admin-blog-editor-form";
   const title =
     editor.type === "car"
@@ -1265,6 +1343,81 @@ function EditorDrawer({
     editor.type === "car"
       ? "Bu avtomobil idarə panelindən və bağlı siyahılardan silinəcək."
       : "Bu məqalə idarə panelindən və saytdakı blog siyahısından silinəcək.";
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setDrawerError(null);
+    setIsSaving(true);
+
+    const formData = new FormData(event.currentTarget);
+
+    try {
+      if (editor.type === "car") {
+        const result = await saveCarInlineAction(formData);
+
+        if (!result.ok) {
+          setDrawerError(adminClientMessage(result.error));
+          return;
+        }
+
+        onCarSaved(result.car);
+        return;
+      }
+
+      const result = await saveBlogInlineAction(formData);
+
+      if (!result.ok) {
+        setDrawerError(adminClientMessage(result.error));
+        return;
+      }
+
+      onBlogSaved(result.blog);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  const handleDelete = async () => {
+    setDrawerError(null);
+    setIsDeleting(true);
+
+    try {
+      if (editor.type === "car") {
+        const id = editor.car?.id;
+
+        if (!id) {
+          setDrawerError(adminClientMessage("database-delete-failed"));
+          return;
+        }
+
+        const result = await deleteCarInlineAction(id);
+
+        if (!result.ok) {
+          setDrawerError(adminClientMessage(result.error));
+          return;
+        }
+
+        onCarDeleted(result.id);
+        return;
+      }
+
+      const slug = editor.blog?.slug;
+
+      if (!slug) {
+        setDrawerError(adminClientMessage("database-delete-failed"));
+        return;
+      }
+
+      const result = await deleteBlogInlineAction(slug);
+
+      if (!result.ok) {
+        setDrawerError(adminClientMessage(result.error));
+        return;
+      }
+
+      onBlogDeleted(result.slug);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="admin-drawer-layer">
@@ -1291,22 +1444,52 @@ function EditorDrawer({
             editor={editor}
             activeTab={carTab}
             onTab={onCarTab}
+            onSubmit={handleSubmit}
           />
         ) : (
-          <BlogEditorForm formId={formId} editor={editor} activeTab={blogTab} onTab={onBlogTab} />
+          <BlogEditorForm
+            formId={formId}
+            editor={editor}
+            activeTab={blogTab}
+            onTab={onBlogTab}
+            onSubmit={handleSubmit}
+          />
         )}
+
+        {drawerError ? (
+          <div className="admin-drawer-message is-error">
+            {drawerError}
+          </div>
+        ) : null}
 
         <footer className="admin-drawer-footer">
           {isEditing ? (
-            <button type="button" className="admin-danger-button" onClick={() => setConfirmDelete(true)}>
+            <button
+              type="button"
+              className="admin-danger-button"
+              onClick={() => setConfirmDelete(true)}
+              disabled={isSaving || isDeleting}
+            >
               <Trash2 size={15} />
               {deleteTitle}
             </button>
           ) : null}
-          <button type="button" className="admin-secondary-button" onClick={onClose}>Ləğv et</button>
-          <button type="submit" form={formId} className="admin-primary-button">
+          <button
+            type="button"
+            className="admin-secondary-button"
+            onClick={onClose}
+            disabled={isSaving || isDeleting}
+          >
+            Ləğv et
+          </button>
+          <button
+            type="submit"
+            form={formId}
+            className="admin-primary-button"
+            disabled={isSaving || isDeleting}
+          >
             <Save size={15} />
-            Dəyişiklikləri saxla
+            {isSaving ? "Saxlanılır..." : "Dəyişiklikləri saxla"}
           </button>
         </footer>
       </aside>
@@ -1325,17 +1508,14 @@ function EditorDrawer({
               <button type="button" className="admin-secondary-button" onClick={() => setConfirmDelete(false)}>
                 Ləğv et
               </button>
-              {editor.type === "car" ? (
-                <form action={deleteCarAction}>
-                  <input name="id" type="hidden" value={editor.car?.id ?? ""} readOnly />
-                  <button type="submit" className="admin-danger-button">Bəli, sil</button>
-                </form>
-              ) : (
-                <form action={deleteBlogAction}>
-                  <input name="blogSlug" type="hidden" value={editor.blog?.slug ?? ""} readOnly />
-                  <button type="submit" className="admin-danger-button">Bəli, sil</button>
-                </form>
-              )}
+              <button
+                type="button"
+                className="admin-danger-button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Silinir..." : "Bəli, sil"}
+              </button>
             </footer>
           </section>
         </div>
@@ -1367,11 +1547,13 @@ function CarEditorForm({
   editor,
   activeTab,
   onTab,
+  onSubmit,
 }: {
   formId: string;
   editor: Extract<NonNullable<EditorState>, { type: "car" }>;
   activeTab: CarTab;
   onTab: (tab: CarTab) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const car = editor.car;
   const initialVariantCount = Math.max(car?.variants?.length ?? 0, 1);
@@ -1389,7 +1571,7 @@ function CarEditorForm({
         <TabButton value="wedding" active={activeTab} onClick={onTab}>Toy</TabButton>
       </nav>
 
-      <form id={formId} action={saveCarAction} className="admin-editor-form">
+      <form id={formId} onSubmit={onSubmit} className="admin-editor-form">
         <input name="id" type="hidden" defaultValue={car?.id ?? ""} />
         <input name="variantCount" type="hidden" value={variantCount} readOnly />
 
@@ -1547,11 +1729,13 @@ function BlogEditorForm({
   editor,
   activeTab,
   onTab,
+  onSubmit,
 }: {
   formId: string;
   editor: Extract<NonNullable<EditorState>, { type: "blog" }>;
   activeTab: BlogTab;
   onTab: (tab: BlogTab) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const blog = editor.blog;
 
@@ -1564,7 +1748,7 @@ function BlogEditorForm({
         <TabButton value="visibility" active={activeTab} onClick={onTab}>Görünürlük</TabButton>
       </nav>
 
-      <form id={formId} action={saveBlogAction} className="admin-editor-form">
+      <form id={formId} onSubmit={onSubmit} className="admin-editor-form">
         <section className={`admin-tab-panel${activeTab === "general" ? "" : " is-hidden"}`}>
           <div className="admin-form-grid">
             <Field label="Başlıq" name="blogTitle" defaultValue={blog?.title} placeholder="Bakıda avtomobil seçimi" />
