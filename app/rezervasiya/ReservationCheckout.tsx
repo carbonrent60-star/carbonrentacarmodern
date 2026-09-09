@@ -978,7 +978,7 @@ function getRate(priceSource: Pick<Car, "rentalPrices"> | Pick<CarVariant, "rent
   return priceSource.rentalPrices[tier.key];
 }
 
-function variantDisplayLabel(variant: CarVariant | undefined, variantId: string) {
+function variantDisplayLabel(car: Car, variant: CarVariant | undefined, variantId: string) {
   if (variant) {
     if (variant.label && variant.label !== String(variant.manufactureYear ?? "")) {
       return variant.label;
@@ -988,14 +988,14 @@ function variantDisplayLabel(variant: CarVariant | undefined, variantId: string)
   }
 
   if (variantId.endsWith("-main")) {
-    return "";
+    return car.manufactureYear ? String(car.manufactureYear) : "";
   }
 
   return "";
 }
 
 function selectedVehicleLabel(car: Car, variant: CarVariant | undefined, variantId: string) {
-  const variantLabel = variantDisplayLabel(variant, variantId);
+  const variantLabel = variantDisplayLabel(car, variant, variantId);
 
   return variantLabel ? `${car.title} · ${variantLabel}` : car.title;
 }

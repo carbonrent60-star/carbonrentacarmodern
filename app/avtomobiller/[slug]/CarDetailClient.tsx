@@ -299,9 +299,9 @@ function variantTitle(car: Car, variant: PublicVariant) {
   return variant.label || (variant.manufactureYear ? String(variant.manufactureYear) : car.title);
 }
 
-function variantDetailLine(car: Car, variant: PublicVariant) {
+function variantDetailLine(car: Car, variant: PublicVariant, showYear = true) {
   return [
-    variant.manufactureYear,
+    showYear ? variant.manufactureYear : null,
     variant.engine ?? car.engine,
     variant.fuel ?? car.fuel,
     variant.power,
@@ -312,7 +312,7 @@ function variantDetailLine(car: Car, variant: PublicVariant) {
 
 function selectedVehicleLabel(car: Car, variant: PublicVariant) {
   if (variant.isMain) {
-    return car.title;
+    return car.manufactureYear ? `${car.title} · ${car.manufactureYear}` : car.title;
   }
 
   const title = variantTitle(car, variant);
@@ -742,6 +742,9 @@ function VariantSelector({
           const price = getVariantStartingPrice(variant);
           const image = variant.thumbnail || car.thumbnail;
           const selected = selectedVariant.id === variant.id;
+          const title = variantTitle(car, variant);
+          const year = variant.manufactureYear;
+          const showYearBadge = Boolean(year && title !== String(year));
 
           return (
             <motion.button
@@ -757,10 +760,15 @@ function VariantSelector({
               </span>
               <span className="carbon-variant-option-copy">
                 <strong>
-                  {variantTitle(car, variant)}
+                  {title}
+                  {showYearBadge ? (
+                    <span className="carbon-variant-year-badge">
+                      {year}
+                    </span>
+                  ) : null}
                   {variant.popular ? <em>Ən populyar</em> : null}
                 </strong>
-                <small>{variantDetailLine(car, variant)}</small>
+                <small>{variantDetailLine(car, variant, !showYearBadge && title !== String(year ?? ""))}</small>
               </span>
               <span className="carbon-variant-option-price">
                 {price !== null ? (

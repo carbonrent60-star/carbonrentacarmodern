@@ -8854,6 +8854,17 @@ button {
   font-weight: 700;
 }
 
+.carbon-variant-year-badge {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(0,0,0,.035);
+  color: #666;
+  font-size: 7px;
+  line-height: 1;
+  font-weight: 760;
+}
+
 .carbon-variant-option-copy small,
 .carbon-variant-option-price small {
   color: #777;

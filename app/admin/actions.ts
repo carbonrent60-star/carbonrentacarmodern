@@ -215,6 +215,7 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
   const title = text(formData, "title");
   const slug = text(formData, "slug") || slugify(title);
   const category = text(formData, "category") as CarCategory;
+  const carInfoYear = numberValue(formData, "manufactureYear");
   const transferPrices = Object.fromEntries(
     transferPriceKeys.map((key) => [key, numberValue(formData, `transfer_${key}`)])
   ) as Car["transferPrices"];
@@ -277,7 +278,7 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
     brand: text(formData, "brand"),
     title,
     category: carCategories.includes(category) ? category : "Econom",
-    manufactureYear: mainVariant?.manufactureYear ?? numberValue(formData, "manufactureYear"),
+    manufactureYear: carInfoYear ?? mainVariant?.manufactureYear,
     seats: numberValue(formData, "seats"),
     baggage: numberValue(formData, "baggage"),
     smallBaggage: numberValue(formData, "smallBaggage"),
