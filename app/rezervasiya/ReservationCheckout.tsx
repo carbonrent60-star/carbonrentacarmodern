@@ -318,11 +318,7 @@ function checkoutDayValue(date: Date) {
 function formatCheckoutCalendarDate(value: string) {
   if (!value) return "Tarix seçin";
 
-  return new Intl.DateTimeFormat("az-AZ", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(checkoutIsoToDate(value));
+  return formatAzeriDate(value);
 }
 
 function ReservationCalendarMonth({
@@ -1004,14 +1000,31 @@ function selectedVehicleLabel(car: Car, variant: CarVariant | undefined, variant
   return variantLabel ? `${car.title} · ${variantLabel}` : car.title;
 }
 
+function formatAzeriDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  const monthLabels = [
+    "yan",
+    "fev",
+    "mar",
+    "apr",
+    "may",
+    "iyn",
+    "iyl",
+    "avq",
+    "sen",
+    "okt",
+    "noy",
+    "dek",
+  ];
+  const monthIndex = Math.max(0, Math.min(11, (month || 1) - 1));
+
+  return `${String(day || 1).padStart(2, "0")} ${monthLabels[monthIndex]} ${year || ""}`.trim();
+}
+
 function formatDate(value: string) {
   if (!value) return "Seçilməyib";
 
-  return new Intl.DateTimeFormat("az-AZ", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(`${value}T12:00:00`));
+  return formatAzeriDate(value);
 }
 
 type Initial = {

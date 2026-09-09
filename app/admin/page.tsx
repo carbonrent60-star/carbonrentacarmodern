@@ -69,29 +69,48 @@ export default async function AdminPage({
             </div>
           </div>
 
-          <div className="admin-login-copy">
-            <span>Secure access</span>
-            <h1>Carbon idarəetmə mərkəzi</h1>
-            <p>
-              Avtomobil parkı, qiymətlər, media və blog məzmununu sürətli,
-              sakit və təhlükəsiz idarə edin.
-            </p>
-          </div>
+          <div className="admin-login-content">
+            <div className="admin-login-copy">
+              <span>Secure access</span>
+              <h1>Carbon idarəetmə mərkəzi</h1>
+              <p>
+                Avtomobil parkı, variantlar, qiymətlər və məzmun üçün sakit,
+                sürətli və təhlükəsiz idarəetmə sahəsi.
+              </p>
 
-          <form action={loginAction} className="admin-login-form">
-            <label>
-              <span>Şifrə</span>
-              <div className="admin-password-box">
-                <KeyRound size={17} />
-                <input name="password" type="password" autoComplete="current-password" />
+              <div className="admin-login-proof" aria-label="Panel imkanları">
+                <span>
+                  <ShieldCheck size={14} />
+                  Park nəzarəti
+                </span>
+                <span>Variant qiymətləri</span>
+                <span>Media və blog</span>
               </div>
-            </label>
-            {errorMessage ? <small>{errorMessage}</small> : null}
-            <button type="submit" className="admin-primary-button">
-              Panelə daxil ol
-              <ArrowRight size={16} />
-            </button>
-          </form>
+            </div>
+
+            <form action={loginAction} className="admin-login-form">
+              <div className="admin-login-form-head">
+                <span>01</span>
+                <div>
+                  <strong>Giriş</strong>
+                  <small>Yalnız səlahiyyətli adminlər üçün</small>
+                </div>
+              </div>
+
+              <label>
+                <span>Şifrə</span>
+                <div className="admin-password-box">
+                  <KeyRound size={17} />
+                  <input name="password" type="password" autoComplete="current-password" />
+                </div>
+              </label>
+              {errorMessage ? <small>{errorMessage}</small> : null}
+              <button type="submit" className="admin-primary-button">
+                Panelə daxil ol
+                <ArrowRight size={16} />
+              </button>
+            </form>
+          </div>
 
           <div className="admin-login-status">
             <span>
