@@ -23,6 +23,8 @@ export const metadata: Metadata = createPageMetadata({
   ],
 });
 
+export const dynamic = "force-dynamic";
+
 export default async function CarsPage() {
   const cars = (await getCarsForSite()).filter(
     (car) => car.rentalVisible !== false

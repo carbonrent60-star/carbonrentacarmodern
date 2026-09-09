@@ -3,6 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
+  BadgeHelp,
+  Bell,
+  CalendarDays,
   CarFront,
   ChevronDown,
   ChevronsLeft,
@@ -17,6 +20,7 @@ import {
   List,
   LogOut,
   MoreHorizontal,
+  Moon,
   Newspaper,
   Plane,
   Plus,
@@ -24,7 +28,10 @@ import {
   Save,
   Search,
   Settings,
+  SlidersHorizontal,
   Trash2,
+  Upload,
+  Users,
   X,
   CheckCircle2,
   type LucideIcon,
@@ -40,7 +47,7 @@ import {
   seedCarsAction,
 } from "./actions";
 import AdminImageField from "./AdminImageField";
-import type { Car } from "@/data/cars";
+import type { Car, CarVariant } from "@/data/cars";
 import type { AdminBlogPost } from "@/lib/supabase/blogs";
 import {
   carCategories,
@@ -67,7 +74,18 @@ type BlogsResult = {
   error: string | null;
 };
 
-type ViewKey = "overview" | "cars" | "transfer" | "weddings" | "blog" | "media" | "settings";
+type ViewKey =
+  | "overview"
+  | "cars"
+  | "bookings"
+  | "customers"
+  | "rental"
+  | "transfer"
+  | "weddings"
+  | "blog"
+  | "media"
+  | "tutorial"
+  | "settings";
 type CarTab =
   | "general"
   | "technical"
@@ -147,7 +165,15 @@ const navGroups: Array<{
     items: [
       { key: "overview", label: "İcmal", icon: LayoutDashboard },
       { key: "cars", label: "Avtomobillər", icon: CarFront },
-      { key: "transfer", label: "Transfer", icon: Plane },
+    ],
+  },
+  {
+    label: "İDARƏETMƏ",
+    items: [
+      { key: "bookings", label: "Bronlar", icon: CalendarDays },
+      { key: "customers", label: "Müştərilər", icon: Users },
+      { key: "rental", label: "İcarə", icon: Gauge },
+      { key: "transfer", label: "Transferlər", icon: Plane },
       { key: "weddings", label: "Toy avtomobilləri", icon: Heart },
     ],
   },
@@ -156,6 +182,7 @@ const navGroups: Array<{
     items: [
       { key: "blog", label: "Blog", icon: Newspaper },
       { key: "media", label: "Şəkillər", icon: Images },
+      { key: "tutorial", label: "Təlimat", icon: BadgeHelp },
     ],
   },
   {
@@ -318,18 +345,60 @@ function displayImage(car: AdminCar, mode: CarTableMode = "fleet") {
   return mode === "wedding" ? car.weddingThumbnail ?? car.thumbnail : car.thumbnail;
 }
 
-function carServices(car: AdminCar) {
-  return [
-    car.rentalVisible !== false ? "İcarə" : null,
-    car.transferAvailable ? "Transfer" : null,
-    car.weddingAvailable ? "Toy" : null,
-  ].filter(Boolean) as string[];
-}
-
 function variantPriceLabel(car: AdminCar) {
   const count = car.variants?.length ?? 0;
 
-  return count ? `${count} variant` : "Variant yoxdur";
+  return `${count + 1} variant`;
+}
+
+function carVariantYears(car: AdminCar) {
+  return [
+    car.manufactureYear,
+    ...(car.variants ?? []).map((variant) => variant.manufactureYear),
+  ].filter((year): year is number => typeof year === "number");
+}
+
+function carVariantRange(car: AdminCar) {
+  const years = carVariantYears(car);
+
+  if (!years.length) {
+    return "";
+  }
+
+  const min = Math.min(...years);
+  const max = Math.max(...years);
+
+  return min === max ? String(min) : `${min}-${max}`;
+}
+
+function variantStartingPrice(variant?: Pick<CarVariant, "rentalPrices">) {
+  if (!variant) {
+    return null;
+  }
+
+  return (
+    variant.rentalPrices.days1to3 ??
+    variant.rentalPrices.days4to7 ??
+    variant.rentalPrices.days8to15 ??
+    variant.rentalPrices.days16to24 ??
+    variant.rentalPrices.days25to30 ??
+    variant.rentalPrices.days30plus
+  );
+}
+
+function variantDisplayName(variant: Partial<CarVariant> | undefined, index: number) {
+  if (!variant) {
+    return index === 0 ? "Yeni əsas variant" : "Yeni variant";
+  }
+
+  const year = variant.manufactureYear ? String(variant.manufactureYear) : "";
+  const label = variant.label?.trim() ?? "";
+
+  if (year && label && label !== year) {
+    return `${year} · ${label}`;
+  }
+
+  return year || label || (index === 0 ? "Əsas variant" : "Yeni variant");
 }
 
 function blogBodyText(blog?: AdminBlogPost) {
@@ -444,6 +513,7 @@ function AdminDashboardClient({
   const [carQuery, setCarQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [serviceFilter, setServiceFilter] = useState("all");
   const [sortKey, setSortKey] = useState("sort");
   const [layout, setLayout] = useState<"list" | "grid">("list");
   const [cars, setCars] = useState(() => carsResult.cars);
@@ -561,28 +631,45 @@ function AdminDashboardClient({
       .filter((car) => {
         const matchesQuery = !query
           ? true
-          : [car.title, car.brand, car.category, car.slug].some((value) =>
+          : [car.title, car.brand, car.category, car.slug, car.id].some((value) =>
               value?.toLowerCase().includes(query)
             );
         const matchesCategory = categoryFilter === "all" || car.category === categoryFilter;
         const matchesStatus =
           statusFilter === "all" ||
           (statusFilter === "active" ? car.isActive !== false : car.isActive === false);
+        const matchesService =
+          serviceFilter === "all" ||
+          (serviceFilter === "rental" && car.rentalVisible !== false) ||
+          (serviceFilter === "transfer" && car.transferAvailable) ||
+          (serviceFilter === "wedding" && car.weddingAvailable);
 
-        return matchesQuery && matchesCategory && matchesStatus;
+        return matchesQuery && matchesCategory && matchesStatus && matchesService;
       })
       .sort((a, b) => {
+        if (sortKey === "newest") {
+          return (b.sortOrder ?? 0) - (a.sortOrder ?? 0);
+        }
+
         if (sortKey === "title") {
           return a.title.localeCompare(b.title);
+        }
+
+        if (sortKey === "title-desc") {
+          return b.title.localeCompare(a.title);
         }
 
         if (sortKey === "price") {
           return (startPrice(a) ?? 0) - (startPrice(b) ?? 0);
         }
 
+        if (sortKey === "price-desc") {
+          return (startPrice(b) ?? 0) - (startPrice(a) ?? 0);
+        }
+
         return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
       });
-  }, [cars, carQuery, categoryFilter, statusFilter, sortKey]);
+  }, [cars, carQuery, categoryFilter, statusFilter, serviceFilter, sortKey]);
 
   const mediaItems = useMemo(() => {
     const carMedia = cars.flatMap((car) => [
@@ -621,6 +708,8 @@ function AdminDashboardClient({
     { label: "Yeni avtomobil əlavə et", hint: "Yarat", run: () => openCarEditor() },
     { label: "Bloga keç", hint: "Məzmun", run: () => setView("blog") },
     { label: "Yeni məqalə əlavə et", hint: "Yarat", run: () => openBlogEditor() },
+    { label: "Təlimatı aç", hint: "Admin kömək", run: () => setView("tutorial") },
+    { label: "İcarəyə keç", hint: "Xidmət", run: () => setView("rental") },
     { label: "Transferlərə keç", hint: "Xidmət", run: () => setView("transfer") },
     { label: "Toy avtomobillərinə keç", hint: "Xidmət", run: () => setView("weddings") },
     { label: "Sayta bax", hint: "Carbon", run: () => window.open("/", "_blank") },
@@ -666,10 +755,14 @@ function AdminDashboardClient({
             <ExternalLink size={16} />
             <span>Sayta bax</span>
           </Link>
-          <form action={logoutAction}>
+          <form action={logoutAction} className="admin-user-card">
+            <span className="admin-user-avatar">N</span>
+            <span className="admin-user-copy">
+              <strong>JS Carbon</strong>
+              <small>Administrator</small>
+            </span>
             <button type="submit" title={collapsed ? "Çıxış" : undefined}>
-              <LogOut size={16} />
-              <span>Çıxış</span>
+              <LogOut size={15} />
             </button>
           </form>
         </div>
@@ -690,10 +783,12 @@ function AdminDashboardClient({
           </button>
 
           <div className="admin-topbar-actions">
-            <Link href="/" target="_blank" rel="noopener noreferrer" className="admin-secondary-button">
-              Sayta bax
-              <ExternalLink size={14} />
-            </Link>
+            <ShellButton onClick={() => undefined} title="Görünüş">
+              <Moon size={16} />
+            </ShellButton>
+            <ShellButton onClick={() => undefined} title="Bildirişlər">
+              <Bell size={16} />
+            </ShellButton>
             <ShellButton onClick={() => setCollapsed((value) => !value)} title="Menyunu yığ">
               {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
             </ShellButton>
@@ -727,11 +822,13 @@ function AdminDashboardClient({
               query={carQuery}
               category={categoryFilter}
               status={statusFilter}
+              service={serviceFilter}
               sortKey={sortKey}
               layout={layout}
               onQuery={setCarQuery}
               onCategory={setCategoryFilter}
               onStatus={setStatusFilter}
+              onService={setServiceFilter}
               onSort={setSortKey}
               onLayout={setLayout}
               onNew={() => openCarEditor()}
@@ -739,9 +836,35 @@ function AdminDashboardClient({
             />
           ) : null}
 
+          {view === "bookings" ? (
+            <ComingSoonView
+              eyebrow="İDARƏETMƏ"
+              title="Bronlar"
+              subtitle="İcarə, transfer və toy sorğuları üçün vahid bron mərkəzi."
+            />
+          ) : null}
+
+          {view === "customers" ? (
+            <ComingSoonView
+              eyebrow="İDARƏETMƏ"
+              title="Müştərilər"
+              subtitle="Müştəri profilləri, əlaqə məlumatları və bron tarixçəsi burada toplanacaq."
+            />
+          ) : null}
+
+          {view === "rental" ? (
+            <ServiceCarsView
+              title="İcarə"
+              subtitle="Gündəlik icarə üçün aktiv avtomobillər və başlanğıc qiymətlər"
+              cars={cars.filter((car) => car.rentalVisible !== false)}
+              icon={<Gauge size={18} />}
+              onEdit={openCarEditor}
+            />
+          ) : null}
+
           {view === "transfer" ? (
             <ServiceCarsView
-              title="Transfer"
+              title="Transferlər"
               subtitle="Transfer üçün aktiv avtomobilləri və marşrut qiymətlərini idarə edin"
               cars={transferCars}
               icon={<Plane size={18} />}
@@ -765,6 +888,7 @@ function AdminDashboardClient({
           ) : null}
 
           {view === "media" ? <MediaView items={mediaItems} /> : null}
+          {view === "tutorial" ? <TutorialView onView={setView} onNewCar={() => openCarEditor()} /> : null}
           {view === "settings" ? (
             <SettingsView carsResult={carsResult} blogsResult={blogsResult} />
           ) : null}
@@ -1010,11 +1134,13 @@ function CarsView({
   query,
   category,
   status,
+  service,
   sortKey,
   layout,
   onQuery,
   onCategory,
   onStatus,
+  onService,
   onSort,
   onLayout,
   onNew,
@@ -1025,52 +1151,143 @@ function CarsView({
   query: string;
   category: string;
   status: string;
+  service: string;
   sortKey: string;
   layout: "list" | "grid";
   onQuery: (value: string) => void;
   onCategory: (value: string) => void;
   onStatus: (value: string) => void;
+  onService: (value: string) => void;
   onSort: (value: string) => void;
   onLayout: (value: "list" | "grid") => void;
   onNew: () => void;
   onEdit: (car?: AdminCar, index?: number) => void;
 }) {
   const categories = Array.from(new Set(allCars.map((car) => car.category)));
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount =
+    (category !== "all" ? 1 : 0) +
+    (status !== "all" ? 1 : 0) +
+    (service !== "all" ? 1 : 0);
+  const activeCount = allCars.filter((car) => car.isActive !== false).length;
+  const transferCount = allCars.filter((car) => car.transferAvailable).length;
+  const weddingCount = allCars.filter((car) => car.weddingAvailable).length;
+  const fleetStats = [
+    { value: allCars.length, label: "Avtomobil", note: "+3 bu ay", icon: CarFront },
+    { value: activeCount, label: "Aktiv", note: `${Math.round((activeCount / Math.max(allCars.length, 1)) * 100)}% park`, icon: Gauge },
+    { value: transferCount, label: "Transfer", note: "Mövcuddur", icon: Plane },
+    { value: weddingCount, label: "Toy", note: "Kolleksiya", icon: Heart },
+  ];
 
   return (
     <div className="admin-view">
       <PageTitle
         eyebrow="AVTOMOBİL PARKI"
         title="Avtomobillər"
-        subtitle="Avtomobil parkını idarə edin"
-        action={<button type="button" className="admin-primary-button" onClick={onNew}><Plus size={16} /> Yeni avtomobil</button>}
+        subtitle={`${allCars.length} avtomobil · ${activeCount} aktiv`}
+        action={
+          <div className="admin-title-actions">
+            <button type="button" className="admin-secondary-button">
+              <Upload size={15} />
+              Import
+            </button>
+            <button type="button" className="admin-primary-button" onClick={onNew}><Plus size={16} /> Yeni avtomobil</button>
+          </div>
+        }
       />
+
+      <section className="admin-fleet-stat-strip">
+        {fleetStats.map((stat) => {
+          const Icon = stat.icon;
+
+          return (
+            <article key={stat.label}>
+              <span><Icon size={16} /></span>
+              <div>
+                <strong>{stat.value}</strong>
+                <small>{stat.label}</small>
+              </div>
+              <em>{stat.note}</em>
+            </article>
+          );
+        })}
+      </section>
 
       <div className="admin-toolbar">
         <label className="admin-search-field">
           <Search size={15} />
-          <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Avtomobil axtar..." />
+          <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Avtomobil, brend, ID və ya URL axtar..." />
           {query ? (
             <button type="button" onClick={() => onQuery("")} aria-label="Axtarışı təmizlə">
               <X size={14} />
             </button>
           ) : null}
         </label>
-        <select value={category} onChange={(event) => onCategory(event.target.value)}>
-          <option value="all">Bütün kateqoriyalar</option>
-          {categories.map((item) => (
-            <option key={item} value={item}>{categoryLabels[item] ?? item}</option>
-          ))}
-        </select>
-        <select value={status} onChange={(event) => onStatus(event.target.value)}>
-          <option value="all">Status</option>
-          <option value="active">Aktiv</option>
-          <option value="hidden">Gizli</option>
-        </select>
+
+        <div className="admin-filter-shell">
+          <button
+            type="button"
+            className={`admin-filter-button${filtersOpen ? " is-active" : ""}`}
+            onClick={() => setFiltersOpen((value) => !value)}
+          >
+            <SlidersHorizontal size={15} />
+            Filter
+            {activeFilterCount ? <span>{activeFilterCount}</span> : null}
+          </button>
+          {filtersOpen ? (
+            <div className="admin-filter-popover">
+              <label>
+                <span>Kateqoriya</span>
+                <select value={category} onChange={(event) => onCategory(event.target.value)}>
+                  <option value="all">Hamısı</option>
+                  {categories.map((item) => (
+                    <option key={item} value={item}>{categoryLabels[item] ?? item}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Xidmət</span>
+                <select value={service} onChange={(event) => onService(event.target.value)}>
+                  <option value="all">Hamısı</option>
+                  <option value="rental">İcarə</option>
+                  <option value="transfer">Transfer</option>
+                  <option value="wedding">Toy</option>
+                </select>
+              </label>
+              <label>
+                <span>Status</span>
+                <select value={status} onChange={(event) => onStatus(event.target.value)}>
+                  <option value="all">Hamısı</option>
+                  <option value="active">Aktiv</option>
+                  <option value="hidden">Deaktiv</option>
+                </select>
+              </label>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCategory("all");
+                    onStatus("all");
+                    onService("all");
+                  }}
+                >
+                  Təmizlə
+                </button>
+                <button type="button" onClick={() => setFiltersOpen(false)}>
+                  Tətbiq et
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
         <select value={sortKey} onChange={(event) => onSort(event.target.value)}>
-          <option value="sort">Sırala</option>
-          <option value="title">Ada görə</option>
-          <option value="price">Qiymətə görə</option>
+          <option value="sort">Ən köhnə</option>
+          <option value="newest">Son əlavə edilən</option>
+          <option value="title">A-Z</option>
+          <option value="title-desc">Z-A</option>
+          <option value="price">Qiymət ↑</option>
+          <option value="price-desc">Qiymət ↓</option>
         </select>
         <div className="admin-segmented">
           <ShellButton active={layout === "list"} onClick={() => onLayout("list")} title="Siyahı görünüşü">
@@ -1115,11 +1332,35 @@ function CarIdentity({ car, mode = "fleet" }: { car: AdminCar; mode?: CarTableMo
       </span>
       <span>
         <strong>{car.title}</strong>
-        <small>
-          {car.brand}
-          {car.manufactureYear ? ` · ${car.manufactureYear}` : ""}
-        </small>
+        <small>{car.brand}</small>
       </span>
+    </span>
+  );
+}
+
+function ServicePills({ car }: { car: AdminCar }) {
+  const services = [
+    car.rentalVisible !== false ? { label: "İcarə", icon: CarFront } : null,
+    car.transferAvailable ? { label: "Transfer", icon: Plane } : null,
+    car.weddingAvailable ? { label: "Toy", icon: Heart } : null,
+  ].filter(Boolean) as Array<{ label: string; icon: LucideIcon }>;
+
+  if (!services.length) {
+    return <span className="admin-service-empty">—</span>;
+  }
+
+  return (
+    <span className="admin-service-pills">
+      {services.map((service) => {
+        const Icon = service.icon;
+
+        return (
+          <i key={service.label}>
+            <Icon size={12} />
+            {service.label}
+          </i>
+        );
+      })}
     </span>
   );
 }
@@ -1137,11 +1378,10 @@ function CarTable({
     <section className="admin-panel admin-table-panel">
       <div className="admin-table-head">
         <span>Avtomobil</span>
-        <span>Kateqoriya</span>
-        <span>İl</span>
-        <span>{mode === "wedding" ? "Toy" : "İcarə"}</span>
         <span>Variantlar</span>
+        <span>Kateqoriya</span>
         <span>Xidmətlər</span>
+        <span>Qiymət</span>
         <span>Status</span>
         <span />
       </div>
@@ -1149,11 +1389,13 @@ function CarTable({
         {cars.map((car, index) => (
           <button key={car.id} type="button" className="admin-table-row" onClick={() => onEdit(car, index)}>
             <CarIdentity car={car} mode={mode} />
-            <span>{categoryLabels[car.category] ?? car.category}</span>
-            <span>{car.manufactureYear ?? "-"}</span>
-            <span>{displayPrice(car, mode) ? `${displayPrice(car, mode)} ₼` : "-"}</span>
-            <span>{variantPriceLabel(car)}</span>
-            <span className="admin-service-list">{carServices(car).join(", ") || "-"}</span>
+            <span className="admin-variant-cell">
+              <strong>{variantPriceLabel(car)}</strong>
+              <small>{carVariantRange(car)}</small>
+            </span>
+            <span className="admin-category-cell">{categoryLabels[car.category] ?? car.category}</span>
+            <ServicePills car={car} />
+            <span className="admin-price-cell">{displayPrice(car, mode) ? `${displayPrice(car, mode)} ₼-dan` : "-"}</span>
             <StatusDot active={car.isActive} />
             <MoreHorizontal size={18} />
           </button>
@@ -1226,6 +1468,511 @@ function ServiceCarsView({
         </div>
       </section>
       <CarTable cars={cars} onEdit={onEdit} mode={mode} />
+    </div>
+  );
+}
+
+function ComingSoonView({
+  eyebrow,
+  title,
+  subtitle,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="admin-view">
+      <PageTitle eyebrow={eyebrow} title={title} subtitle={subtitle} />
+      <section className="admin-panel admin-module-empty">
+        <div>
+          <span>
+            <Database size={20} />
+          </span>
+          <h2>Modul hazırlanır</h2>
+          <p>
+            Bu bölmə yeni Carbon operations strukturuna uyğun ayrılıb. Növbəti mərhələdə bron, müştəri və xidmət konfiqurasiyaları ayrıca bazaya bağlana bilər.
+          </p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+const tutorialGuides: Array<{
+  id: string;
+  title: string;
+  shortTitle: string;
+  description: string;
+  time: string;
+  icon: LucideIcon;
+  keywords: string[];
+  cta: string;
+  action: "new-car" | ViewKey;
+  steps: Array<{
+    title: string;
+    text: string;
+    visual: "new-car" | "fields" | "variant" | "services" | "prices" | "transfer" | "wedding" | "bookings";
+  }>;
+}> = [
+  {
+    id: "new-car",
+    title: "Yeni avtomobil əlavə etmək",
+    shortTitle: "Avtomobil əlavə et",
+    description: "Model, brend, şəkil və əsas variantı düzgün yaradın.",
+    time: "2-3 dəq",
+    icon: CarFront,
+    keywords: ["avtomobil", "masin", "yeni", "model", "brend", "sekil", "şəkil"],
+    cta: "Avtomobil əlavə etməyə başla",
+    action: "new-car",
+    steps: [
+      {
+        title: "Avtomobili yarat",
+        text: "Avtomobillər bölməsinə keçin və Yeni avtomobil düyməsini seçin.",
+        visual: "new-car",
+      },
+      {
+        title: "Əsas məlumatları doldur",
+        text: "Model adı, brend və kateqoriya yazılanda avtomobil siyahıda aydın görünür.",
+        visual: "fields",
+      },
+      {
+        title: "Əsas variantı seç",
+        text: "Birinci variant avtomobilin əsas ili və versiyasıdır. Saytda kart qiyməti buradan götürülür.",
+        visual: "variant",
+      },
+      {
+        title: "Xidməti aktivləşdir",
+        text: "İcarə, Transfer və ya Toy xidmətini seçin, qiymətləri doldurun və dəyişiklikləri saxlayın.",
+        visual: "services",
+      },
+    ],
+  },
+  {
+    id: "price",
+    title: "Qiymətləri dəyişmək",
+    shortTitle: "Qiymət dəyiş",
+    description: "İcarə və xidmət qiymətlərini qarışdırmadan yeniləyin.",
+    time: "1 dəq",
+    icon: Gauge,
+    keywords: ["qiymet", "qiymət", "icarə", "icare", "pul", "rent", "gunluk", "günlük"],
+    cta: "Qiymətləri aç",
+    action: "cars",
+    steps: [
+      {
+        title: "Avtomobili aç",
+        text: "Siyahıda istənilən avtomobil sətrinə klik edin.",
+        visual: "new-car",
+      },
+      {
+        title: "Qiymətlər tabına keç",
+        text: "1-3 gün, 4-7 gün, 8-15 gün və digər aralıqları ayrıca dəyişin.",
+        visual: "prices",
+      },
+      {
+        title: "Variant qiymətini yoxla",
+        text: "Əsas variantın 1-3 gün qiyməti public kartda başlanğıc qiymət kimi görünür.",
+        visual: "variant",
+      },
+      {
+        title: "Saytda yoxla",
+        text: "Saxladıqdan sonra avtomobil səhifəsində qiymətin yeniləndiyini yoxlayın.",
+        visual: "services",
+      },
+    ],
+  },
+  {
+    id: "variant",
+    title: "Fərqli il üçün variant əlavə etmək",
+    shortTitle: "Variant əlavə et",
+    description: "Eyni modelin yeni il və ya versiyasını əlavə edin.",
+    time: "1-2 dəq",
+    icon: Rows3,
+    keywords: ["variant", "il", "versiya", "2024", "2022", "model", "fərqli", "ferqli"],
+    cta: "Variantları aç",
+    action: "cars",
+    steps: [
+      {
+        title: "Modeli ayrı saxla",
+        text: "Hyundai Sonata bir avtomobildir. 2022 və 2024 həmin avtomobilin variantlarıdır.",
+        visual: "variant",
+      },
+      {
+        title: "Variantlar tabına keç",
+        text: "Birinci sətir əsas variantdır. İkinci variant yalnız əlavə il və ya versiya üçündür.",
+        visual: "new-car",
+      },
+      {
+        title: "İl və versiya yaz",
+        text: "Məsələn: 2024 · Facelift və ya 2022 · E 200.",
+        visual: "variant",
+      },
+      {
+        title: "Hər variantın qiymətini yaz",
+        text: "Variantın öz qiyməti varsa, onu həmin variantın qiymət sahələrində doldurun.",
+        visual: "prices",
+      },
+    ],
+  },
+  {
+    id: "transfer",
+    title: "Transfer xidməti qurmaq",
+    shortTitle: "Transfer qur",
+    description: "Transfer üçün avtomobili aktivləşdirin və qiymətləri daxil edin.",
+    time: "2 dəq",
+    icon: Plane,
+    keywords: ["transfer", "airport", "hava limani", "marşrut", "marsrut", "sürücü", "surucu"],
+    cta: "Transferlərə keç",
+    action: "transfer",
+    steps: [
+      {
+        title: "Xidmətlər tabını aç",
+        text: "Avtomobil səhifəsində Transfer aktiv seçimini yandırın.",
+        visual: "services",
+      },
+      {
+        title: "Transfer qiymətlərini yaz",
+        text: "Saatlıq və marşrut qiymətlərini ayrıca saxlayın.",
+        visual: "transfer",
+      },
+      {
+        title: "Tutumu yoxla",
+        text: "Sərnişin və baqaj sayı transfer müştərisi üçün vacibdir.",
+        visual: "fields",
+      },
+      {
+        title: "Transfer siyahısında yoxla",
+        text: "Saxladıqdan sonra avtomobil Transferlər bölməsində görünməlidir.",
+        visual: "transfer",
+      },
+    ],
+  },
+  {
+    id: "wedding",
+    title: "Toy avtomobili əlavə etmək",
+    shortTitle: "Toy avtomobili",
+    description: "Toy xidməti, paket və başlanğıc qiyməti qurun.",
+    time: "2 dəq",
+    icon: Heart,
+    keywords: ["toy", "wedding", "paket", "bezək", "bezek", "gelin", "gəlin"],
+    cta: "Toy avtomobillərinə keç",
+    action: "weddings",
+    steps: [
+      {
+        title: "Toy xidmətini aktivləşdir",
+        text: "Avtomobil editorunda Toy tabına keçin və toy xidməti üçün statusu aktiv edin.",
+        visual: "services",
+      },
+      {
+        title: "Başlanğıc qiyməti yaz",
+        text: "Public toy kartında görünəcək əsas qiyməti daxil edin.",
+        visual: "wedding",
+      },
+      {
+        title: "Paketləri aydın saxla",
+        text: "Standart, Premium və Full Day kimi paketləri saat və qiymətlə izah edin.",
+        visual: "wedding",
+      },
+      {
+        title: "Şəkilləri seç",
+        text: "Toy üçün uyğun, təmiz və premium görünən əsas şəkil istifadə edin.",
+        visual: "fields",
+      },
+    ],
+  },
+  {
+    id: "bookings",
+    title: "Bronları idarə etmək",
+    shortTitle: "Bronları idarə et",
+    description: "Rezervasiyalara baxın və xidmət tipinə görə ayırın.",
+    time: "1 dəq",
+    icon: CalendarDays,
+    keywords: ["bron", "rezervasiya", "musteri", "müştəri", "sifaris", "sifariş"],
+    cta: "Bronlara keç",
+    action: "bookings",
+    steps: [
+      {
+        title: "Bronlar bölməsinə keç",
+        text: "Bütün icarə, transfer və toy sorğuları burada birləşəcək.",
+        visual: "bookings",
+      },
+      {
+        title: "Xidmət tipini yoxla",
+        text: "Hər bronun icarə, transfer və ya toy olduğunu ayrıca görmək lazımdır.",
+        visual: "services",
+      },
+      {
+        title: "Müştəri məlumatına bax",
+        text: "Telefon, tarix, avtomobil və qiymət eyni ekranda olmalıdır.",
+        visual: "bookings",
+      },
+      {
+        title: "Statusu yenilə",
+        text: "Gözləyən, təsdiqlənən və tamamlanan bronlar qarışmamalıdır.",
+        visual: "bookings",
+      },
+    ],
+  },
+];
+
+const tutorialTopics = [
+  "Avtomobil və variant fərqi",
+  "Qiymətlər necə hesablanır?",
+  "Transfer sistemi",
+  "Toy avtomobilləri",
+  "Şəkillərin idarəsi",
+  "SEO və URL",
+];
+
+function TutorialView({
+  onView,
+  onNewCar,
+}: {
+  onView: (view: ViewKey) => void;
+  onNewCar: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [activeGuideId, setActiveGuideId] = useState(tutorialGuides[0].id);
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleGuides = normalizedQuery
+    ? tutorialGuides.filter((guide) =>
+        [guide.title, guide.shortTitle, guide.description, ...guide.keywords]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery)
+      )
+    : tutorialGuides;
+  const activeGuide = tutorialGuides.find((guide) => guide.id === activeGuideId) ?? tutorialGuides[0];
+  const onboardingTasks = [
+    { label: "Paneli tanı", done: true, guideId: "new-car" },
+    { label: "İlk avtomobili əlavə et", done: false, guideId: "new-car" },
+    { label: "Qiymət təyin et", done: false, guideId: "price" },
+    { label: "Saytda nəticəyə bax", done: false, guideId: "price" },
+  ];
+  const completedTasks = onboardingTasks.filter((task) => task.done).length;
+
+  const runGuideAction = () => {
+    if (activeGuide.action === "new-car") {
+      onNewCar();
+      return;
+    }
+
+    onView(activeGuide.action);
+  };
+
+  return (
+    <div className="admin-view admin-tutorial-view">
+      <PageTitle
+        eyebrow="TƏLİMAT"
+        title="Nə etmək istəyirsiniz?"
+        subtitle="Carbon idarə panelində işə başlamaq üçün bir əməliyyat seçin."
+      />
+
+      <label className="admin-tutorial-search">
+        <Search size={16} />
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder='Nə etmək istəyirsiniz? Məsələn, "qiymət dəyiş"'
+        />
+        {query ? (
+          <button type="button" onClick={() => setQuery("")} aria-label="Axtarışı təmizlə">
+            <X size={14} />
+          </button>
+        ) : null}
+      </label>
+
+      <section className="admin-help-section">
+        <div className="admin-help-section-title">
+          <p>POPULYAR ƏMƏLİYYATLAR</p>
+        </div>
+        <div className="admin-help-action-grid">
+          {visibleGuides.map((guide) => {
+            const Icon = guide.icon;
+
+            return (
+              <button
+                key={guide.id}
+                type="button"
+                className={`admin-help-action-card${activeGuide.id === guide.id ? " is-active" : ""}`}
+                onClick={() => setActiveGuideId(guide.id)}
+              >
+                <span><Icon size={22} /></span>
+                <strong>{guide.shortTitle}</strong>
+                <small>{guide.description}</small>
+                <em>{guide.time}</em>
+                <b>Başla <ChevronDown size={13} /></b>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="admin-help-layout">
+        <article className="admin-guide-panel">
+          <header>
+            <div>
+              <p>{activeGuide.title}</p>
+              <h2>Addım 1 / {activeGuide.steps.length}</h2>
+              <span>Təxminən {activeGuide.time}</span>
+            </div>
+            <button type="button" className="admin-primary-button" onClick={runGuideAction}>
+              {activeGuide.cta}
+              <ChevronsRight size={15} />
+            </button>
+          </header>
+
+          <div className="admin-guide-steps">
+            {activeGuide.steps.map((step, index) => (
+              <article key={step.title} className="admin-guide-step">
+                <div>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.text}</p>
+                </div>
+                <TutorialMock type={step.visual} />
+              </article>
+            ))}
+          </div>
+        </article>
+
+        <aside className="admin-onboarding-card">
+          <div>
+            <p>İLK DƏFƏ BURADASINIZ?</p>
+            <strong>{completedTasks} / {onboardingTasks.length} tamamlandı</strong>
+            <span>{Math.round((completedTasks / onboardingTasks.length) * 100)}%</span>
+          </div>
+          <i>
+            <span style={{ width: `${(completedTasks / onboardingTasks.length) * 100}%` }} />
+          </i>
+          {onboardingTasks.map((task) => (
+            <button
+              key={task.label}
+              type="button"
+              onClick={() => setActiveGuideId(task.guideId)}
+              className={task.done ? "is-done" : ""}
+            >
+              <CheckCircle2 size={15} />
+              {task.label}
+            </button>
+          ))}
+        </aside>
+      </section>
+
+      <section className="admin-carbon-model-card">
+        <div>
+          <p>CARBON NECƏ İŞLƏYİR?</p>
+          <h2>Model, variant və xidmət eyni şey deyil</h2>
+          <span><strong>Avtomobil</strong> modeli, <strong>variant</strong> onun il/versiyası, <strong>xidmət</strong> isə həmin variantın necə təklif olunduğudur.</span>
+        </div>
+        <div className="admin-carbon-model-visual" aria-hidden="true">
+          <strong>Hyundai Sonata</strong>
+          <i />
+          <div>
+            <span>2022<small>VARİANT</small></span>
+            <span>2024<small>VARİANT</small></span>
+          </div>
+          <i />
+          <div>
+            <em><CarFront size={14} />İcarə<b>70 ₼</b></em>
+            <em><Plane size={14} />Transfer<b>35 ₼</b></em>
+            <em><Heart size={14} />Toy<b>250 ₼</b></em>
+          </div>
+        </div>
+      </section>
+
+      <section className="admin-help-topics">
+        <p>DİGƏR MÖVZULAR</p>
+        <div>
+          {tutorialTopics.map((topic) => (
+            <button key={topic} type="button">
+              {topic}
+              <ChevronsRight size={14} />
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function TutorialMock({ type }: { type: "new-car" | "fields" | "variant" | "services" | "prices" | "transfer" | "wedding" | "bookings" }) {
+  if (type === "fields") {
+    return (
+      <div className="admin-guide-mock admin-guide-mock-fields">
+        <span>Model adı <b>Mercedes E Class</b></span>
+        <span>Brend <b>Mercedes-Benz</b></span>
+        <span>Kateqoriya <b>Biznes</b></span>
+      </div>
+    );
+  }
+
+  if (type === "variant") {
+    return (
+      <div className="admin-guide-mock admin-guide-mock-variant">
+        <strong>ƏSAS</strong>
+        <span>2024</span>
+        <b>E 200 AMG</b>
+        <small>2.0L · 204 HP · 200 ₼</small>
+      </div>
+    );
+  }
+
+  if (type === "prices") {
+    return (
+      <div className="admin-guide-mock admin-guide-mock-prices">
+        {["1-3 gün", "4-7 gün", "8-15 gün"].map((label, index) => (
+          <span key={label}>{label}<b>{[200, 180, 165][index]} ₼</b></span>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "services") {
+    return (
+      <div className="admin-guide-mock admin-guide-mock-services">
+        <span><CarFront size={14} /> İcarə <b>Aktiv</b></span>
+        <span><Plane size={14} /> Transfer <b>Aktiv</b></span>
+        <span><Heart size={14} /> Toy <b>Deaktiv</b></span>
+      </div>
+    );
+  }
+
+  if (type === "transfer") {
+    return (
+      <div className="admin-guide-mock admin-guide-mock-prices">
+        <span>GYD - Bakı <b>45 ₼</b></span>
+        <span>Saatlıq <b>80 ₼</b></span>
+        <span>Baqaj <b>3</b></span>
+      </div>
+    );
+  }
+
+  if (type === "wedding") {
+    return (
+      <div className="admin-guide-mock admin-guide-mock-prices">
+        <span>Standart <b>250 ₼</b></span>
+        <span>Premium <b>400 ₼</b></span>
+        <span>Full Day <b>600 ₼</b></span>
+      </div>
+    );
+  }
+
+  if (type === "bookings") {
+    return (
+      <div className="admin-guide-mock admin-guide-mock-bookings">
+        <span>09:30 <b>Transfer</b></span>
+        <span>12:00 <b>İcarə təhvil</b></span>
+        <span>16:30 <b>Geri qaytarma</b></span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-guide-mock admin-guide-mock-new">
+      <span>Avtomobillər</span>
+      <b><Plus size={14} /> Yeni avtomobil</b>
+      <i />
     </div>
   );
 }
@@ -1669,8 +2416,26 @@ function CarEditorForm({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const car = editor.car;
-  const initialVariantCount = Math.max(car?.variants?.length ?? 0, 1);
+  const baseVariant = car
+    ? {
+        id: "",
+        label:
+          car.manufactureYear ? String(car.manufactureYear) :
+          "Əsas variant",
+        manufactureYear: car.manufactureYear ?? null,
+        bodyStyle: null,
+        engine: car.engine ?? null,
+        thumbnail: null,
+        rentalPrices: car.rentalPrices,
+      }
+    : undefined;
+  const existingVariants = car?.variants ?? [];
+  const formVariants = [baseVariant, ...existingVariants];
+  const initialVariantCount = Math.max(formVariants.length, 1);
   const [variantCount, setVariantCount] = useState(initialVariantCount);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+  const [activeHelp, setActiveHelp] = useState<"prices" | "variants" | null>(null);
+  const selectedVariant = Math.min(selectedVariantIndex, variantCount - 1);
 
   return (
     <>
@@ -1679,7 +2444,7 @@ function CarEditorForm({
         <TabButton value="technical" active={activeTab} onClick={onTab}>Texniki</TabButton>
         <TabButton value="images" active={activeTab} onClick={onTab}>Şəkillər</TabButton>
         <TabButton value="prices" active={activeTab} onClick={onTab}>Qiymətlər</TabButton>
-        <TabButton value="variants" active={activeTab} onClick={onTab}>Variantlar</TabButton>
+        <TabButton value="variants" active={activeTab} onClick={onTab}>Variantlar {variantCount}</TabButton>
         <TabButton value="services" active={activeTab} onClick={onTab}>Xidmətlər</TabButton>
         <TabButton value="wedding" active={activeTab} onClick={onTab}>Toy</TabButton>
       </nav>
@@ -1740,7 +2505,19 @@ function CarEditorForm({
 
         <section className={`admin-tab-panel${activeTab === "prices" ? "" : " is-hidden"}`}>
           <div className="admin-mini-section">
-            <h3>İcarə qiymətləri</h3>
+            <div className="admin-section-heading">
+              <h3>İcarə qiymətləri</h3>
+              <button type="button" onClick={() => setActiveHelp(activeHelp === "prices" ? null : "prices")}>
+                ?
+              </button>
+              {activeHelp === "prices" ? (
+                <div className="admin-context-help">
+                  <strong>Bu qiymət harada görünür?</strong>
+                  <p>Əsas variantın 1-3 gün qiyməti avtomobil kartında başlanğıc qiymət kimi görünür. Digər aralıqlar rezervasiya müddəti seçiləndə istifadə olunur.</p>
+                  <button type="button" onClick={() => setActiveHelp(null)}>Bağla</button>
+                </div>
+              ) : null}
+            </div>
             <div className="admin-price-grid">
               {rentalPriceKeys.map((key) => (
                 <PriceField key={key} label={rentalPriceLabels[key]} name={`rental_${key}`} defaultValue={car?.rentalPrices[key]} />
@@ -1758,63 +2535,143 @@ function CarEditorForm({
         </section>
 
         <section className={`admin-tab-panel${activeTab === "variants" ? "" : " is-hidden"}`}>
-          <div className="admin-mini-section">
-            <h3>İl / kuzov variantları</h3>
-            <p className="admin-muted-copy">
-              Eyni modelin fərqli il, kuzov və qiymətlərini əlavə edin. Boş variantlar saxlanılmayacaq.
-            </p>
+          <div className="admin-variant-overview">
+            <div>
+              <div className="admin-section-heading">
+                <h3>Variantlar</h3>
+                <button type="button" onClick={() => setActiveHelp(activeHelp === "variants" ? null : "variants")}>
+                  ?
+                </button>
+                {activeHelp === "variants" ? (
+                  <div className="admin-context-help">
+                    <strong>Variant nədir?</strong>
+                    <p>Eyni avtomobil modelinin fərqli il və ya versiyasıdır. Məsələn, Hyundai Sonata modelində 2022 və 2024 ayrı variant ola bilər.</p>
+                    <button type="button" onClick={() => setActiveHelp(null)}>Bağla</button>
+                  </div>
+                ) : null}
+              </div>
+              <p>
+                Bu modelin fərqli il və versiyalarını idarə edin. Birinci sətir əsas variantdır və saytda əsas qiymət kimi görünür.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="admin-secondary-button"
+              onClick={() => {
+                setSelectedVariantIndex(variantCount);
+                setVariantCount((count) => count + 1);
+              }}
+            >
+              <Plus size={14} />
+              Variant əlavə et
+            </button>
           </div>
 
-          {Array.from({ length: variantCount }, (_, index) => {
-            const variant = car?.variants?.[index];
+          <div className="admin-variant-table">
+            <div className="admin-variant-table-head">
+              <span>Variant</span>
+              <span>İl</span>
+              <span>Mühərrik</span>
+              <span>İcarə</span>
+              <span>Transfer</span>
+              <span>Toy</span>
+              <span>Status</span>
+            </div>
 
-            return (
-              <div className="admin-variant-card" key={`${car?.id ?? "new"}-${index}`}>
-                <input name={`variant_${index}_id`} type="hidden" defaultValue={variant?.id ?? ""} />
+            {Array.from({ length: variantCount }, (_, index) => {
+              const variant = formVariants[index];
+              const isMainVariant = index === 0;
+              const price = variantStartingPrice(variant);
 
-                <div className="admin-variant-card-head">
+              return (
+                <button
+                  key={`${car?.id ?? "new"}-variant-row-${index}`}
+                  type="button"
+                  className={`admin-variant-table-row${selectedVariant === index ? " is-active" : ""}`}
+                  onClick={() => setSelectedVariantIndex(index)}
+                >
                   <span>
-                    <Rows3 size={14} />
-                    Variant {index + 1}
+                    <strong>{variantDisplayName(variant, index)}</strong>
+                    {isMainVariant ? <small>Əsas</small> : null}
                   </span>
-                </div>
+                  <span>{variant?.manufactureYear ?? "-"}</span>
+                  <span>{variant?.engine ?? car?.engine ?? "-"}</span>
+                  <span>{price !== null ? `${price} ₼-dan` : "-"}</span>
+                  <span>{car?.transferAvailable ? "Aktiv" : "-"}</span>
+                  <span>{car?.weddingAvailable ? "Aktiv" : "-"}</span>
+                  <StatusDot active />
+                </button>
+              );
+            })}
+          </div>
 
-                <div className="admin-form-grid">
-                  <Field label="Variant adı" name={`variant_${index}_label`} defaultValue={variant?.label} placeholder="W213 Facelift" />
-                  <Field label="İl" name={`variant_${index}_manufactureYear`} type="number" defaultValue={variant?.manufactureYear} placeholder="2021" />
-                  <Field label="Kuzov" name={`variant_${index}_bodyStyle`} defaultValue={variant?.bodyStyle} placeholder="W213 / F10 / SUV" />
-                  <Field label="Mühərrik" name={`variant_${index}_engine`} defaultValue={variant?.engine} placeholder="2.0" />
-                  <Field
-                    label="Variant şəkli (boş olsa əsas şəkil)"
-                    name={`variant_${index}_thumbnail`}
-                    defaultValue={variant?.thumbnail}
-                    placeholder="https://..."
-                    span
-                  />
-                </div>
+          <div className="admin-variant-editors">
+            {Array.from({ length: variantCount }, (_, index) => {
+              const variant = formVariants[index];
+              const isMainVariant = index === 0;
 
-                <div className="admin-price-grid">
-                  {rentalPriceKeys.map((key) => (
-                    <PriceField
-                      key={key}
-                      label={rentalPriceLabels[key]}
-                      name={`variant_${index}_rental_${key}`}
-                      defaultValue={variant?.rentalPrices[key]}
+              return (
+                <div
+                  className={`admin-variant-card${selectedVariant === index ? "" : " is-hidden"}`}
+                  key={`${car?.id ?? "new"}-variant-editor-${index}`}
+                >
+                  <input name={`variant_${index}_id`} type="hidden" defaultValue={variant?.id ?? ""} />
+
+                  <div className="admin-variant-card-head">
+                    <span>
+                      <Rows3 size={14} />
+                      {variantDisplayName(variant, index)}
+                    </span>
+                    {isMainVariant ? <small>Saytda əsas qiymət</small> : <small>Əlavə variant</small>}
+                  </div>
+
+                  <div className="admin-variant-subtabs">
+                    <span>Ümumi</span>
+                    <span>Texniki</span>
+                    <span>Şəkillər</span>
+                    <span>Xidmət qiymətləri</span>
+                  </div>
+
+                  {!isMainVariant ? (
+                    <p className="admin-muted-copy">
+                      Yalnız il və qiymət yazmaq kifayətdir. Boş saxlanan mühərrik, şəkil və texniki məlumatlar saytda əsas avtomobildən götürüləcək.
+                    </p>
+                  ) : null}
+
+                  <div className="admin-form-grid">
+                    <Field
+                      label="Variant adı (istəyə bağlı)"
+                      name={`variant_${index}_label`}
+                      defaultValue={variant?.label}
+                      placeholder="E 200 AMG"
                     />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+                    <Field label="İl" name={`variant_${index}_manufactureYear`} type="number" defaultValue={variant?.manufactureYear} placeholder="2024" />
+                    <Field label="Kuzov" name={`variant_${index}_bodyStyle`} defaultValue={variant?.bodyStyle} placeholder={isMainVariant ? "W214 / Sedan" : "Boş qalarsa əsas məlumat istifadə olunur"} />
+                    <Field label="Mühərrik" name={`variant_${index}_engine`} defaultValue={variant?.engine} placeholder={isMainVariant ? "2.0 L" : car?.engine ?? "Boş qalarsa əsas məlumat istifadə olunur"} />
+                    <Field
+                      label={isMainVariant ? "Şəkil URL-i (boş olsa modelin əsas şəkli)" : "Variant şəkli (boş olsa modelin əsas şəkli)"}
+                      name={`variant_${index}_thumbnail`}
+                      defaultValue={variant?.thumbnail}
+                      placeholder="https://..."
+                      span
+                    />
+                  </div>
 
-          <button
-            type="button"
-            className="admin-secondary-button"
-            onClick={() => setVariantCount((count) => count + 1)}
-          >
-            <Plus size={14} />
-            Variant əlavə et
-          </button>
+                  <div className="admin-price-grid">
+                    {rentalPriceKeys.map((key) => (
+                      <PriceField
+                        key={key}
+                        label={rentalPriceLabels[key]}
+                        name={`variant_${index}_rental_${key}`}
+                        defaultValue={variant?.rentalPrices[key]}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </section>
 
         <section className={`admin-tab-panel${activeTab === "services" ? "" : " is-hidden"}`}>

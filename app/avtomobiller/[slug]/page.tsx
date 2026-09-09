@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { cars } from "@/data/cars";
 import StructuredData from "@/components/StructuredData";
 import { getCarsForSite } from "@/lib/supabase/cars";
 import {
@@ -12,11 +11,7 @@ import {
 } from "@/lib/seo";
 import CarDetailClient from "./CarDetailClient";
 
-export function generateStaticParams() {
-  return cars.map((car) => ({
-    slug: car.slug,
-  }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,

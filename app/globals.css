@@ -8523,6 +8523,11 @@ button {
     drop-shadow(0 7px 7px rgba(0,0,0,.05));
 }
 
+.carbon-showroom-car-image {
+  position: absolute;
+  inset: 0;
+}
+
 .carbon-showroom-shadow {
   width: 64%;
   height: 8%;
@@ -8633,6 +8638,240 @@ button {
   font-size: 23px;
   letter-spacing: -.045em;
   font-weight: 540;
+}
+
+.carbon-variant-selector,
+.carbon-single-variant {
+  margin-top: 18px;
+}
+
+.carbon-variant-selector-head {
+  position: relative;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.carbon-variant-selector-head h3 {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: -.02em;
+  font-weight: 650;
+}
+
+.carbon-variant-selector-head button {
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #777;
+  font: inherit;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.carbon-variant-selector-head button > span {
+  width: 15px;
+  height: 15px;
+  border: 1px solid rgba(0,0,0,.18);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--detail-accent);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.carbon-variant-help {
+  width: min(260px, calc(100vw - 56px));
+  position: absolute;
+  z-index: 18;
+  top: calc(100% + 8px);
+  right: 0;
+  padding: 12px;
+  border: 1px solid rgba(0,0,0,.12);
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 18px 48px rgba(24,18,20,.13);
+  backdrop-filter: blur(16px);
+}
+
+.carbon-variant-help strong {
+  font-size: 11px;
+}
+
+.carbon-variant-help p {
+  margin: 6px 0 0;
+  color: #777;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.carbon-single-variant {
+  padding: 13px;
+  border: 1px solid rgba(0,0,0,.09);
+  background: #f7f6f3;
+  display: grid;
+  gap: 5px;
+}
+
+.carbon-single-variant span {
+  color: #999;
+  font-size: 7px;
+}
+
+.carbon-single-variant strong {
+  font-size: 12px;
+}
+
+.carbon-single-variant small {
+  color: #777;
+  font-size: 9px;
+}
+
+.carbon-variant-options {
+  display: grid;
+  gap: 8px;
+}
+
+.carbon-variant-options button {
+  width: 100%;
+  min-height: 70px;
+  padding: 9px 10px;
+  border: 1px solid rgba(0,0,0,.095);
+  border-radius: 10px;
+  background: rgba(255,255,255,.68);
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 10px;
+  color: #171717;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.carbon-variant-options button:hover,
+.carbon-variant-options button.is-selected {
+  border-color: rgba(147,29,79,.42);
+  background: rgba(147,29,79,.055);
+  box-shadow: 0 12px 34px rgba(147,29,79,.08);
+}
+
+.carbon-variant-options button:hover {
+  transform: translateY(-1px);
+}
+
+.carbon-variant-option-image {
+  width: 54px;
+  height: 42px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #eee;
+}
+
+.carbon-variant-option-image img {
+  object-fit: contain;
+  padding: 2px;
+}
+
+.carbon-variant-option-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.carbon-variant-option-copy strong {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.carbon-variant-option-copy em {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(147,29,79,.11);
+  color: var(--detail-accent);
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.carbon-variant-option-copy small,
+.carbon-variant-option-price small {
+  color: #777;
+  font-size: 8px;
+}
+
+.carbon-variant-option-price {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.carbon-variant-option-price b {
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.carbon-variant-options button > i {
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(0,0,0,.18);
+  border-radius: 50%;
+  position: relative;
+}
+
+.carbon-variant-options button.is-selected > i {
+  border-color: var(--detail-accent);
+}
+
+.carbon-variant-options button.is-selected > i::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--detail-accent);
+}
+
+.carbon-service-fields {
+  margin-top: 17px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.carbon-service-fields span {
+  min-height: 52px;
+  padding: 0 13px;
+  border: 1px solid rgba(0,0,0,.095);
+  background: #f7f6f3;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #555;
+  font-size: 9px;
+}
+
+.carbon-service-fields svg {
+  color: var(--detail-accent);
 }
 
 .carbon-live-status {
@@ -10904,6 +11143,7 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  min-height: 22px;
 }
 
 .fleet-v4-variants span {
@@ -10917,6 +11157,12 @@ button {
   font-size: 7px;
   font-weight: 600;
   background: #fafafa;
+}
+
+.fleet-v4-variants .fleet-v4-main-variant {
+  border-color: rgba(147,29,79,.18);
+  background: rgba(147,29,79,.07);
+  color: #6f173c;
 }
 
 .fleet-v4-specs {

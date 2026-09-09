@@ -18,6 +18,8 @@ export const metadata: Metadata = createPageMetadata({
 
 type Search = {
   car?: string | string[];
+  variant?: string | string[];
+  service?: string | string[];
   start?: string | string[];
   end?: string | string[];
   pickup?: string | string[];
@@ -45,6 +47,8 @@ export default async function ReservationPage({
       initial={{
         start: value(query.start) ?? "",
         end: value(query.end) ?? "",
+        variant: value(query.variant) ?? "",
+        service: value(query.service) ?? "rental",
         pickup: value(query.pickup) ?? "office",
         drivers: value(query.drivers) ?? "1",
         extras: value(query.extras) ?? "",

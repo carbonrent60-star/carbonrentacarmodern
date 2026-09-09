@@ -15,27 +15,21 @@ import {
   CarFront,
   Check,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Clock3,
   Fuel,
   Gauge,
   Headphones,
   Luggage,
   MapPin,
-  Minus,
   Phone,
-  Plus,
   Settings2,
   ShieldCheck,
   Sparkles,
   Users,
   WalletCards,
-  X,
   Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useMemo, useRef, useState } from "react";
 
 import CarbonNavbar from "@/components/CarbonNavbar";
 import CarbonDateRangePicker from "@/components/CarbonDateRangePicker";
@@ -259,13 +253,19 @@ function differenceInDays(start: string, end: string) {
 }
 
 
-function getRate(car: Car, days: number) {
+type PublicVariant = CarVariant & {
+  isMain?: boolean;
+};
+
+type PublicService = "rental" | "transfer" | "wedding";
+
+function getVariantRate(variant: PublicVariant, days: number) {
   const tier =
     pricingTiers.find(
       (item) => days >= item.min && days <= item.max,
     ) ?? pricingTiers[pricingTiers.length - 1];
 
-  return car.rentalPrices[tier.key];
+  return variant.rentalPrices[tier.key];
 }
 
 function getVariantStartingPrice(variant: CarVariant) {
@@ -277,6 +277,76 @@ function getVariantStartingPrice(variant: CarVariant) {
     variant.rentalPrices.days25to30 ??
     variant.rentalPrices.days30plus
   );
+}
+
+function getTransferStartingPrice(car: Car) {
+  const prices = Object.values(car.transferPrices).filter(
+    (price): price is number => typeof price === "number",
+  );
+
+  return prices.length ? Math.min(...prices) : null;
+}
+
+function variantTitle(car: Car, variant: PublicVariant) {
+  if (variant.label && variant.label !== String(variant.manufactureYear ?? "")) {
+    return variant.label;
+  }
+
+  return variant.isMain ? car.title : variant.label || car.title;
+}
+
+function variantDetailLine(car: Car, variant: PublicVariant) {
+  return [
+    variant.manufactureYear,
+    variant.engine ?? car.engine,
+    variant.fuel ?? car.fuel,
+    variant.power,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function variantSupportsService(car: Car, variant: PublicVariant, service: PublicService) {
+  if (variant.isActive === false) {
+    return false;
+  }
+
+  if (service === "rental") {
+    return car.rentalVisible !== false;
+  }
+
+  if (service === "transfer") {
+    return variant.transferAvailable ?? car.transferAvailable;
+  }
+
+  return variant.weddingAvailable ?? car.weddingAvailable === true;
+}
+
+function getPublicVariants(car: Car): PublicVariant[] {
+  return [
+    {
+      id: `${car.id}-main`,
+      label: car.manufactureYear ? String(car.manufactureYear) : car.title,
+      manufactureYear: car.manufactureYear ?? null,
+      bodyStyle: null,
+      engine: car.engine,
+      fuel: car.fuel,
+      transmission: car.transmission,
+      seats: car.seats,
+      baggage: car.baggage,
+      thumbnail: car.thumbnail,
+      images: [car.thumbnail],
+      rentalPrices: car.rentalPrices,
+      transferAvailable: car.transferAvailable,
+      weddingAvailable: car.weddingAvailable,
+      isMain: true,
+      isActive: true,
+    },
+    ...(car.variants ?? []).map((variant) => ({
+      ...variant,
+      isActive: variant.isActive ?? true,
+    })),
+  ].filter((variant) => variant.isActive !== false);
 }
 
 function formatDate(value: string, locale: "az" | "en" | "ru") {
@@ -300,27 +370,38 @@ function formatDate(value: string, locale: "az" | "en" | "ru") {
 
 function ReservationPanel({
   car,
+  variants,
+  selectedVariant,
+  service,
+  onVariantChange,
   compact = false,
 }: {
   car: Car;
+  variants: PublicVariant[];
+  selectedVariant: PublicVariant;
+  service: PublicService;
+  onVariantChange: (variantId: string) => void;
   compact?: boolean;
 }) {
   const { locale } = useCarbonCopy();
   const t = detailText[locale];
   const [startDate, setStartDate] = useState(isoToday(1));
   const [endDate, setEndDate] = useState(isoToday(4));
-  const [pickup, setPickup] = useState("office");
-  const [pickupOpen, setPickupOpen] = useState(false);
+  const [pickup] = useState("office");
   const [extrasOpen, setExtrasOpen] = useState(false);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
-  const [drivers, setDrivers] = useState(1);
+  const [drivers] = useState(1);
 
   const days = useMemo(
     () => differenceInDays(startDate, endDate),
     [startDate, endDate],
   );
 
-  const dailyRate = getRate(car, days);
+  const visibleVariants = variants.filter((variant) =>
+    variantSupportsService(car, variant, service),
+  );
+
+  const dailyRate = getVariantRate(selectedVariant, days);
 
   const estimatedTotal =
     typeof dailyRate === "number" ? dailyRate * days : null;
@@ -346,6 +427,8 @@ function ReservationPanel({
 
   const checkoutParams = new URLSearchParams({
     car: car.slug,
+    variant: selectedVariant.id,
+    service,
     start: startDate,
     end: endDate,
     pickup,
@@ -387,10 +470,28 @@ function ReservationPanel({
         </div>
       </div>
 
-      <div className="carbon-reserve-price">
-        <span>{t.selectedDuration}</span>
+      <VariantSelector
+        car={car}
+        variants={visibleVariants}
+        selectedVariant={selectedVariant}
+        service={service}
+        onVariantChange={onVariantChange}
+      />
 
-        {dailyRate !== null ? (
+      <div className="carbon-reserve-price">
+        <span>{service === "rental" ? t.selectedDuration : service === "transfer" ? "Transfer üçün başlanğıc" : "Toy xidməti üçün başlanğıc"}</span>
+
+        {service === "wedding" && typeof car.weddingPrice === "number" ? (
+          <div>
+            <strong>{car.weddingPrice} ₼</strong>
+            <small>/ paket</small>
+          </div>
+        ) : service === "transfer" && getTransferStartingPrice(car) !== null ? (
+          <div>
+            <strong>{getTransferStartingPrice(car)} ₼</strong>
+            <small>-dan</small>
+          </div>
+        ) : dailyRate !== null ? (
           <div>
             <strong>{dailyRate} ₼</strong>
             <small>/ {t.day}</small>
@@ -400,7 +501,8 @@ function ReservationPanel({
         )}
       </div>
 
-      <CarbonDateRangePicker
+      {service === "rental" ? (
+        <CarbonDateRangePicker
           startDate={startDate}
           endDate={endDate}
           onChange={(nextStart, nextEnd) => {
@@ -408,6 +510,17 @@ function ReservationPanel({
             setEndDate(nextEnd);
           }}
         />
+      ) : service === "transfer" ? (
+        <div className="carbon-service-fields">
+          <span><MapPin size={14} /> Götürülmə ünvanı</span>
+          <span><ArrowRight size={14} /> Təyinat ünvanı</span>
+        </div>
+      ) : (
+        <div className="carbon-service-fields">
+          <span><CalendarDays size={14} /> Toy tarixi</span>
+          <span><Clock3 size={14} /> Paket və müddət</span>
+        </div>
+      )}
 
       <div className="carbon-extras">
         <button
@@ -521,6 +634,95 @@ function ReservationPanel({
   );
 }
 
+function VariantSelector({
+  car,
+  variants,
+  selectedVariant,
+  service,
+  onVariantChange,
+}: {
+  car: Car;
+  variants: PublicVariant[];
+  selectedVariant: PublicVariant;
+  service: PublicService;
+  onVariantChange: (variantId: string) => void;
+}) {
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  if (variants.length <= 1) {
+    const variant = variants[0] ?? selectedVariant;
+
+    return (
+      <div className="carbon-single-variant">
+        <span>Seçilmiş variant</span>
+        <strong>{variantTitle(car, variant)}</strong>
+        <small>{variantDetailLine(car, variant)}</small>
+      </div>
+    );
+  }
+
+  return (
+    <section className="carbon-variant-selector">
+      <div className="carbon-variant-selector-head">
+        <h3>Variant seçin</h3>
+        <button type="button" onClick={() => setHelpOpen((value) => !value)}>
+          <BadgeHelpIcon />
+          Variant nədir?
+        </button>
+        {helpOpen ? (
+          <div className="carbon-variant-help">
+            <strong>Variant nədir?</strong>
+            <p>Variant eyni avtomobil modelinin fərqli il və ya versiyasıdır. Qiymət və xüsusiyyətlər varianta görə dəyişə bilər.</p>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="carbon-variant-options">
+        {variants.map((variant) => {
+          const price = getVariantStartingPrice(variant);
+          const image = variant.thumbnail || car.thumbnail;
+          const selected = selectedVariant.id === variant.id;
+
+          return (
+            <button
+              key={`${service}-${variant.id}`}
+              type="button"
+              className={selected ? "is-selected" : ""}
+              onClick={() => onVariantChange(variant.id)}
+            >
+              <span className="carbon-variant-option-image">
+                <Image src={image} alt={`${car.title} ${variantTitle(car, variant)}`} fill sizes="56px" />
+              </span>
+              <span className="carbon-variant-option-copy">
+                <strong>
+                  {variantTitle(car, variant)}
+                  {variant.popular ? <em>Ən populyar</em> : null}
+                </strong>
+                <small>{variantDetailLine(car, variant)}</small>
+              </span>
+              <span className="carbon-variant-option-price">
+                {price !== null ? (
+                  <>
+                    <b>{price} ₼</b>
+                    <small>/ gün</small>
+                  </>
+                ) : (
+                  <b>Sorğu ilə</b>
+                )}
+              </span>
+              <i />
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function BadgeHelpIcon() {
+  return <span aria-hidden="true">?</span>;
+}
+
 export default function CarDetailClient({
   car,
   relatedCars,
@@ -531,6 +733,41 @@ export default function CarDetailClient({
   const { locale } = useCarbonCopy();
   const t = detailText[locale];
   const heroRef = useRef<HTMLElement | null>(null);
+  const variants = useMemo(() => getPublicVariants(car), [car]);
+  const initialVariantId = variants[0]?.id ?? `${car.id}-main`;
+  const [selectedVariantId, setSelectedVariantId] = useState(() => {
+    if (typeof window === "undefined") {
+      return initialVariantId;
+    }
+
+    const variantFromUrl = new URLSearchParams(window.location.search).get("variant");
+
+    return variants.some((variant) => variant.id === variantFromUrl)
+      ? variantFromUrl ?? initialVariantId
+      : initialVariantId;
+  });
+  const requestedVariant =
+    variants.find((variant) => variant.id === selectedVariantId) ??
+    variants[0];
+  const requestedVariantView = requestedVariant as PublicVariant;
+  const activeService: PublicService = "rental";
+  const serviceVariants = variants.filter((variant) =>
+    variantSupportsService(car, variant, activeService),
+  );
+  const activeVariant =
+    serviceVariants.find((variant) => variant.id === requestedVariantView.id) ??
+    serviceVariants[0] ??
+    requestedVariantView;
+  const currentVariantImage = activeVariant.thumbnail || car.thumbnail;
+  const currentVariantImages =
+    activeVariant.images?.length ? activeVariant.images : [currentVariantImage];
+
+  function handleVariantChange(variantId: string) {
+    setSelectedVariantId(variantId);
+    const params = new URLSearchParams(window.location.search);
+    params.set("variant", variantId);
+    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+  }
 
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -549,45 +786,45 @@ export default function CarDetailClient({
     [1, 0.96],
   );
 
-  const startingPrice = getShortTermPrice(car);
+  const startingPrice = getVariantStartingPrice(activeVariant) ?? getShortTermPrice(car);
 
   const specs = [
     {
       icon: Users,
       label: t.passenger,
       value:
-        car.seats !== null ? `${car.seats} ${t.person}` : "—",
+        (activeVariant.seats ?? car.seats) !== null ? `${activeVariant.seats ?? car.seats} ${t.person}` : "—",
     },
     {
       icon: Fuel,
       label: t.fuel,
-      value: translateCarValue(car.fuel, locale),
+      value: translateCarValue(activeVariant.fuel ?? car.fuel, locale),
     },
     {
       icon: Settings2,
       label: t.transmission,
-      value: translateCarValue(car.transmission, locale),
+      value: translateCarValue(activeVariant.transmission ?? car.transmission, locale),
     },
     {
       icon: Gauge,
       label: t.engine,
-      value: car.engine ?? "—",
+      value: activeVariant.engine ?? car.engine ?? "—",
     },
     {
       icon: CalendarDays,
       label: "İl",
-      value: car.manufactureYear ? String(car.manufactureYear) : "—",
+      value: activeVariant.manufactureYear ? String(activeVariant.manufactureYear) : "—",
     },
     {
       icon: Luggage,
       label: t.luggage,
       value:
-        car.baggage !== null ? `${car.baggage} ${t.large}` : "—",
+        (activeVariant.baggage ?? car.baggage) !== null ? `${activeVariant.baggage ?? car.baggage} ${t.large}` : "—",
     },
   ];
 
   const availableTiers = pricingTiers.filter(
-    (tier) => car.rentalPrices[tier.key] !== null,
+    (tier) => activeVariant.rentalPrices[tier.key] !== null,
   );
   const formatTierLabel = (tier: (typeof pricingTiers)[number]) =>
     tier.key === "days30plus"
@@ -697,23 +934,34 @@ export default function CarDetailClient({
                 >
                   <div className="carbon-showroom-shadow" />
 
-                  <Image
-                    src={car.thumbnail}
-                    alt={car.title}
-                    fill
-                    priority
-                    quality={100}
-                    sizes="(max-width: 1000px) 100vw, 65vw"
-                  />
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentVariantImage}
+                      className="carbon-showroom-car-image"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.22, ease }}
+                    >
+                      <Image
+                        src={currentVariantImage}
+                        alt={`${car.title} ${variantTitle(car, activeVariant)}`}
+                        fill
+                        priority
+                        quality={100}
+                        sizes="(max-width: 1000px) 100vw, 65vw"
+                      />
+                    </motion.div>
+                  </AnimatePresence>
                 </motion.div>
 
                 <div className="carbon-showroom-bottom">
                   <span>
                     <Zap size={13} />
-                    CARBON SELECTED
+                    {variantTitle(car, activeVariant)}
                   </span>
 
-                  <span>AZ · BAKU</span>
+                  <span>{currentVariantImages.length} / {currentVariantImages.length}</span>
                 </div>
               </motion.div>
 
@@ -754,7 +1002,13 @@ export default function CarDetailClient({
                 ease,
               }}
             >
-              <ReservationPanel car={car} />
+              <ReservationPanel
+                car={car}
+                variants={variants}
+                selectedVariant={activeVariant}
+                service={activeService}
+                onVariantChange={handleVariantChange}
+              />
             </motion.aside>
           </div>
         </div>
@@ -788,7 +1042,7 @@ export default function CarDetailClient({
 
           <div className="carbon-rate-grid">
             {pricingTiers.map((tier, index) => {
-              const price = car.rentalPrices[tier.key];
+              const price = activeVariant.rentalPrices[tier.key];
               const best =
                 price !== null &&
                 availableTiers.length > 0 &&
@@ -796,7 +1050,7 @@ export default function CarDetailClient({
                   Math.min(
                     ...availableTiers.map(
                       (item) =>
-                        car.rentalPrices[item.key] as number,
+                        activeVariant.rentalPrices[item.key] as number,
                     ),
                   );
 
@@ -845,72 +1099,6 @@ export default function CarDetailClient({
             })}
           </div>
 
-          {car.variants?.length ? (
-            <motion.section
-              className="carbon-variant-rates"
-              initial={{ opacity: 0, y: 22 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.25 }}
-              transition={{ duration: 0.62, ease }}
-            >
-              <div className="carbon-section-head-v3">
-                <div>
-                  <span>YEAR / BODY VARIANTS</span>
-
-                  <h2>
-                    Eyni model.
-                    <br />
-                    <em>Fərqli il və kuzov.</em>
-                  </h2>
-                </div>
-
-                <p>
-                  Bu model üzrə mövcud variantları və hər variantın
-                  başlanğıc günlük qiymətini müqayisə edin.
-                </p>
-              </div>
-
-              <div className="carbon-variant-grid">
-                {car.variants.map((variant) => {
-                  const price = getVariantStartingPrice(variant);
-                  const image = variant.thumbnail || car.thumbnail;
-
-                  return (
-                    <article key={variant.id} className="carbon-variant-card">
-                      <div className="carbon-variant-card-image">
-                        <Image
-                          src={image}
-                          alt={`${car.title} ${variant.label}`}
-                          fill
-                          quality={100}
-                          sizes="(max-width: 900px) 100vw, 180px"
-                        />
-                      </div>
-
-                      <div className="carbon-variant-card-copy">
-                        <span>{variant.label}</span>
-                        <strong>
-                          {[
-                            variant.manufactureYear,
-                            variant.bodyStyle,
-                          ]
-                            .filter(Boolean)
-                            .join(" / ") || car.title}
-                        </strong>
-                        <small>
-                          {variant.engine ?? car.engine ?? "Carbon variant"}
-                        </small>
-                      </div>
-
-                      <b>
-                        {price !== null ? `${price} ₼ / ${t.day}` : t.byRequest}
-                      </b>
-                    </article>
-                  );
-                })}
-              </div>
-            </motion.section>
-          ) : null}
         </div>
       </section>
 
@@ -1061,19 +1249,26 @@ export default function CarDetailClient({
               <div className="carbon-booking-car-preview">
                 <div>
                   <span>SEÇİLMİŞ AVTOMOBİL</span>
-                  <strong>{car.title}</strong>
+                  <strong>{car.title} · {variantTitle(car, activeVariant)}</strong>
                 </div>
 
                 <Image
-                  src={car.thumbnail}
-                  alt={car.title}
+                  src={currentVariantImage}
+                  alt={`${car.title} ${variantTitle(car, activeVariant)}`}
                   width={260}
                   height={150}
                   quality={100}
                 />
               </div>
 
-              <ReservationPanel car={car} compact />
+              <ReservationPanel
+                car={car}
+                variants={variants}
+                selectedVariant={activeVariant}
+                service={activeService}
+                onVariantChange={handleVariantChange}
+                compact
+              />
             </motion.div>
           </div>
         </div>

@@ -34,7 +34,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import CarbonNavbar from "@/components/CarbonNavbar";
-import type { Car } from "@/data/cars";
+import type { Car, CarVariant } from "@/data/cars";
 import {useCarbonCopy} from "@/lib/carbon-locale";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -973,13 +973,13 @@ function ReservationDateRangePicker({
 }
 
 
-function getRate(car: Car, days: number) {
+function getRate(priceSource: Pick<Car, "rentalPrices"> | Pick<CarVariant, "rentalPrices">, days: number) {
   const tier =
     pricingTiers.find(
       (item) => days >= item.min && days <= item.max,
     ) ?? pricingTiers[pricingTiers.length - 1];
 
-  return car.rentalPrices[tier.key];
+  return priceSource.rentalPrices[tier.key];
 }
 
 function formatDate(value: string) {
@@ -995,6 +995,8 @@ function formatDate(value: string) {
 type Initial = {
   start: string;
   end: string;
+  variant: string;
+  service: string;
   pickup: string;
   drivers: string;
   extras: string;
@@ -1039,13 +1041,23 @@ export default function ReservationCheckout({
 
   const [step, setStep] = useState(1);
   const [complete, setComplete] = useState(false);
+  const selectedVariant = car?.variants?.find((variant) => variant.id === initial.variant);
+  const variantLabel = selectedVariant
+    ? [selectedVariant.manufactureYear, selectedVariant.label].filter(Boolean).join(" ")
+    : initial.variant.endsWith("-main")
+      ? car?.manufactureYear
+        ? `${car.manufactureYear}`
+        : "Əsas variant"
+      : "";
+  const selectedCarLabel =
+    car && variantLabel ? `${car.title} · ${variantLabel}` : car?.title ?? "";
 
   const days = useMemo(
     () => differenceInDays(startDate, endDate),
     [startDate, endDate],
   );
 
-  const dailyRate = car ? getRate(car, days) : null;
+  const dailyRate = car ? getRate(selectedVariant ?? car, days) : null;
 
   const total =
     typeof dailyRate === "number"
@@ -1090,7 +1102,8 @@ export default function ReservationCheckout({
       "",
       w.title,
       "",
-      `${w.car}: ${car.title}`,
+      `${w.car}: ${selectedCarLabel}`,
+      ...(initial.service ? [`Xidmət: ${initial.service}`] : []),
       `${w.category}: ${car.category}`,
       `${w.pickup}: ${formatDate(startDate)}`,
       `${w.return}: ${formatDate(endDate)}`,
@@ -1589,7 +1602,7 @@ export default function ReservationCheckout({
                     <div className="reservation-v4-review">
                       <div>
                         <span>{t.carLabel}</span>
-                        <strong>{car.title}</strong>
+                        <strong>{selectedCarLabel}</strong>
                         <small>{car.category}</small>
                       </div>
 
@@ -1774,7 +1787,7 @@ export default function ReservationCheckout({
 
                 <Image
                   src={car.thumbnail}
-                  alt={car.title}
+                  alt={selectedCarLabel}
                   fill
                   priority
                   quality={100}
@@ -1783,7 +1796,7 @@ export default function ReservationCheckout({
 
                 <div className="reservation-v4-car-name">
                   <span>{car.brand}</span>
-                  <strong>{car.title}</strong>
+                  <strong>{selectedCarLabel}</strong>
                 </div>
               </div>
 

@@ -78,6 +78,35 @@ function readVariants(value: Json | undefined): CarVariant[] {
           typeof variant.engine === "string" && variant.engine.trim()
             ? variant.engine.trim()
             : null,
+        fuel:
+          typeof variant.fuel === "string" && variant.fuel.trim()
+            ? variant.fuel.trim()
+            : null,
+        transmission:
+          typeof variant.transmission === "string" && variant.transmission.trim()
+            ? variant.transmission.trim()
+            : null,
+        seats: numberOrNull(variant.seats),
+        baggage: numberOrNull(variant.baggage),
+        power:
+          typeof variant.power === "string" && variant.power.trim()
+            ? variant.power.trim()
+            : null,
+        isActive:
+          typeof variant.isActive === "boolean" ? variant.isActive : true,
+        popular:
+          typeof variant.popular === "boolean" ? variant.popular : false,
+        transferAvailable:
+          typeof variant.transferAvailable === "boolean"
+            ? variant.transferAvailable
+            : undefined,
+        weddingAvailable:
+          typeof variant.weddingAvailable === "boolean"
+            ? variant.weddingAvailable
+            : undefined,
+        images: Array.isArray(variant.images)
+          ? variant.images.filter((image): image is string => typeof image === "string" && image.trim().length > 0)
+          : undefined,
         thumbnail:
           typeof variant.thumbnail === "string" && variant.thumbnail.trim()
             ? variant.thumbnail.trim()
@@ -88,8 +117,15 @@ function readVariants(value: Json | undefined): CarVariant[] {
       };
     })
     .filter((variant) =>
-      Object.values(variant.rentalPrices).some(
-        (price) => typeof price === "number"
+      Boolean(
+        variant.label ||
+        variant.manufactureYear ||
+        variant.bodyStyle ||
+        variant.engine ||
+        variant.thumbnail ||
+        Object.values(variant.rentalPrices).some(
+          (price) => typeof price === "number"
+        )
       )
     );
 }

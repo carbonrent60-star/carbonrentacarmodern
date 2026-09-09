@@ -95,6 +95,15 @@ function getDisplayPrice(car: Car, mode: PriceMode = "rental") {
   return getShortTermPrice(car);
 }
 
+function carMainVariantLabel(car: Car) {
+  return [
+    car.manufactureYear,
+    car.engine ? `${car.engine}` : null,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+}
+
 export default function CarsClient() {
   const { copy, locale } = useCarbonCopy();
   const [siteCars, setSiteCars] = useState<Car[]>(cars);
@@ -1194,6 +1203,8 @@ export default function CarsClient() {
                         : "rental";
                     const price =
                       getDisplayPrice(car, priceMode);
+                    const extraVariants = car.variants ?? [];
+                    const mainVariantLabel = carMainVariantLabel(car);
 
                     const href = priceMode === "transfer"
                       ? `/transfer/${car.slug}`
@@ -1350,20 +1361,27 @@ export default function CarsClient() {
                               </div>
                             </div>
 
-                            {car.variants?.length ? (
-                              <div className="fleet-v4-variants">
-                                {car.variants.slice(0, 3).map((variant) => (
-                                  <span key={variant.id}>
-                                    {[
-                                      variant.manufactureYear,
-                                      variant.bodyStyle,
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" / ") || variant.label}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : null}
+                            <div className="fleet-v4-variants">
+                              <span className="fleet-v4-main-variant">
+                                Əsas variant
+                                {mainVariantLabel ? ` · ${mainVariantLabel}` : ""}
+                              </span>
+
+                              {extraVariants.slice(0, 2).map((variant) => (
+                                <span key={variant.id}>
+                                  {[
+                                    variant.manufactureYear,
+                                    variant.bodyStyle,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" / ") || variant.label}
+                                </span>
+                              ))}
+
+                              {extraVariants.length > 2 ? (
+                                <span>+{extraVariants.length - 2}</span>
+                              ) : null}
+                            </div>
 
                             <div className="fleet-v4-specs">
                               {car.seats !==

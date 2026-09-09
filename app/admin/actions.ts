@@ -44,7 +44,6 @@ function isMissingManufactureYearColumn(error: { code?: string; message?: string
   return (
     error.code === "PGRST204" ||
     message.includes("manufacture_year") ||
-    message.includes("variants") ||
     message.includes("schema cache")
   );
 }
@@ -52,7 +51,6 @@ function isMissingManufactureYearColumn(error: { code?: string; message?: string
 function withoutManufactureYear(row: CarRow) {
   const compatibleRow = { ...row } as Partial<CarRow>;
   delete compatibleRow.manufacture_year;
-  delete compatibleRow.variants;
 
   return compatibleRow;
 }
@@ -222,7 +220,7 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
   ) as Car["transferPrices"];
   const rentalPrices = readRentalPricesFromForm(formData, "rental");
   const variantCount = numberValue(formData, "variantCount") ?? 0;
-  const variants = Array.from({ length: variantCount }, (_, index) => {
+  const variantRows = Array.from({ length: variantCount }, (_, index) => {
     const label = text(formData, `variant_${index}_label`);
     const manufactureYear = numberValue(formData, `variant_${index}_manufactureYear`);
     const bodyStyle = optionalText(formData, `variant_${index}_bodyStyle`);
@@ -232,10 +230,6 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
     const hasPrice = Object.values(variantPrices).some(
       (price) => typeof price === "number"
     );
-
-    if (!label && !manufactureYear && !bodyStyle && !engine && !hasPrice) {
-      return null;
-    }
 
     const variantLabel =
       label ||
@@ -252,8 +246,30 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
       engine,
       thumbnail,
       rentalPrices: variantPrices,
+      isEmpty: !label && !manufactureYear && !bodyStyle && !engine && !thumbnail && !hasPrice,
     };
-  }).filter((variant): variant is NonNullable<typeof variant> => Boolean(variant));
+  });
+  const mainVariant = variantRows[0]?.isEmpty ? null : variantRows[0] ?? null;
+  const variants = variantRows
+    .slice(1)
+    .filter((variant) => !variant.isEmpty)
+    .map((variant) => ({
+      id: variant.id,
+      label: variant.label,
+      manufactureYear: variant.manufactureYear,
+      bodyStyle: variant.bodyStyle,
+      engine: variant.engine,
+      thumbnail: variant.thumbnail,
+      rentalPrices: variant.rentalPrices,
+    }));
+  const mainRentalPrices = mainVariant
+    ? Object.fromEntries(
+        rentalPriceKeys.map((key) => [
+          key,
+          mainVariant.rentalPrices[key] ?? rentalPrices[key],
+        ])
+      ) as Car["rentalPrices"]
+    : rentalPrices;
 
   return {
     id: text(formData, "id") || slug,
@@ -261,13 +277,13 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
     brand: text(formData, "brand"),
     title,
     category: carCategories.includes(category) ? category : "Econom",
-    manufactureYear: numberValue(formData, "manufactureYear"),
+    manufactureYear: mainVariant?.manufactureYear ?? numberValue(formData, "manufactureYear"),
     seats: numberValue(formData, "seats"),
     baggage: numberValue(formData, "baggage"),
     smallBaggage: numberValue(formData, "smallBaggage"),
-    thumbnail: text(formData, "thumbnail"),
+    thumbnail: mainVariant?.thumbnail ?? text(formData, "thumbnail"),
     fuel: text(formData, "fuel") || "Benzin",
-    engine: optionalText(formData, "engine"),
+    engine: mainVariant?.engine ?? optionalText(formData, "engine"),
     transmission: text(formData, "transmission") || "Avtomat",
     weddingAvailable: boolValue(formData, "weddingAvailable"),
     weddingThumbnail: optionalText(formData, "weddingThumbnail"),
@@ -276,7 +292,7 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
     rentalVisible: boolValue(formData, "rentalVisible"),
     transferAvailable: boolValue(formData, "transferAvailable"),
     transferPrices,
-    rentalPrices,
+    rentalPrices: mainRentalPrices,
     variants,
     isActive: boolValue(formData, "isActive"),
     sortOrder: numberValue(formData, "sortOrder") ?? 0,
