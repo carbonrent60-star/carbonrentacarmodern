@@ -8677,7 +8677,7 @@ button {
   width: 15px;
   height: 15px;
   border: 1px solid rgba(0,0,0,.18);
-  border-radius: 50%;
+  border-radius: 0;
   display: grid;
   place-items: center;
   color: var(--detail-accent);
@@ -8696,6 +8696,8 @@ button {
   background: rgba(255,255,255,.98);
   box-shadow: 0 18px 48px rgba(24,18,20,.13);
   backdrop-filter: blur(16px);
+  transform-origin: top right;
+  animation: carbonVariantHelpIn 180ms var(--motion-ease, cubic-bezier(.22,1,.36,1));
 }
 
 .carbon-variant-help strong {
@@ -8712,7 +8714,9 @@ button {
 .carbon-single-variant {
   padding: 13px;
   border: 1px solid rgba(0,0,0,.09);
-  background: #f7f6f3;
+  background:
+    linear-gradient(90deg, rgba(147,29,79,.04), transparent 58%),
+    #f7f6f3;
   display: grid;
   gap: 5px;
 }
@@ -8741,8 +8745,9 @@ button {
   min-height: 70px;
   padding: 9px 10px;
   border: 1px solid rgba(0,0,0,.095);
-  border-radius: 10px;
-  background: rgba(255,255,255,.68);
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.92), rgba(255,255,255,.72));
   display: grid;
   grid-template-columns: 54px minmax(0, 1fr) auto 18px;
   align-items: center;
@@ -8750,6 +8755,8 @@ button {
   color: #171717;
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
+  position: relative;
   transition:
     border-color 180ms ease,
     background 180ms ease,
@@ -8757,15 +8764,39 @@ button {
     transform 180ms ease;
 }
 
+.carbon-variant-options button::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--detail-accent);
+  opacity: 0;
+  transform: scaleY(.25);
+  transform-origin: center;
+  transition:
+    opacity 180ms ease,
+    transform 260ms var(--motion-ease, cubic-bezier(.22,1,.36,1));
+}
+
 .carbon-variant-options button:hover,
 .carbon-variant-options button.is-selected {
-  border-color: rgba(147,29,79,.42);
-  background: rgba(147,29,79,.055);
-  box-shadow: 0 12px 34px rgba(147,29,79,.08);
+  border-color: rgba(147,29,79,.5);
+  background:
+    linear-gradient(90deg, rgba(147,29,79,.08), rgba(147,29,79,.018) 62%),
+    rgba(255,255,255,.86);
+  box-shadow:
+    0 18px 38px rgba(147,29,79,.08),
+    inset 0 1px rgba(255,255,255,.82);
 }
 
 .carbon-variant-options button:hover {
   transform: translateY(-1px);
+}
+
+.carbon-variant-options button:hover::before,
+.carbon-variant-options button.is-selected::before {
+  opacity: 1;
+  transform: scaleY(1);
 }
 
 .carbon-variant-option-image {
@@ -8773,13 +8804,25 @@ button {
   height: 42px;
   position: relative;
   overflow: hidden;
-  border-radius: 7px;
-  background: #eee;
+  border-radius: 0;
+  border: 1px solid rgba(0,0,0,.055);
+  background: #efefee;
+  transition:
+    border-color 180ms ease,
+    transform 260ms var(--motion-ease, cubic-bezier(.22,1,.36,1)),
+    filter 260ms ease;
 }
 
 .carbon-variant-option-image img {
   object-fit: contain;
   padding: 2px;
+}
+
+.carbon-variant-options button:hover .carbon-variant-option-image,
+.carbon-variant-options button.is-selected .carbon-variant-option-image {
+  border-color: rgba(147,29,79,.2);
+  filter: saturate(1.08) contrast(1.03);
+  transform: translateX(1px);
 }
 
 .carbon-variant-option-copy {
@@ -8803,7 +8846,7 @@ button {
 .carbon-variant-option-copy em {
   flex: 0 0 auto;
   padding: 3px 6px;
-  border-radius: 999px;
+  border-radius: 0;
   background: rgba(147,29,79,.11);
   color: var(--detail-accent);
   font-size: 7px;
@@ -8903,6 +8946,12 @@ button {
   gap: 6px;
 }
 
+.carbon-money-swap {
+  width: max-content;
+  max-width: 100%;
+  position: relative;
+}
+
 .carbon-reserve-price strong {
   font-size: 31px;
   line-height: 1;
@@ -8913,6 +8962,77 @@ button {
 .carbon-reserve-price small {
   color: #888;
   font-size: 8px;
+}
+
+.carbon-money-burst {
+  pointer-events: none;
+  position: absolute;
+  left: calc(100% + 9px);
+  top: 2px;
+  width: 34px;
+  height: 28px;
+}
+
+.carbon-money-burst i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1px solid rgba(147,29,79,.38);
+  background: rgba(147,29,79,.08);
+  transform: rotate(45deg);
+  opacity: 0;
+  animation: carbonMoneyBurst 620ms var(--motion-ease, cubic-bezier(.22,1,.36,1)) forwards;
+}
+
+.carbon-money-burst i:nth-child(1) {
+  left: 0;
+  top: 12px;
+  animation-delay: 20ms;
+}
+
+.carbon-money-burst i:nth-child(2) {
+  left: 12px;
+  top: 4px;
+  animation-delay: 85ms;
+}
+
+.carbon-money-burst i:nth-child(3) {
+  left: 23px;
+  top: 15px;
+  animation-delay: 135ms;
+}
+
+@keyframes carbonMoneyBurst {
+  0% {
+    opacity: 0;
+    transform: translate3d(-6px, 10px, 0) rotate(45deg) scale(.45);
+    filter: blur(6px);
+  }
+
+  34% {
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(10px, -13px, 0) rotate(45deg) scale(.92);
+    filter: blur(1px);
+  }
+}
+
+@keyframes carbonVariantHelpIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(.985);
+    filter: blur(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 
 .carbon-date-grid {

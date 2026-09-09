@@ -982,6 +982,28 @@ function getRate(priceSource: Pick<Car, "rentalPrices"> | Pick<CarVariant, "rent
   return priceSource.rentalPrices[tier.key];
 }
 
+function variantDisplayLabel(variant: CarVariant | undefined, variantId: string) {
+  if (variant) {
+    if (variant.label && variant.label !== String(variant.manufactureYear ?? "")) {
+      return variant.label;
+    }
+
+    return variant.label || (variant.manufactureYear ? String(variant.manufactureYear) : "");
+  }
+
+  if (variantId.endsWith("-main")) {
+    return "";
+  }
+
+  return "";
+}
+
+function selectedVehicleLabel(car: Car, variant: CarVariant | undefined, variantId: string) {
+  const variantLabel = variantDisplayLabel(variant, variantId);
+
+  return variantLabel ? `${car.title} · ${variantLabel}` : car.title;
+}
+
 function formatDate(value: string) {
   if (!value) return "Seçilməyib";
 
@@ -1042,15 +1064,9 @@ export default function ReservationCheckout({
   const [step, setStep] = useState(1);
   const [complete, setComplete] = useState(false);
   const selectedVariant = car?.variants?.find((variant) => variant.id === initial.variant);
-  const variantLabel = selectedVariant
-    ? [selectedVariant.manufactureYear, selectedVariant.label].filter(Boolean).join(" ")
-    : initial.variant.endsWith("-main")
-      ? car?.manufactureYear
-        ? `${car.manufactureYear}`
-        : "Əsas variant"
-      : "";
   const selectedCarLabel =
-    car && variantLabel ? `${car.title} · ${variantLabel}` : car?.title ?? "";
+    car ? selectedVehicleLabel(car, selectedVariant, initial.variant) : "";
+  const selectedCarImage = selectedVariant?.thumbnail || car?.thumbnail || "";
 
   const days = useMemo(
     () => differenceInDays(startDate, endDate),
@@ -1786,7 +1802,7 @@ export default function ReservationCheckout({
                 </div>
 
                 <Image
-                  src={car.thumbnail}
+                  src={selectedCarImage}
                   alt={selectedCarLabel}
                   fill
                   priority
