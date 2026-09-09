@@ -2517,15 +2517,25 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   color: var(--admin-text);
   font-size: 12px;
   font-weight: 700;
+}
+
+.admin-variant-card-head > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px 10px;
 }
 
 .admin-variant-card-head span {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  min-width: 0;
 }
 
 .admin-variant-card-head small {
@@ -2535,6 +2545,34 @@ kbd {
   color: var(--admin-accent);
   font-size: 11px;
   font-weight: 750;
+}
+
+.admin-variant-delete-button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(248, 113, 113, .22);
+  border-radius: 7px;
+  background: rgba(127, 29, 29, .13);
+  color: #fda4af;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 720;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    background var(--motion-fast) var(--ease-out);
+}
+
+.admin-variant-delete-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(248, 113, 113, .42);
+  background: rgba(127, 29, 29, .2);
 }
 
 .admin-variant-subtabs {

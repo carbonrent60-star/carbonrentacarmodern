@@ -2432,10 +2432,48 @@ function CarEditorForm({
   const existingVariants = car?.variants ?? [];
   const formVariants = [baseVariant, ...existingVariants];
   const initialVariantCount = Math.max(formVariants.length, 1);
-  const [variantCount, setVariantCount] = useState(initialVariantCount);
+  const [variantSlots, setVariantSlots] = useState(() =>
+    Array.from({ length: initialVariantCount }, (_, index) => ({
+      key: `${car?.id ?? "new"}-${formVariants[index]?.id ?? "main"}-${index}`,
+      variant: formVariants[index],
+    })),
+  );
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [activeHelp, setActiveHelp] = useState<"prices" | "variants" | null>(null);
+  const variantCount = variantSlots.length;
   const selectedVariant = Math.min(selectedVariantIndex, variantCount - 1);
+
+  function addVariant() {
+    const nextIndex = variantSlots.length;
+
+    setVariantSlots((slots) => [
+      ...slots,
+      {
+        key: `${car?.id ?? "new"}-new-variant-${Date.now()}`,
+        variant: undefined,
+      },
+    ]);
+    setSelectedVariantIndex(nextIndex);
+  }
+
+  function removeVariant(index: number) {
+    if (index === 0) {
+      return;
+    }
+
+    setVariantSlots((slots) => slots.filter((_, slotIndex) => slotIndex !== index));
+    setSelectedVariantIndex((current) => {
+      if (current === index) {
+        return Math.max(0, index - 1);
+      }
+
+      if (current > index) {
+        return current - 1;
+      }
+
+      return Math.min(current, Math.max(0, variantCount - 2));
+    });
+  }
 
   return (
     <>
@@ -2558,10 +2596,7 @@ function CarEditorForm({
             <button
               type="button"
               className="admin-secondary-button"
-              onClick={() => {
-                setSelectedVariantIndex(variantCount);
-                setVariantCount((count) => count + 1);
-              }}
+              onClick={addVariant}
             >
               <Plus size={14} />
               Variant əlavə et
@@ -2579,14 +2614,14 @@ function CarEditorForm({
               <span>Status</span>
             </div>
 
-            {Array.from({ length: variantCount }, (_, index) => {
-              const variant = formVariants[index];
+            {variantSlots.map((slot, index) => {
+              const variant = slot.variant;
               const isMainVariant = index === 0;
               const price = variantStartingPrice(variant);
 
               return (
                 <button
-                  key={`${car?.id ?? "new"}-variant-row-${index}`}
+                  key={`${slot.key}-row`}
                   type="button"
                   className={`admin-variant-table-row${selectedVariant === index ? " is-active" : ""}`}
                   onClick={() => setSelectedVariantIndex(index)}
@@ -2607,23 +2642,36 @@ function CarEditorForm({
           </div>
 
           <div className="admin-variant-editors">
-            {Array.from({ length: variantCount }, (_, index) => {
-              const variant = formVariants[index];
+            {variantSlots.map((slot, index) => {
+              const variant = slot.variant;
               const isMainVariant = index === 0;
 
               return (
                 <div
                   className={`admin-variant-card${selectedVariant === index ? "" : " is-hidden"}`}
-                  key={`${car?.id ?? "new"}-variant-editor-${index}`}
+                  key={`${slot.key}-editor`}
                 >
                   <input name={`variant_${index}_id`} type="hidden" defaultValue={variant?.id ?? ""} />
 
                   <div className="admin-variant-card-head">
-                    <span>
-                      <Rows3 size={14} />
-                      {variantDisplayName(variant, index)}
-                    </span>
-                    {isMainVariant ? <small>Saytda əsas qiymət</small> : <small>Əlavə variant</small>}
+                    <div>
+                      <span>
+                        <Rows3 size={14} />
+                        {variantDisplayName(variant, index)}
+                      </span>
+                      {isMainVariant ? <small>Saytda əsas qiymət</small> : <small>Əlavə variant · silmək üçün sonra yadda saxlayın</small>}
+                    </div>
+
+                    {!isMainVariant ? (
+                      <button
+                        type="button"
+                        className="admin-variant-delete-button"
+                        onClick={() => removeVariant(index)}
+                      >
+                        <Trash2 size={13} />
+                        Variantı sil
+                      </button>
+                    ) : null}
                   </div>
 
                   <div className="admin-variant-subtabs">
