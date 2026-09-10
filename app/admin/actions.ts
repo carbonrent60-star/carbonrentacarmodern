@@ -527,6 +527,7 @@ export async function seedBlogsAction() {
 async function saveCarRecord(formData: FormData) {
   const supabase = requireAdminConfig();
   const car = readCarFromForm(formData);
+  const variantCount = numberValue(formData, "variantCount") ?? 0;
 
   if (!car.title || !car.brand || !car.slug) {
     throw new Error("required-fields-missing");
@@ -546,15 +547,45 @@ async function saveCarRecord(formData: FormData) {
   );
   const thumbnail = uploadedUrl ?? car.thumbnail;
   const weddingThumbnail = uploadedWeddingUrl ?? car.weddingThumbnail;
+  let savedThumbnail = thumbnail;
+  let savedVariants = car.variants ?? [];
 
-  if (!thumbnail) {
+  for (let index = 0; index < variantCount; index += 1) {
+    const uploadedVariantUrl = await getUploadedImageUrl(
+      formData,
+      `variant_${index}_imageFile`,
+      "car-variants",
+      `${car.slug}-variant-${index + 1}`
+    );
+
+    if (!uploadedVariantUrl) {
+      continue;
+    }
+
+    if (index === 0) {
+      savedThumbnail = uploadedVariantUrl;
+      continue;
+    }
+
+    savedVariants = savedVariants.map((variant, variantIndex) =>
+      variantIndex === index - 1
+        ? {
+            ...variant,
+            thumbnail: uploadedVariantUrl,
+          }
+        : variant
+    );
+  }
+
+  if (!savedThumbnail) {
     throw new Error("image-required");
   }
 
   const savedCar = {
     ...car,
-    thumbnail,
+    thumbnail: savedThumbnail,
     weddingThumbnail,
+    variants: savedVariants,
   };
   const row = {
     ...carToRow(savedCar, car.sortOrder),

@@ -366,6 +366,10 @@ function StatusDot({ active }: { active?: boolean }) {
   );
 }
 
+function uniqueCompact(values: Array<string | null | undefined>) {
+  return Array.from(new Set(values.map((value) => value?.trim()).filter(Boolean))) as string[];
+}
+
 function startPrice(car?: AdminCar) {
   if (!car) {
     return null;
@@ -871,28 +875,45 @@ function AdminDashboardClient({
         <div className="admin-content">
           <Alerts alerts={alerts} flags={flags} />
 
-          {editor ? (
-            <EditorWorkspace
-              editor={editor}
-              carTab={carTab}
-              blogTab={blogTab}
-              onCarTab={setCarTab}
-              onBlogTab={setBlogTab}
-              onCarSaved={upsertCar}
-              onBlogSaved={upsertBlog}
-              onCarDeleted={removeCar}
-              onBlogDeleted={removeBlog}
-              onToast={(nextToast) =>
-                setToast({
-                  ...nextToast,
-                  id: Date.now(),
-                })
-              }
-              onDirtyChange={setEditorDirty}
-              onClose={() => closeEditor(editorReturnView)}
-            />
-          ) : (
-            <>
+          <AnimatePresence mode="wait" initial={false}>
+            {editor ? (
+              <motion.div
+                key={`editor-${editor.type}-${editor.type === "car" ? editor.car?.id ?? editor.index : editor.blog?.slug ?? editor.index}`}
+                className="admin-motion-screen"
+                initial={{ opacity: 0, y: 18, scale: 0.985, filter: "blur(8px)" }}
+                animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -10, scale: 0.99, filter: "blur(6px)" }}
+                transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <EditorWorkspace
+                  editor={editor}
+                  carTab={carTab}
+                  blogTab={blogTab}
+                  onCarTab={setCarTab}
+                  onBlogTab={setBlogTab}
+                  onCarSaved={upsertCar}
+                  onBlogSaved={upsertBlog}
+                  onCarDeleted={removeCar}
+                  onBlogDeleted={removeBlog}
+                  onToast={(nextToast) =>
+                    setToast({
+                      ...nextToast,
+                      id: Date.now(),
+                    })
+                  }
+                  onDirtyChange={setEditorDirty}
+                  onClose={() => closeEditor(editorReturnView)}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key={`view-${view}`}
+                className="admin-motion-screen"
+                initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -8, filter: "blur(6px)" }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              >
               {view === "overview" ? (
                 <OverviewView
                   cars={cars}
@@ -987,8 +1008,9 @@ function AdminDashboardClient({
               {view === "settings" ? (
                 <SettingsView carsResult={carsResult} blogsResult={blogsResult} />
               ) : null}
-            </>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -2488,6 +2510,7 @@ function EditorWorkspace({
   const [justSaved, setJustSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [drawerError, setDrawerError] = useState<string | null>(null);
   const originalFormSignatureRef = useRef<string | null>(null);
   const formId = editor.type === "car" ? "admin-car-editor-form" : "admin-blog-editor-form";
@@ -2504,6 +2527,18 @@ function EditorWorkspace({
   const publicHref = editor.type === "car" ? `/avtomobiller/${editor.car?.slug ?? ""}` : `/blog/${editor.blog?.slug ?? ""}`;
   const variantCount = editor.type === "car" ? Math.max((editor.car?.variants?.length ?? 0) + 1, 1) : 0;
   const startingPrice = editor.type === "car" ? startPrice(editor.car) : null;
+  const carImages = useMemo(() => {
+    if (editor.type !== "car") {
+      return [];
+    }
+
+    return uniqueCompact([
+      editor.car?.thumbnail,
+      ...(editor.car?.variants ?? []).map((variant) => variant.thumbnail),
+      editor.car?.weddingThumbnail,
+    ]);
+  }, [editor]);
+  const activePreviewImage = carImages[activeImageIndex] ?? image;
   const deleteTitle = editor.type === "car" ? "Avtomobili sil" : "Məqaləni sil";
   const deleteCopy =
     editor.type === "car"
@@ -2624,6 +2659,11 @@ function EditorWorkspace({
     const form = (event.target as HTMLElement).closest("form");
     updateDirtyFromForm(form instanceof HTMLFormElement ? form : null);
   };
+  const handleEditorFormStructureChange = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      updateDirtyFromForm();
+    });
+  }, [updateDirtyFromForm]);
   const handleDelete = async () => {
     setDrawerError(null);
     setIsDeleting(true);
@@ -2692,84 +2732,95 @@ function EditorWorkspace({
     }
   };
 
-  return (
-    <section className="admin-editor-page">
-      <div className="admin-editor-breadcrumb">
-        <button type="button" onClick={requestClose}>
-          <ArrowRight size={14} />
-          {editor.type === "car" ? "Avtomobillər" : "Blog"}
-        </button>
-        <span>/</span>
-        <strong>{title}</strong>
-      </div>
+	  return (
+	    <section className="admin-editor-page">
+	      <div className="admin-editor-actionbar">
+	        <div className="admin-editor-breadcrumb">
+	          <button type="button" onClick={requestClose}>
+	            <ArrowRight size={14} />
+	            {editor.type === "car" ? "Avtomobillər" : "Blog"}
+	          </button>
+	          <span>/</span>
+	          <strong>{title}</strong>
+	          {editor.type === "car" ? (
+	            <>
+	              <span>/</span>
+	              <em>Redaktə et</em>
+	            </>
+	          ) : null}
+	        </div>
 
-      <header className="admin-editor-hero">
-        <div className="admin-editor-identity">
-          <span className="admin-editor-thumb">
-            {image ? <Image src={image} alt={title} fill sizes="96px" /> : editor.type === "car" ? <CarFront size={22} /> : <Newspaper size={22} />}
-          </span>
-          <div>
-            <p>{editor.type === "car" ? "Vehicle workspace" : "Content workspace"}</p>
-            <h1>{title}</h1>
-            <div className="admin-editor-badges">
-              <span>{subtitle}</span>
-              {editor.type === "car" ? <span>{categoryLabels[editor.car?.category ?? ""] ?? editor.car?.category ?? "Model"}</span> : null}
-              {editor.type === "car" ? <span>{variantCount} variant</span> : null}
-              <span><StatusDot active={editor.type === "car" ? editor.car?.isActive : editor.blog?.isActive} /></span>
-            </div>
-          </div>
-        </div>
-
-        <div className="admin-editor-actions">
-          {dirty ? <span className="admin-editor-dirty"><i /> Saxlanılmamış dəyişikliklər</span> : null}
-          {editor.type === "car" ? (
-            <button type="button" className="admin-secondary-button" onClick={() => setPreviewOpen(true)}>
-              Preview
-              <ExternalLink size={14} />
-            </button>
-          ) : null}
-          {isEditing && publicHref.endsWith("/") === false ? (
-            <Link href={publicHref} target="_blank" rel="noopener noreferrer" className="admin-secondary-button">
-              Saytda bax
-              <ExternalLink size={14} />
-            </Link>
-          ) : null}
-          <button
-            type="button"
-            className="admin-secondary-button"
-            onClick={() => setConfirmDelete(true)}
-            disabled={!isEditing || isSaving || isDeleting}
-            title={deleteTitle}
-          >
-            <MoreHorizontal size={16} />
-          </button>
-          <button
+	        <div className="admin-editor-actions">
+	          {dirty ? <span className="admin-editor-dirty"><i /> Saxlanılmamış dəyişikliklər</span> : null}
+	          {isEditing && publicHref.endsWith("/") === false ? (
+	            <Link href={publicHref} target="_blank" rel="noopener noreferrer" className="admin-secondary-button">
+	              Saytda bax
+	              <ExternalLink size={14} />
+	            </Link>
+	          ) : null}
+	          {editor.type === "car" ? (
+	            <button type="button" className="admin-secondary-button" onClick={() => setPreviewOpen(true)}>
+	              Preview
+	              <ExternalLink size={14} />
+	            </button>
+	          ) : null}
+	          <button
+	            type="button"
+	            className="admin-secondary-button admin-editor-more-button"
+	            onClick={() => setConfirmDelete(true)}
+	            disabled={!isEditing || isSaving || isDeleting}
+	            title={deleteTitle}
+	          >
+	            <MoreHorizontal size={16} />
+	          </button>
+	          <button
 	            type="submit"
 	            form={formId}
 	            className={`admin-primary-button${justSaved ? " is-saved" : ""}`}
 	            disabled={isSaving || isDeleting || !dirty}
 	          >
-            {justSaved ? <CheckCircle2 size={15} /> : <Save size={15} />}
-            {isSaving
-              ? "Saxlanılır..."
-              : justSaved
-                ? "Saxlanıldı"
-                : "Dəyişiklikləri saxla"}
-          </button>
-        </div>
-      </header>
+	            {justSaved ? <CheckCircle2 size={15} /> : <Save size={15} />}
+	            {isSaving
+	              ? "Saxlanılır..."
+	              : justSaved
+	                ? "Saxlanıldı"
+	                : "Dəyişiklikləri saxla"}
+	          </button>
+	        </div>
+	      </div>
 
-      <div className="admin-editor-page-body" onChange={handleEditorFormMutation} onInput={handleEditorFormMutation}>
-        <div className="admin-editor-main">
+	      {editor.type === "car" ? (
+	        <CarEditorHero car={editor.car} title={title} image={image} variantCount={variantCount} startingPrice={startingPrice} />
+	      ) : (
+	        <header className="admin-editor-hero">
+	          <div className="admin-editor-identity">
+	            <span className="admin-editor-thumb">
+	              {image ? <Image src={image} alt={title} fill sizes="96px" /> : <Newspaper size={22} />}
+	            </span>
+	            <div>
+	              <p>Content workspace</p>
+	              <h1>{title}</h1>
+	              <div className="admin-editor-badges">
+	                <span>{subtitle}</span>
+	                <span><StatusDot active={editor.blog?.isActive} /></span>
+	              </div>
+	            </div>
+	          </div>
+	        </header>
+	      )}
+
+	      <div className="admin-editor-page-body" onChange={handleEditorFormMutation} onInput={handleEditorFormMutation}>
+	        <div className="admin-editor-main">
           {editor.type === "car" ? (
             <CarEditorForm
               key={editor.car?.id ?? `new-${editor.index}`}
               formId={formId}
               editor={editor}
               activeTab={carTab}
-              onTab={onCarTab}
-              onSubmit={handleSubmit}
-            />
+	              onTab={onCarTab}
+	              onSubmit={handleSubmit}
+	              onStructureChange={handleEditorFormStructureChange}
+	            />
           ) : (
             <BlogEditorForm
               formId={formId}
@@ -2783,10 +2834,21 @@ function EditorWorkspace({
           {drawerError ? (
             <div className="admin-drawer-message is-error">
               {drawerError}
-            </div>
-          ) : null}
-        </div>
-      </div>
+	            </div>
+	          ) : null}
+	        </div>
+	        {editor.type === "car" ? (
+	          <CarEditorSidePanel
+	            car={editor.car}
+	            title={title}
+	            images={carImages}
+	            activeImage={activePreviewImage}
+	            activeImageIndex={activeImageIndex}
+	            onImage={setActiveImageIndex}
+	            startingPrice={startingPrice}
+	          />
+	        ) : null}
+	      </div>
 
       {previewOpen ? (
         <div className="admin-preview-layer" role="dialog" aria-modal="true" aria-label="Saytda görünüş">
@@ -2873,20 +2935,196 @@ function EditorWorkspace({
   );
 }
 
+function CarEditorHero({
+  car,
+  title,
+  image,
+  variantCount,
+  startingPrice,
+}: {
+  car?: AdminCar;
+  title: string;
+  image?: string | null;
+  variantCount: number;
+  startingPrice: number | null;
+}) {
+  const category = categoryLabels[car?.category ?? ""] ?? car?.category ?? "Model";
+  const meta = uniqueCompact([
+    `${variantCount} variant`,
+    startingPrice !== null ? `${startingPrice} ₼-dan` : null,
+    car?.manufactureYear ? String(car.manufactureYear) : null,
+    car?.variants?.find((variant) => variant.bodyStyle)?.bodyStyle,
+    car?.transmission,
+  ]).slice(0, 5);
+
+  return (
+    <motion.header
+      className="admin-car-hero"
+      initial={{ opacity: 0, y: 18, filter: "blur(8px)" }}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div className="admin-car-hero-copy">
+        <span className={`admin-car-status${car?.isActive === false ? " is-muted" : ""}`}>
+          <i />
+          {car?.isActive === false ? "Gizli" : "Aktiv"}
+        </span>
+        <h1>{title}</h1>
+        <p>{car?.brand ?? "Carbon"} <b /> {category}</p>
+        <div className="admin-car-hero-pills">
+          {meta.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="admin-car-hero-image">
+        {image ? <Image src={image} alt={title} fill sizes="720px" priority /> : <CarFront size={96} />}
+      </div>
+
+      <aside className="admin-car-brand-card">
+        <span><CarFront size={24} /></span>
+        <strong>{car?.brand ?? "Carbon"}</strong>
+        <small>Premium park idarəetməsi</small>
+      </aside>
+    </motion.header>
+  );
+}
+
+function CarEditorSidePanel({
+  car,
+  title,
+  images,
+  activeImage,
+  activeImageIndex,
+  onImage,
+  startingPrice,
+}: {
+  car?: AdminCar;
+  title: string;
+  images: string[];
+  activeImage?: string | null;
+  activeImageIndex: number;
+  onImage: (index: number) => void;
+  startingPrice: number | null;
+}) {
+  const safeIndex = images.length ? Math.min(activeImageIndex, images.length - 1) : 0;
+  const services = [
+    car?.rentalVisible !== false ? "İcarə" : null,
+    car?.transferAvailable ? "Transfer" : null,
+    car?.weddingAvailable ? "Toy" : null,
+  ].filter(Boolean);
+
+  function moveImage(direction: -1 | 1) {
+    if (!images.length) return;
+    onImage((safeIndex + direction + images.length) % images.length);
+  }
+
+  return (
+    <aside className="admin-car-side">
+      <section className="admin-car-preview-card">
+        <header>
+          <span><Images size={16} /></span>
+          <div>
+            <strong>Şəkil önizləməsi</strong>
+            <small>Əsas və variant şəkilləri</small>
+          </div>
+        </header>
+
+        <div className="admin-car-preview-frame">
+          {activeImage ? <Image src={activeImage} alt={title} fill sizes="460px" /> : <CarFront size={46} />}
+          {images.length > 1 ? (
+            <>
+              <button type="button" onClick={() => moveImage(-1)} aria-label="Əvvəlki şəkil">
+                <ArrowRight size={16} />
+              </button>
+              <button type="button" onClick={() => moveImage(1)} aria-label="Növbəti şəkil">
+                <ArrowRight size={16} />
+              </button>
+            </>
+          ) : null}
+        </div>
+
+        {images.length ? (
+          <div className="admin-car-preview-thumbs">
+            {images.slice(0, 4).map((item, index) => (
+              <button
+                key={`${item}-${index}`}
+                type="button"
+                className={safeIndex === index ? "is-active" : ""}
+                onClick={() => onImage(index)}
+              >
+                <Image src={item} alt={`${title} ${index + 1}`} fill sizes="96px" />
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="admin-car-info-card">
+        <header>
+          <span><Gauge size={16} /></span>
+          <div>
+            <strong>Məlumat</strong>
+            <small>Real avtomobil məlumatları</small>
+          </div>
+        </header>
+        <div className="admin-car-info-grid">
+          <span><b>{car?.variants?.length ? car.variants.length + 1 : 1}</b><small>Variant</small></span>
+          <span><b>{startingPrice !== null ? `${startingPrice} ₼` : "—"}</b><small>Başlanğıc</small></span>
+          <span><b>{services.length || 0}</b><small>Xidmət</small></span>
+        </div>
+      </section>
+    </aside>
+  );
+}
+
+function FormSection({
+  icon,
+  title,
+  subtitle,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="admin-form-section-card">
+      <header>
+        <span>{icon}</span>
+        <div>
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
+        </div>
+      </header>
+      {children}
+    </section>
+  );
+}
+
 function TabButton<T extends string>({
   value,
   active,
   onClick,
   children,
+  icon,
+  count,
 }: {
   value: T;
   active: T;
   onClick: (value: T) => void;
   children: ReactNode;
+  icon?: ReactNode;
+  count?: number;
 }) {
   return (
     <button type="button" className={active === value ? "is-active" : ""} onClick={() => onClick(value)}>
+      {icon ? <span className="admin-tab-icon">{icon}</span> : null}
       {children}
+      {typeof count === "number" ? <small>{count}</small> : null}
+      {active === value ? <motion.i layoutId="admin-editor-tab-indicator" /> : null}
     </button>
   );
 }
@@ -2934,12 +3172,14 @@ function CarEditorForm({
   activeTab,
   onTab,
   onSubmit,
+  onStructureChange,
 }: {
   formId: string;
   editor: Extract<NonNullable<EditorState>, { type: "car" }>;
   activeTab: CarTab;
   onTab: (tab: CarTab) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onStructureChange: () => void;
 }) {
   const car = editor.car;
   const baseVariant = car
@@ -2980,6 +3220,7 @@ function CarEditorForm({
     ]);
     setVariantEditorTab("general");
     setVariantEditorIndex(nextIndex);
+    onStructureChange();
   }
 
   function removeVariant(index: number) {
@@ -2989,19 +3230,20 @@ function CarEditorForm({
 
     setVariantSlots((slots) => slots.filter((_, slotIndex) => slotIndex !== index));
     setVariantEditorIndex(null);
+    onStructureChange();
   }
 
   return (
     <>
-      <nav className="admin-drawer-tabs">
-        <TabButton value="general" active={activeTab} onClick={onTab}>Ümumi</TabButton>
-        <TabButton value="technical" active={activeTab} onClick={onTab}>Texniki</TabButton>
-        <TabButton value="variants" active={activeTab} onClick={onTab}>Variantlar {variantCount}</TabButton>
-        <TabButton value="images" active={activeTab} onClick={onTab}>Şəkillər</TabButton>
-        <TabButton value="services" active={activeTab} onClick={onTab}>Xidmətlər</TabButton>
-        <TabButton value="description" active={activeTab} onClick={onTab}>Təsvir</TabButton>
-        <TabButton value="seo" active={activeTab} onClick={onTab}>SEO</TabButton>
-      </nav>
+	      <nav className="admin-drawer-tabs">
+	        <TabButton value="general" active={activeTab} onClick={onTab} icon={<CarFront size={15} />}>Ümumi</TabButton>
+	        <TabButton value="technical" active={activeTab} onClick={onTab} icon={<Gauge size={15} />}>Texniki</TabButton>
+	        <TabButton value="variants" active={activeTab} onClick={onTab} icon={<Grid2X2 size={15} />} count={variantCount}>Variantlar</TabButton>
+	        <TabButton value="images" active={activeTab} onClick={onTab} icon={<Images size={15} />}>Şəkillər</TabButton>
+	        <TabButton value="services" active={activeTab} onClick={onTab} icon={<SlidersHorizontal size={15} />}>Xidmətlər</TabButton>
+	        <TabButton value="description" active={activeTab} onClick={onTab} icon={<List size={15} />}>Təsvir</TabButton>
+	        <TabButton value="seo" active={activeTab} onClick={onTab} icon={<ShieldCheck size={15} />}>SEO</TabButton>
+	      </nav>
 
       <form id={formId} onSubmit={onSubmit} className="admin-editor-form">
         <input name="id" type="hidden" defaultValue={car?.id ?? ""} />
@@ -3017,62 +3259,79 @@ function CarEditorForm({
           ),
         )}
 
-        <section className={`admin-tab-panel${activeTab === "general" ? "" : " is-hidden"}`}>
-          <div className="admin-form-grid">
-            <Field label="Model adı" name="title" defaultValue={car?.title} placeholder="Mercedes S Class" />
-            <Field label="URL adı" name="slug" defaultValue={car?.slug} placeholder="mercedes-s-class" />
-            <Field label="Brend" name="brand" defaultValue={car?.brand} placeholder="Mercedes-Benz" />
-            <label className="admin-field">
-              <span>Kateqoriya</span>
-              <select name="category" defaultValue={car?.category ?? "Business"}>
-                {carCategories.map((category) => (
-                  <option key={category} value={category}>{categoryLabels[category] ?? category}</option>
-                ))}
-              </select>
-            </label>
-            <Field label="Sıralama" name="sortOrder" type="number" defaultValue={car?.sortOrder ?? editor.index + 1} />
-            <Field label="Buraxılış ili" name="manufactureYear" type="number" defaultValue={car?.manufactureYear} placeholder="2024" />
-          </div>
-        </section>
+	        <section className={`admin-tab-panel${activeTab === "general" ? "" : " is-hidden"}`}>
+	          <FormSection icon={<CarFront size={18} />} title="Əsas məlumatlar" subtitle="Avtomobilin ümumi məlumatlarını daxil edin.">
+	            <div className="admin-form-grid">
+	              <Field label="Model adı" name="title" defaultValue={car?.title} placeholder="Mercedes S Class" />
+	              <Field label="URL adı" name="slug" defaultValue={car?.slug} placeholder="mercedes-s-class" />
+	              <Field label="Brend" name="brand" defaultValue={car?.brand} placeholder="Mercedes-Benz" />
+	              <label className="admin-field">
+	                <span>Kateqoriya</span>
+	                <select name="category" defaultValue={car?.category ?? "Business"}>
+	                  {carCategories.map((category) => (
+	                    <option key={category} value={category}>{categoryLabels[category] ?? category}</option>
+	                  ))}
+	                </select>
+	              </label>
+	              <Field label="Sıralama" name="sortOrder" type="number" defaultValue={car?.sortOrder ?? editor.index + 1} />
+	              <Field label="Buraxılış ili" name="manufactureYear" type="number" defaultValue={car?.manufactureYear} placeholder="2024" />
+	              <div className="admin-form-status-row">
+	                <Toggle label="Aktiv" name="isActive" defaultChecked={car?.isActive ?? true} description="Saytda göstərilsin." />
+	              </div>
+	            </div>
+	          </FormSection>
+	        </section>
 
-        <section className={`admin-tab-panel${activeTab === "technical" ? "" : " is-hidden"}`}>
-          <div className="admin-form-grid">
-            <Field label="Oturacaq sayı" name="seats" type="number" defaultValue={car?.seats} />
-            <Field label="Baqaj" name="baggage" type="number" defaultValue={car?.baggage} />
-            <Field label="Kiçik baqaj" name="smallBaggage" type="number" defaultValue={car?.smallBaggage} />
-            <SelectField label="Yanacaq" name="fuel" defaultValue={car?.fuel ?? "Benzin"} options={["Benzin", "Dizel", "Hibrid", "Elektrik"]} />
-            <Field label="Mühərrik" name="engine" defaultValue={car?.engine} placeholder="2.0" />
-            <SelectField label="Sürətlər qutusu" name="transmission" defaultValue={car?.transmission ?? "Avtomat"} options={["Avtomat", "Mexanika"]} />
-          </div>
-        </section>
+	        <section className={`admin-tab-panel${activeTab === "technical" ? "" : " is-hidden"}`}>
+	          <FormSection icon={<Gauge size={18} />} title="Texniki məlumatlar" subtitle="Komfort, mühərrik və istifadə göstəricilərini yeniləyin.">
+	            <div className="admin-form-grid">
+	              <Field label="Oturacaq sayı" name="seats" type="number" defaultValue={car?.seats} />
+	              <Field label="Baqaj" name="baggage" type="number" defaultValue={car?.baggage} />
+	              <Field label="Kiçik baqaj" name="smallBaggage" type="number" defaultValue={car?.smallBaggage} />
+	              <SelectField label="Yanacaq" name="fuel" defaultValue={car?.fuel ?? "Benzin"} options={["Benzin", "Dizel", "Hibrid", "Elektrik"]} />
+	              <Field label="Mühərrik" name="engine" defaultValue={car?.engine} placeholder="2.0" />
+	              <SelectField label="Sürətlər qutusu" name="transmission" defaultValue={car?.transmission ?? "Avtomat"} options={["Avtomat", "Mexanika"]} />
+	            </div>
+	          </FormSection>
+	        </section>
 
-        <section className={`admin-tab-panel${activeTab === "images" ? "" : " is-hidden"}`}>
-          <div className="admin-form-grid">
-            <AdminImageField
-              key={`car-image-${car?.id ?? "new"}`}
-              label="Əsas şəkil"
-              name="thumbnail"
-              fileName="imageFile"
-              defaultValue={car?.thumbnail}
-              title={car?.title || "Avtomobil şəkli"}
-            />
-            <AdminImageField
-              key={`car-wedding-image-${car?.id ?? "new"}`}
-              label="Toy şəkli"
-              name="weddingThumbnail"
-              fileName="weddingImageFile"
-              defaultValue={car?.weddingThumbnail}
-              title={car?.title ? `${car.title} toy şəkli` : "Toy avtomobili şəkli"}
-            />
-          </div>
-        </section>
+	        <section className={`admin-tab-panel${activeTab === "images" ? "" : " is-hidden"}`}>
+	          <FormSection icon={<Images size={18} />} title="Şəkillər" subtitle="Əsas, toy və public görünüş üçün istifadə olunan şəkilləri idarə edin.">
+	            <div className="admin-image-editor-stack">
+	              <AdminImageField
+	                key={`car-image-${car?.id ?? "new"}`}
+	                label="Əsas şəkil"
+	                name="thumbnail"
+	                fileName="imageFile"
+	                defaultValue={car?.thumbnail}
+	                title={car?.title || "Avtomobil şəkli"}
+	              />
+	              <AdminImageField
+	                key={`car-wedding-image-${car?.id ?? "new"}`}
+	                label="Toy şəkli"
+	                name="weddingThumbnail"
+	                fileName="weddingImageFile"
+	                defaultValue={car?.weddingThumbnail}
+	                title={car?.title ? `${car.title} toy şəkli` : "Toy avtomobili şəkli"}
+	              />
+	            </div>
+	          </FormSection>
+	        </section>
 
         <section className={`admin-tab-panel${activeTab === "variants" ? "" : " is-hidden"}`}>
-          {variantEditorIndex === null ? (
-            <>
-              <div className="admin-clean-section-head">
-                <div>
-                  <h2>Variantlar</h2>
+	          <AnimatePresence mode="wait" initial={false}>
+	            {variantEditorIndex === null ? (
+	              <motion.div
+	                key="variant-list"
+	                className="admin-variant-stage"
+	                initial={{ opacity: 0, x: -18, filter: "blur(8px)" }}
+	                animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+	                exit={{ opacity: 0, x: -14, filter: "blur(6px)" }}
+	                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+	              >
+	              <div className="admin-clean-section-head">
+	                <div>
+	                  <h2>Variantlar</h2>
                   <p>{car?.title ?? "Bu model"} üçün {variantCount} versiya</p>
                 </div>
                 <button type="button" className="admin-secondary-button" onClick={addVariant}>
@@ -3081,18 +3340,25 @@ function CarEditorForm({
                 </button>
               </div>
 
-              <div className="admin-variant-card-grid">
-                {variantSlots.map((slot, index) => {
-                  const variant = slot.variant;
-                  const isMainVariant = index === 0;
+	              <motion.div className="admin-variant-card-grid" layout>
+	                {variantSlots.map((slot, index) => {
+	                  const variant = slot.variant;
+	                  const isMainVariant = index === 0;
                   const price = variantStartingPrice(variant);
 
-                  return (
-                    <button
-                      key={`${slot.key}-card`}
-                      type="button"
-                      className="admin-variant-object-card"
-                      onClick={() => {
+	                  return (
+	                    <motion.button
+	                      key={`${slot.key}-card`}
+	                      layout
+	                      initial={{ opacity: 0, y: 18, scale: 0.96 }}
+	                      animate={{ opacity: 1, y: 0, scale: 1 }}
+	                      exit={{ opacity: 0, y: -12, scale: 0.96 }}
+	                      whileHover={{ y: -4 }}
+	                      whileTap={{ scale: 0.985 }}
+	                      transition={{ duration: 0.24, delay: index * 0.025, ease: [0.22, 1, 0.36, 1] }}
+	                      type="button"
+	                      className="admin-variant-object-card"
+	                      onClick={() => {
                         setVariantEditorTab("general");
                         setVariantEditorIndex(index);
                       }}
@@ -3106,16 +3372,23 @@ function CarEditorForm({
                         {car?.transferAvailable ? <span>Transfer</span> : null}
                         {car?.weddingAvailable ? <span>Toy</span> : null}
                       </i>
-                      <b>{price !== null ? `${price} ₼-dan` : "Qiymət yoxdur"}</b>
-                      <ArrowRight size={16} />
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <div className="admin-variant-workspace">
-              {variantSlots.map((slot, index) => {
+	                      <b>{price !== null ? `${price} ₼-dan` : "Qiymət yoxdur"}</b>
+	                      <ArrowRight size={16} />
+	                    </motion.button>
+	                  );
+	                })}
+	              </motion.div>
+	              </motion.div>
+	            ) : (
+	            <motion.div
+	              key={`variant-workspace-${variantEditorIndex}`}
+	              className="admin-variant-workspace"
+	              initial={{ opacity: 0, x: 20, filter: "blur(8px)" }}
+	              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+	              exit={{ opacity: 0, x: 16, filter: "blur(6px)" }}
+	              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+	            >
+	              {variantSlots.map((slot, index) => {
                 if (index !== variantEditorIndex) return null;
 
                 const variant = slot.variant;
@@ -3186,23 +3459,24 @@ function CarEditorForm({
 	                        </div>
 		                    </div>
 
-		                    <div className={`admin-variant-workspace-panel${variantEditorTab === "images" ? "" : " is-hidden"}`}>
-	                        <div className="admin-clean-section-head">
-	                          <div>
-	                            <h2>Variant şəkli</h2>
-	                            <p>Bu il və versiya üçün ayrıca PNG və ya şəkil linki əlavə edin.</p>
-	                          </div>
-	                        </div>
-	                        <div className="admin-form-grid admin-form-grid-comfort">
-	                          <Field
-	                            label="Variant şəkli"
-	                            name={`variant_${index}_thumbnail`}
-	                            defaultValue={variant?.thumbnail}
-	                            placeholder="https://..."
-	                            span
-	                          />
-	                        </div>
-		                    </div>
+			                    <div className={`admin-variant-workspace-panel${variantEditorTab === "images" ? "" : " is-hidden"}`}>
+		                        <div className="admin-clean-section-head">
+		                          <div>
+		                            <h2>Variant şəkli</h2>
+		                            <p>Bu il və versiya üçün ayrıca PNG və ya şəkil linki əlavə edin.</p>
+		                          </div>
+		                        </div>
+		                        <div className="admin-image-editor-stack">
+		                          <AdminImageField
+		                            key={`variant-image-${slot.key}`}
+		                            label="Variant şəkli"
+		                            name={`variant_${index}_thumbnail`}
+		                            fileName={`variant_${index}_imageFile`}
+		                            defaultValue={variant?.thumbnail ?? (index === 0 ? car?.thumbnail : undefined)}
+		                            title={`${car?.title ?? "Avtomobil"} ${variantDisplayName(variant, index)}`}
+		                          />
+		                        </div>
+			                    </div>
 
 		                    <div className={`admin-variant-workspace-panel${variantEditorTab === "services" ? "" : " is-hidden"}`}>
 	                        <div className="admin-clean-section-head">
@@ -3226,14 +3500,14 @@ function CarEditorForm({
 	                  </section>
                 );
               })}
-            </div>
-          )}
-        </section>
+	            </motion.div>
+	            )}
+	          </AnimatePresence>
+	        </section>
 
         <section className={`admin-tab-panel${activeTab === "services" ? "" : " is-hidden"}`}>
           <div className="admin-service-card-grid">
-            <Toggle label="Saytda aktiv" name="isActive" defaultChecked={car?.isActive ?? true} description="Avtomobil saytda görünür." />
-            <Toggle label="İcarədə göstər" name="rentalVisible" defaultChecked={car?.rentalVisible ?? true} description="İcarə siyahısında göstər." />
+	            <Toggle label="İcarədə göstər" name="rentalVisible" defaultChecked={car?.rentalVisible ?? true} description="İcarə siyahısında göstər." />
             <Toggle label="Transfer üçün aktiv" name="transferAvailable" defaultChecked={car?.transferAvailable} description="Transfer bölməsində istifadə et." />
             <Toggle label="Toy avtomobili" name="weddingAvailable" defaultChecked={car?.weddingAvailable} description="Toy kolleksiyasında göstər." />
           </div>
