@@ -550,6 +550,10 @@ export function rankCars(cars: Car[], intent: ConciergeIntent): ConciergeResult[
       }
 
       const boundedScore = Math.max(0, Math.min(100, score));
+      const bookingHref =
+        serviceType === "transfer"
+          ? `/transfer-rezervasiya?car=${encodeURIComponent(car.slug)}&route=${encodeURIComponent(routeKeyForDestination(intent.destination))}`
+          : `/rezervasiya?car=${encodeURIComponent(car.slug)}`;
 
       return {
         car,
@@ -560,7 +564,7 @@ export function rankCars(cars: Car[], intent: ConciergeIntent): ConciergeResult[
         price: price.price,
         priceLabel: price.label,
         detailHref: detailHref(car, { ...intent, serviceType }),
-        bookingHref: `/rezervasiya?car=${encodeURIComponent(car.slug)}`,
+        bookingHref,
       };
     })
     .filter((result) => result.score >= 50 || result.warnings.length === 0)

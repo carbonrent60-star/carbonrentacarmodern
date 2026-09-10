@@ -471,6 +471,9 @@ export default function TransferDetailClient({
 
   const startingPrice =
     getStartingPrice(car);
+  const defaultRoute =
+    availableRoutes[0]?.key ?? "custom";
+  const checkoutHref = `/transfer-rezervasiya?car=${encodeURIComponent(car.slug)}&route=${encodeURIComponent(defaultRoute)}`;
 
   return (
     <main className="transfer-detail-page">
@@ -638,9 +641,10 @@ export default function TransferDetailClient({
                     const [from, to] = t.routeNames[key];
 
                     return (
-                    <motion.div
+                    <motion.a
                       className="transfer-route-row"
                       key={key}
+                      href={`/transfer-rezervasiya?car=${encodeURIComponent(car.slug)}&route=${encodeURIComponent(key)}`}
                       initial={{
                         opacity: 0,
                         y: 10,
@@ -679,14 +683,14 @@ export default function TransferDetailClient({
                         }{" "}
                         ₼
                       </strong>
-                    </motion.div>
+                    </motion.a>
                   );
                   }
                 )}
               </div>
 
               <a
-                href="tel:+994554840006"
+                href={checkoutHref}
                 className="transfer-apply"
               >
                 <span>

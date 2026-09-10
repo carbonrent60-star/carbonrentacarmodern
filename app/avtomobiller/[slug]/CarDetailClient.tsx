@@ -455,7 +455,10 @@ function ReservationPanel({
     checkoutParams.set("extras", selectedExtras.join(","));
   }
 
-  const checkoutHref = `/rezervasiya?${checkoutParams.toString()}`;
+  const checkoutHref =
+    service === "transfer"
+      ? `/transfer-rezervasiya?car=${encodeURIComponent(car.slug)}&route=baku&date=${encodeURIComponent(startDate)}`
+      : `/rezervasiya?${checkoutParams.toString()}`;
 
   function toggleExtra(id: string) {
     setSelectedExtras((current) =>

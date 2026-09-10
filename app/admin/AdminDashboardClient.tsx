@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { AnimatePresence, motion } from "motion/react";
 import {
+  ArrowRight,
   BadgeHelp,
   Bell,
   CalendarDays,
@@ -28,6 +30,7 @@ import {
   Save,
   Search,
   Settings,
+  ShieldCheck,
   SlidersHorizontal,
   Trash2,
   Upload,
@@ -89,11 +92,12 @@ type ViewKey =
 type CarTab =
   | "general"
   | "technical"
-  | "images"
-  | "prices"
   | "variants"
+  | "images"
   | "services"
-  | "wedding";
+  | "description"
+  | "seo";
+type VariantEditorTab = "general" | "technical" | "images" | "services";
 type BlogTab = "general" | "content" | "media" | "visibility";
 type EditorState =
   | { type: "car"; mode: "create" | "edit"; car?: AdminCar; index: number }
@@ -508,6 +512,8 @@ function AdminDashboardClient({
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
   const [editor, setEditor] = useState<EditorState>(null);
+  const [editorReturnView, setEditorReturnView] = useState<ViewKey>("cars");
+  const [editorDirty, setEditorDirty] = useState(false);
   const [carTab, setCarTab] = useState<CarTab>("general");
   const [blogTab, setBlogTab] = useState<BlogTab>("general");
   const [carQuery, setCarQuery] = useState("");
@@ -550,7 +556,6 @@ function AdminDashboardClient({
 
       if (event.key === "Escape") {
         setCommandOpen(false);
-        setEditor(null);
       }
     }
 
@@ -560,12 +565,31 @@ function AdminDashboardClient({
 
   const openCarEditor = (car?: AdminCar, index = cars.length) => {
     setCarTab("general");
+    setEditorReturnView(view);
+    setEditorDirty(false);
     setEditor({ type: "car", mode: car ? "edit" : "create", car, index });
   };
 
   const openBlogEditor = (blog?: AdminBlogPost, index = blogs.length) => {
     setBlogTab("general");
+    setEditorReturnView(view);
+    setEditorDirty(false);
     setEditor({ type: "blog", mode: blog ? "edit" : "create", blog, index });
+  };
+
+  const closeEditor = (nextView = editorReturnView) => {
+    if (
+      editorDirty &&
+      !window.confirm(
+        "Saxlanılmamış dəyişikliklər var.\n\nBu səhifədən çıxsanız etdiyiniz dəyişikliklər itiriləcək.",
+      )
+    ) {
+      return;
+    }
+
+    setEditor(null);
+    setEditorDirty(false);
+    setView(nextView);
   };
 
   const upsertCar = (car: AdminCar) => {
@@ -738,7 +762,14 @@ function AdminDashboardClient({
                     key={item.key}
                     type="button"
                     className={view === item.key ? "is-active" : ""}
-                    onClick={() => setView(item.key)}
+                    onClick={() => {
+                      if (editor) {
+                        closeEditor(item.key);
+                        return;
+                      }
+
+                      setView(item.key);
+                    }}
                     title={collapsed ? item.label : undefined}
                   >
                     <Icon size={17} />
@@ -798,100 +829,124 @@ function AdminDashboardClient({
         <div className="admin-content">
           <Alerts alerts={alerts} flags={flags} />
 
-          {view === "overview" ? (
-            <OverviewView
-              cars={cars}
-              blogs={blogs}
-              source={carsResult.source}
-              configured={carsResult.configured}
-              rentalCount={rentalCount}
-              transferCount={transferCars.length}
-              weddingCount={weddingCars.length}
-              activeBlogCount={activeBlogCount}
-              onNewCar={() => openCarEditor()}
-              onNewBlog={() => openBlogEditor()}
-              onView={setView}
-              onEditCar={openCarEditor}
+          {editor ? (
+            <EditorWorkspace
+              editor={editor}
+              carTab={carTab}
+              blogTab={blogTab}
+              onCarTab={setCarTab}
+              onBlogTab={setBlogTab}
+              onCarSaved={upsertCar}
+              onBlogSaved={upsertBlog}
+              onCarDeleted={removeCar}
+              onBlogDeleted={removeBlog}
+              onToast={(nextToast) =>
+                setToast({
+                  ...nextToast,
+                  id: Date.now(),
+                })
+              }
+              onDirtyChange={setEditorDirty}
+              onClose={() => closeEditor(editorReturnView)}
             />
-          ) : null}
+          ) : (
+            <>
+              {view === "overview" ? (
+                <OverviewView
+                  cars={cars}
+                  blogs={blogs}
+                  source={carsResult.source}
+                  configured={carsResult.configured}
+                  rentalCount={rentalCount}
+                  transferCount={transferCars.length}
+                  weddingCount={weddingCars.length}
+                  activeBlogCount={activeBlogCount}
+                  onNewCar={() => openCarEditor()}
+                  onNewBlog={() => openBlogEditor()}
+                  onView={setView}
+                  onEditCar={openCarEditor}
+                />
+              ) : null}
 
-          {view === "cars" ? (
-            <CarsView
-              cars={filteredCars}
-              allCars={cars}
-              query={carQuery}
-              category={categoryFilter}
-              status={statusFilter}
-              service={serviceFilter}
-              sortKey={sortKey}
-              layout={layout}
-              onQuery={setCarQuery}
-              onCategory={setCategoryFilter}
-              onStatus={setStatusFilter}
-              onService={setServiceFilter}
-              onSort={setSortKey}
-              onLayout={setLayout}
-              onNew={() => openCarEditor()}
-              onEdit={openCarEditor}
-            />
-          ) : null}
+              {view === "cars" ? (
+                <CarsView
+                  cars={filteredCars}
+                  allCars={cars}
+                  query={carQuery}
+                  category={categoryFilter}
+                  status={statusFilter}
+                  service={serviceFilter}
+                  sortKey={sortKey}
+                  layout={layout}
+                  onQuery={setCarQuery}
+                  onCategory={setCategoryFilter}
+                  onStatus={setStatusFilter}
+                  onService={setServiceFilter}
+                  onSort={setSortKey}
+                  onLayout={setLayout}
+                  onNew={() => openCarEditor()}
+                  onEdit={openCarEditor}
+                />
+              ) : null}
 
-          {view === "bookings" ? (
-            <ComingSoonView
-              eyebrow="İDARƏETMƏ"
-              title="Bronlar"
-              subtitle="İcarə, transfer və toy sorğuları üçün vahid bron mərkəzi."
-            />
-          ) : null}
+              {view === "bookings" ? (
+                <ComingSoonView
+                  eyebrow="İDARƏETMƏ"
+                  title="Bronlar"
+                  subtitle="İcarə, transfer və toy sorğuları üçün vahid bron mərkəzi."
+                />
+              ) : null}
 
-          {view === "customers" ? (
-            <ComingSoonView
-              eyebrow="İDARƏETMƏ"
-              title="Müştərilər"
-              subtitle="Müştəri profilləri, əlaqə məlumatları və bron tarixçəsi burada toplanacaq."
-            />
-          ) : null}
+              {view === "customers" ? (
+                <ComingSoonView
+                  eyebrow="İDARƏETMƏ"
+                  title="Müştərilər"
+                  subtitle="Müştəri profilləri, əlaqə məlumatları və bron tarixçəsi burada toplanacaq."
+                />
+              ) : null}
 
-          {view === "rental" ? (
-            <ServiceCarsView
-              title="İcarə"
-              subtitle="Gündəlik icarə üçün aktiv avtomobillər və başlanğıc qiymətlər"
-              cars={cars.filter((car) => car.rentalVisible !== false)}
-              icon={<Gauge size={18} />}
-              onEdit={openCarEditor}
-            />
-          ) : null}
+              {view === "rental" ? (
+                <ServiceCarsView
+                  title="İcarə"
+                  subtitle="Gündəlik icarə üçün aktiv avtomobillər və başlanğıc qiymətlər"
+                  cars={cars.filter((car) => car.rentalVisible !== false)}
+                  icon={<Gauge size={18} />}
+                  onEdit={openCarEditor}
+                />
+              ) : null}
 
-          {view === "transfer" ? (
-            <ServiceCarsView
-              title="Transferlər"
-              subtitle="Transfer üçün aktiv avtomobilləri və marşrut qiymətlərini idarə edin"
-              cars={transferCars}
-              icon={<Plane size={18} />}
-              onEdit={openCarEditor}
-            />
-          ) : null}
+              {view === "transfer" ? (
+                <ServiceCarsView
+                  title="Transferlər"
+                  subtitle="Transfer üçün aktiv avtomobilləri və marşrut qiymətlərini idarə edin"
+                  cars={transferCars}
+                  icon={<Plane size={18} />}
+                  onEdit={openCarEditor}
+                />
+              ) : null}
 
-          {view === "weddings" ? (
-            <ServiceCarsView
-              title="Toy avtomobilləri"
-              subtitle="Toy kolleksiyasını və xüsusi gün qiymətlərini idarə edin"
-              cars={weddingCars}
-              icon={<Heart size={18} />}
-              onEdit={openCarEditor}
-              mode="wedding"
-            />
-          ) : null}
+              {view === "weddings" ? (
+                <ServiceCarsView
+                  title="Toy avtomobilləri"
+                  subtitle="Toy kolleksiyasını və xüsusi gün qiymətlərini idarə edin"
+                  cars={weddingCars}
+                  icon={<Heart size={18} />}
+                  onEdit={openCarEditor}
+                  mode="wedding"
+                />
+              ) : null}
 
-          {view === "blog" ? (
-            <BlogView blogs={blogs} onNew={() => openBlogEditor()} onEdit={openBlogEditor} />
-          ) : null}
+              {view === "blog" ? (
+                <BlogView blogs={blogs} onNew={() => openBlogEditor()} onEdit={openBlogEditor} />
+              ) : null}
 
-          {view === "media" ? <MediaView items={mediaItems} /> : null}
-          {view === "tutorial" ? <TutorialView onView={setView} onNewCar={() => openCarEditor()} /> : null}
-          {view === "settings" ? (
-            <SettingsView carsResult={carsResult} blogsResult={blogsResult} />
-          ) : null}
+              {view === "media" ? <MediaView items={mediaItems} /> : null}
+              {view === "tutorial" ? <TutorialView onView={setView} onNewCar={() => openCarEditor()} /> : null}
+              {view === "settings" ? (
+                <SettingsView carsResult={carsResult} blogsResult={blogsResult} />
+              ) : null}
+            </>
+          )}
         </div>
       </section>
 
@@ -926,27 +981,6 @@ function AdminDashboardClient({
             </div>
           </section>
         </div>
-      ) : null}
-
-      {editor ? (
-        <EditorDrawer
-          editor={editor}
-          carTab={carTab}
-          blogTab={blogTab}
-          onCarTab={setCarTab}
-          onBlogTab={setBlogTab}
-          onCarSaved={upsertCar}
-          onBlogSaved={upsertBlog}
-          onCarDeleted={removeCar}
-          onBlogDeleted={removeBlog}
-          onToast={(nextToast) =>
-            setToast({
-              ...nextToast,
-              id: Date.now(),
-            })
-          }
-          onClose={() => setEditor(null)}
-        />
       ) : null}
 
       {toast ? (
@@ -1715,13 +1749,91 @@ const tutorialGuides: Array<{
   },
 ];
 
-const tutorialTopics = [
-  "Avtomobil və variant fərqi",
-  "Qiymətlər necə hesablanır?",
-  "Transfer sistemi",
-  "Toy avtomobilləri",
-  "Şəkillərin idarəsi",
-  "SEO və URL",
+const docsHighlights = [
+  {
+    label: "Park idarəsi",
+    value: "7 əsas modul",
+    text: "Avtomobil, variant, qiymət, xidmət və media eyni axında izah olunur.",
+    icon: CarFront,
+  },
+  {
+    label: "Public sayt",
+    value: "Canlı görünüş",
+    text: "Admin paneldə etdiyiniz dəyişikliklərin saytda harada göründüyünü göstərir.",
+    icon: ExternalLink,
+  },
+  {
+    label: "Keyfiyyət",
+    value: "Premium qaydalar",
+    text: "Şəkil, SEO, URL, status və qiymət üçün praktik standartlar.",
+    icon: ShieldCheck,
+  },
+];
+
+const docsSystemMap = [
+  {
+    title: "Avtomobillər",
+    text: "Model adı, brend, kateqoriya, texniki məlumat, əsas şəkil, aktivlik və sıralama buradan idarə olunur.",
+    icon: CarFront,
+    view: "cars" as ViewKey,
+  },
+  {
+    title: "Variantlar",
+    text: "Eyni modelin müxtəlif illərini və versiyalarını ayrıca saxlayın. Saytda müştəri düzgün ili görür.",
+    icon: Rows3,
+    view: "cars" as ViewKey,
+  },
+  {
+    title: "İcarə qiymətləri",
+    text: "1-3, 4-7, 8-15, 16-24, 25-30 və 30+ gün aralıqları müştəriyə real başlanğıc qiyməti verir.",
+    icon: Gauge,
+    view: "rental" as ViewKey,
+  },
+  {
+    title: "Transferlər",
+    text: "Hava limanı, şəhər və region marşrutları üçün sürücülü xidmət qiymətlərini ayrıca idarə edin.",
+    icon: Plane,
+    view: "transfer" as ViewKey,
+  },
+  {
+    title: "Toy avtomobilləri",
+    text: "Toy statusu, toy şəkli, paket təsviri və toy qiyməti public toy kolleksiyasını formalaşdırır.",
+    icon: Heart,
+    view: "weddings" as ViewKey,
+  },
+  {
+    title: "Blog və SEO",
+    text: "Məqalə adı, URL adı, kateqoriya, oxu vaxtı və şəkillər axtarış nəticəsində daha səliqəli görünməyə kömək edir.",
+    icon: Newspaper,
+    view: "blog" as ViewKey,
+  },
+];
+
+const docsDesignRules = [
+  "Model adlarını qısa və rəsmi saxlayın: Mercedes S Class, Hyundai Sonata kimi.",
+  "Şəkillər təmiz, yüksək keyfiyyətli və avtomobili aydın göstərən olmalıdır.",
+  "Toy avtomobillərində ağ və premium görüntünü ayrıca toy şəkli ilə vurğulayın.",
+  "Qiymət boş qalırsa, həmin xidmət saytda zəif görünür və seçim alqoritmi onu aşağı sala bilər.",
+  "URL adında boşluq, böyük hərf və xüsusi simvol istifadə etməyin.",
+];
+
+const docsTroubleshooting = [
+  {
+    title: "Avtomobil saytda görünmür",
+    text: "Status aktiv olmalıdır, rentalVisible gizli olmamalıdır və əsas şəkil mütləq yazılmalıdır.",
+  },
+  {
+    title: "Toy kolleksiyası səhv çıxır",
+    text: "Toy xidməti aktiv olmalı, toy qiyməti və toy üçün uyğun şəkil ayrıca əlavə edilməlidir.",
+  },
+  {
+    title: "Qiymət görünmür",
+    text: "Ən azı bir rental qiymət aralığı, transfer marşrutu və ya toy başlanğıc qiyməti doldurulmalıdır.",
+  },
+  {
+    title: "Şəkil köhnə görünür",
+    text: "Yeni şəkli yükləyin, lazım olsa çevirmə alətlərindən istifadə edin və brauzeri sərt yeniləyin.",
+  },
 ];
 
 function TutorialView({
@@ -1733,6 +1845,7 @@ function TutorialView({
 }) {
   const [query, setQuery] = useState("");
   const [activeGuideId, setActiveGuideId] = useState(tutorialGuides[0].id);
+  const [openedGuideId, setOpenedGuideId] = useState(tutorialGuides[0].id);
   const normalizedQuery = query.trim().toLowerCase();
   const visibleGuides = normalizedQuery
     ? tutorialGuides.filter((guide) =>
@@ -1750,93 +1863,223 @@ function TutorialView({
     { label: "Saytda nəticəyə bax", done: false, guideId: "price" },
   ];
   const completedTasks = onboardingTasks.filter((task) => task.done).length;
+  const activeGuideIndex = tutorialGuides.findIndex((guide) => guide.id === activeGuide.id);
 
-  const runGuideAction = () => {
-    if (activeGuide.action === "new-car") {
+  const runGuideAction = (guide = activeGuide) => {
+    if (guide.action === "new-car") {
       onNewCar();
       return;
     }
 
-    onView(activeGuide.action);
+    onView(guide.action);
   };
 
   return (
     <div className="admin-view admin-tutorial-view">
-      <PageTitle
-        eyebrow="TƏLİMAT"
-        title="Nə etmək istəyirsiniz?"
-        subtitle="Carbon idarə panelində işə başlamaq üçün bir əməliyyat seçin."
-      />
+      <motion.section
+        className="admin-docs-hero"
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+      >
+        <div className="admin-docs-hero-copy">
+          <span>TƏLİMAT MƏRKƏZİ</span>
+          <h1>Carbon panelini peşəkar idarə etmək üçün tam bələdçi</h1>
+          <p>
+            Avtomobil əlavə etməkdən SEO URL-lərinə, toy kolleksiyasından transfer
+            qiymətlərinə qədər paneldə gördüyünüz əsas işlərin hamısı burada izahlı,
+            vizual və addım-addım göstərilir.
+          </p>
+          <label className="admin-tutorial-search">
+            <Search size={16} />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder='Axtar: "qiymət dəyiş", "toy şəkli", "variant ili"'
+            />
+            {query ? (
+              <button type="button" onClick={() => setQuery("")} aria-label="Axtarışı təmizlə">
+                <X size={14} />
+              </button>
+            ) : null}
+          </label>
+        </div>
 
-      <label className="admin-tutorial-search">
-        <Search size={16} />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder='Nə etmək istəyirsiniz? Məsələn, "qiymət dəyiş"'
-        />
-        {query ? (
-          <button type="button" onClick={() => setQuery("")} aria-label="Axtarışı təmizlə">
-            <X size={14} />
-          </button>
-        ) : null}
-      </label>
+        <div className="admin-docs-hero-visual" aria-hidden="true">
+          <div className="admin-docs-window">
+            <header>
+              <span />
+              <span />
+              <span />
+              <b>Carbon Admin</b>
+            </header>
+            <main>
+              <div className="admin-docs-sidebar-mini">
+                <i />
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="admin-docs-screen-mini">
+                <strong>Mercedes S Class</strong>
+                <em>2024 · Biznes · Aktiv</em>
+                <div>
+                  <span>İcarə 230 ₼</span>
+                  <span>Transfer aktiv</span>
+                  <span>Toy 450 ₼</span>
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+      </motion.section>
+
+      <section className="admin-docs-highlight-grid">
+        {docsHighlights.map((item, index) => {
+          const Icon = item.icon;
+
+          return (
+            <motion.article
+              key={item.label}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: index * 0.05, ease: "easeOut" }}
+            >
+              <span><Icon size={18} /></span>
+              <p>{item.label}</p>
+              <strong>{item.value}</strong>
+              <small>{item.text}</small>
+            </motion.article>
+          );
+        })}
+      </section>
 
       <section className="admin-help-section">
         <div className="admin-help-section-title">
-          <p>POPULYAR ƏMƏLİYYATLAR</p>
+          <p>TEZ BAŞLANĞIC</p>
+          <span>Kartı açın və həmin əməliyyatı real docs səhifəsi kimi oxuyun.</span>
         </div>
         <div className="admin-help-action-grid">
-          {visibleGuides.map((guide) => {
+          {visibleGuides.map((guide, index) => {
             const Icon = guide.icon;
+            const isOpen = openedGuideId === guide.id;
 
             return (
-              <button
+              <motion.article
                 key={guide.id}
-                type="button"
-                className={`admin-help-action-card${activeGuide.id === guide.id ? " is-active" : ""}`}
-                onClick={() => setActiveGuideId(guide.id)}
+                className={`admin-help-action-card${activeGuide.id === guide.id ? " is-active" : ""}${isOpen ? " is-open" : ""}`}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.38, delay: index * 0.035, ease: "easeOut" }}
+                whileHover={{ y: -3 }}
               >
-                <span><Icon size={22} /></span>
-                <strong>{guide.shortTitle}</strong>
-                <small>{guide.description}</small>
-                <em>{guide.time}</em>
-                <b>Başla <ChevronDown size={13} /></b>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveGuideId(guide.id);
+                    setOpenedGuideId((current) => (current === guide.id ? "" : guide.id));
+                  }}
+                  aria-expanded={isOpen}
+                >
+                  <span><Icon size={22} /></span>
+                  <strong>{guide.shortTitle}</strong>
+                  <small>{guide.description}</small>
+                  <em>{guide.time}</em>
+                  <b>{isOpen ? "Bağla" : "Oxu"} <ChevronDown size={13} /></b>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {isOpen ? (
+                    <motion.div
+                      className="admin-help-action-expanded"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.28, ease: "easeOut" }}
+                    >
+                      <div>
+                        <p>{guide.title}</p>
+                        <h3>{guide.description}</h3>
+                        <span>
+                          Bu sənəd {guide.time} vaxt aparır və paneldə hansı
+                          bölməni açmalı olduğunuzu addım-addım göstərir.
+                        </span>
+                      </div>
+
+                      <ol>
+                        {guide.steps.map((step, stepIndex) => (
+                          <li key={step.title}>
+                            <span>{String(stepIndex + 1).padStart(2, "0")}</span>
+                            <div>
+                              <strong>{step.title}</strong>
+                              <p>{step.text}</p>
+                            </div>
+                            <TutorialMock type={step.visual} />
+                          </li>
+                        ))}
+                      </ol>
+
+                      <button type="button" onClick={() => runGuideAction(guide)}>
+                        {guide.cta}
+                        <ChevronsRight size={15} />
+                      </button>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </motion.article>
             );
           })}
         </div>
       </section>
 
       <section className="admin-help-layout">
-        <article className="admin-guide-panel">
+        <motion.article
+          className="admin-guide-panel admin-guide-panel-premium"
+          layout
+          transition={{ duration: 0.35, ease: "easeOut" }}
+        >
           <header>
             <div>
               <p>{activeGuide.title}</p>
-              <h2>Addım 1 / {activeGuide.steps.length}</h2>
-              <span>Təxminən {activeGuide.time}</span>
+              <h2>{String(Math.max(activeGuideIndex + 1, 1)).padStart(2, "0")} · {activeGuide.steps.length} addımlı iş axını</h2>
+              <span>Təxminən {activeGuide.time}. Hər addım paneldə hansı sahəyə toxunduğunuzu göstərir.</span>
             </div>
-            <button type="button" className="admin-primary-button" onClick={runGuideAction}>
+            <button type="button" className="admin-primary-button" onClick={() => runGuideAction()}>
               {activeGuide.cta}
               <ChevronsRight size={15} />
             </button>
           </header>
 
-          <div className="admin-guide-steps">
-            {activeGuide.steps.map((step, index) => (
-              <article key={step.title} className="admin-guide-step">
-                <div>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.text}</p>
-                </div>
-                <TutorialMock type={step.visual} />
-              </article>
-            ))}
-          </div>
-        </article>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeGuide.id}
+              className="admin-guide-steps"
+              initial={{ opacity: 0, x: 14 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -14 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+            >
+              {activeGuide.steps.map((step, index) => (
+                <motion.article
+                  key={step.title}
+                  className="admin-guide-step"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.32, delay: index * 0.045, ease: "easeOut" }}
+                >
+                  <div>
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <h3>{step.title}</h3>
+                    <p>{step.text}</p>
+                  </div>
+                  <TutorialMock type={step.visual} />
+                </motion.article>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        </motion.article>
 
-        <aside className="admin-onboarding-card">
+        <aside className="admin-onboarding-card admin-docs-progress-card">
           <div>
             <p>İLK DƏFƏ BURADASINIZ?</p>
             <strong>{completedTasks} / {onboardingTasks.length} tamamlandı</strong>
@@ -1859,11 +2102,40 @@ function TutorialView({
         </aside>
       </section>
 
-      <section className="admin-carbon-model-card">
+      <section className="admin-docs-system-map">
+        <div className="admin-help-section-title">
+          <p>PANEL XƏRİTƏSİ</p>
+          <span>Hansı modulun nə etdiyini və sayta necə təsir etdiyini buradan görün.</span>
+        </div>
         <div>
-          <p>CARBON NECƏ İŞLƏYİR?</p>
+          {docsSystemMap.map((item, index) => {
+            const Icon = item.icon;
+
+            return (
+              <motion.button
+                key={item.title}
+                type="button"
+                onClick={() => onView(item.view)}
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.35, delay: index * 0.035, ease: "easeOut" }}
+              >
+                <span><Icon size={18} /></span>
+                <strong>{item.title}</strong>
+                <small>{item.text}</small>
+                <em>Modula keç <ChevronsRight size={13} /></em>
+              </motion.button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="admin-carbon-model-card admin-docs-model-card">
+        <div>
+          <p>CARBON STRUKTURU</p>
           <h2>Model, variant və xidmət eyni şey deyil</h2>
-          <span><strong>Avtomobil</strong> modeli, <strong>variant</strong> onun il/versiyası, <strong>xidmət</strong> isə həmin variantın necə təklif olunduğudur.</span>
+          <span><strong>Avtomobil</strong> modeli saxlayır, <strong>variant</strong> il/versiyanı ayırır, <strong>xidmət</strong> isə həmin maşının icarə, transfer və ya toy kimi necə satıldığını göstərir.</span>
         </div>
         <div className="admin-carbon-model-visual" aria-hidden="true">
           <strong>Hyundai Sonata</strong>
@@ -1881,14 +2153,40 @@ function TutorialView({
         </div>
       </section>
 
-      <section className="admin-help-topics">
-        <p>DİGƏR MÖVZULAR</p>
+      <section className="admin-docs-quality-grid">
+        <article>
+          <p>PREMIUM SAYT QAYDALARI</p>
+          <h2>Admin paneldə yazdığınız hər şey public dizayna təsir edir</h2>
+          <div>
+            {docsDesignRules.map((rule) => (
+              <span key={rule}>
+                <CheckCircle2 size={15} />
+                {rule}
+              </span>
+            ))}
+          </div>
+        </article>
+
+        <article className="admin-docs-public-preview">
+          <p>SAYTDA GÖRÜNÜŞ</p>
+          <h2>Mercedes S Class</h2>
+          <div>
+            <span>Business</span>
+            <span>2024</span>
+            <span>230 ₼ / gün</span>
+          </div>
+          <button type="button">Rezervasiya et <ArrowRight size={14} /></button>
+        </article>
+      </section>
+
+      <section className="admin-help-topics admin-docs-topics">
+        <p>PROBLEM HƏLLİ</p>
         <div>
-          {tutorialTopics.map((topic) => (
-            <button key={topic} type="button">
-              {topic}
-              <ChevronsRight size={14} />
-            </button>
+          {docsTroubleshooting.map((topic) => (
+            <article key={topic.title}>
+              <strong>{topic.title}</strong>
+              <span>{topic.text}</span>
+            </article>
           ))}
         </div>
       </section>
@@ -2115,7 +2413,7 @@ function SettingsView({
   );
 }
 
-function EditorDrawer({
+function EditorWorkspace({
   editor,
   carTab,
   blogTab,
@@ -2126,6 +2424,7 @@ function EditorDrawer({
   onCarDeleted,
   onBlogDeleted,
   onToast,
+  onDirtyChange,
   onClose,
 }: {
   editor: NonNullable<EditorState>;
@@ -2138,12 +2437,15 @@ function EditorDrawer({
   onCarDeleted: (id: string) => void;
   onBlogDeleted: (slug: string) => void;
   onToast: (toast: Omit<AdminToast, "id">) => void;
+  onDirtyChange: (dirty: boolean) => void;
   onClose: () => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [drawerError, setDrawerError] = useState<string | null>(null);
   const formId = editor.type === "car" ? "admin-car-editor-form" : "admin-blog-editor-form";
   const title =
@@ -2151,13 +2453,40 @@ function EditorDrawer({
       ? editor.car?.title ?? "Yeni avtomobil"
       : editor.blog?.title ?? "Yeni məqalə";
   const subtitle = editor.type === "car" ? editor.car?.brand ?? "Carbon parkı" : "Carbon məqaləsi";
-  const image = editor.type === "car" ? editor.car?.thumbnail : editor.blog?.image;
+  const image =
+    editor.type === "car"
+      ? editor.car?.variants?.find((variant) => variant.thumbnail)?.thumbnail ?? editor.car?.thumbnail
+      : editor.blog?.image;
   const isEditing = editor.mode === "edit";
+  const publicHref = editor.type === "car" ? `/avtomobiller/${editor.car?.slug ?? ""}` : `/blog/${editor.blog?.slug ?? ""}`;
+  const variantCount = editor.type === "car" ? Math.max((editor.car?.variants?.length ?? 0) + 1, 1) : 0;
+  const startingPrice = editor.type === "car" ? startPrice(editor.car) : null;
   const deleteTitle = editor.type === "car" ? "Avtomobili sil" : "Məqaləni sil";
   const deleteCopy =
     editor.type === "car"
       ? "Bu avtomobil idarə panelindən və bağlı siyahılardan silinəcək."
       : "Bu məqalə idarə panelindən və saytdakı blog siyahısından silinəcək.";
+
+  useEffect(() => {
+    onDirtyChange(dirty);
+  }, [dirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (!dirty) return;
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+
+  function requestClose() {
+    onClose();
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setDrawerError(null);
@@ -2182,6 +2511,7 @@ function EditorDrawer({
         }
 
         onCarSaved(result.car);
+        setDirty(false);
         setJustSaved(true);
         window.setTimeout(() => setJustSaved(false), 1800);
         return;
@@ -2201,6 +2531,7 @@ function EditorDrawer({
       }
 
       onBlogSaved(result.blog);
+      setDirty(false);
       setJustSaved(true);
       window.setTimeout(() => setJustSaved(false), 1800);
     } finally {
@@ -2276,73 +2607,61 @@ function EditorDrawer({
   };
 
   return (
-    <div className="admin-drawer-layer">
-      <button type="button" className="admin-drawer-backdrop" onClick={onClose} aria-label="Redaktoru bağla" />
-      <aside className="admin-drawer">
-        <header className="admin-drawer-header">
-          <span className="admin-drawer-thumb">
-            {image ? <Image src={image} alt={title} fill sizes="64px" /> : editor.type === "car" ? <CarFront size={22} /> : <Newspaper size={22} />}
+    <section className="admin-editor-page">
+      <div className="admin-editor-breadcrumb">
+        <button type="button" onClick={requestClose}>
+          <ArrowRight size={14} />
+          {editor.type === "car" ? "Avtomobillər" : "Blog"}
+        </button>
+        <span>/</span>
+        <strong>{title}</strong>
+      </div>
+
+      <header className="admin-editor-hero">
+        <div className="admin-editor-identity">
+          <span className="admin-editor-thumb">
+            {image ? <Image src={image} alt={title} fill sizes="96px" /> : editor.type === "car" ? <CarFront size={22} /> : <Newspaper size={22} />}
           </span>
           <div>
-            <h2>{title}</h2>
-            <p>{subtitle}</p>
-            <StatusDot active={editor.type === "car" ? editor.car?.isActive : editor.blog?.isActive} />
+            <p>{editor.type === "car" ? "Vehicle workspace" : "Content workspace"}</p>
+            <h1>{title}</h1>
+            <div className="admin-editor-badges">
+              <span>{subtitle}</span>
+              {editor.type === "car" ? <span>{categoryLabels[editor.car?.category ?? ""] ?? editor.car?.category ?? "Model"}</span> : null}
+              {editor.type === "car" ? <span>{variantCount} variant</span> : null}
+              <span><StatusDot active={editor.type === "car" ? editor.car?.isActive : editor.blog?.isActive} /></span>
+            </div>
           </div>
-          <button type="button" className="admin-icon-button" onClick={onClose}>
-            <X size={17} />
-          </button>
-        </header>
+        </div>
 
-        {editor.type === "car" ? (
-          <CarEditorForm
-            key={editor.car?.id ?? `new-${editor.index}`}
-            formId={formId}
-            editor={editor}
-            activeTab={carTab}
-            onTab={onCarTab}
-            onSubmit={handleSubmit}
-          />
-        ) : (
-          <BlogEditorForm
-            formId={formId}
-            editor={editor}
-            activeTab={blogTab}
-            onTab={onBlogTab}
-            onSubmit={handleSubmit}
-          />
-        )}
-
-        {drawerError ? (
-          <div className="admin-drawer-message is-error">
-            {drawerError}
-          </div>
-        ) : null}
-
-        <footer className="admin-drawer-footer">
-          {isEditing ? (
-            <button
-              type="button"
-              className="admin-danger-button"
-              onClick={() => setConfirmDelete(true)}
-              disabled={isSaving || isDeleting}
-            >
-              <Trash2 size={15} />
-              {deleteTitle}
+        <div className="admin-editor-actions">
+          {dirty ? <span className="admin-editor-dirty"><i /> Saxlanılmamış dəyişikliklər</span> : null}
+          {editor.type === "car" ? (
+            <button type="button" className="admin-secondary-button" onClick={() => setPreviewOpen(true)}>
+              Preview
+              <ExternalLink size={14} />
             </button>
+          ) : null}
+          {isEditing && publicHref.endsWith("/") === false ? (
+            <Link href={publicHref} target="_blank" rel="noopener noreferrer" className="admin-secondary-button">
+              Saytda bax
+              <ExternalLink size={14} />
+            </Link>
           ) : null}
           <button
             type="button"
             className="admin-secondary-button"
-            onClick={onClose}
-            disabled={isSaving || isDeleting}
+            onClick={() => setConfirmDelete(true)}
+            disabled={!isEditing || isSaving || isDeleting}
+            title={deleteTitle}
           >
-            Ləğv et
+            <MoreHorizontal size={16} />
           </button>
           <button
             type="submit"
             form={formId}
             className={`admin-primary-button${justSaved ? " is-saved" : ""}`}
-            disabled={isSaving || isDeleting}
+            disabled={isSaving || isDeleting || (!dirty && !justSaved)}
           >
             {justSaved ? <CheckCircle2 size={15} /> : <Save size={15} />}
             {isSaving
@@ -2351,8 +2670,92 @@ function EditorDrawer({
                 ? "Saxlanıldı"
                 : "Dəyişiklikləri saxla"}
           </button>
-        </footer>
-      </aside>
+        </div>
+      </header>
+
+      <div className="admin-editor-page-body" onChange={() => setDirty(true)}>
+        <div className="admin-editor-main">
+          {editor.type === "car" ? (
+            <CarEditorForm
+              key={editor.car?.id ?? `new-${editor.index}`}
+              formId={formId}
+              editor={editor}
+              activeTab={carTab}
+              onTab={onCarTab}
+              onSubmit={handleSubmit}
+            />
+          ) : (
+            <BlogEditorForm
+              formId={formId}
+              editor={editor}
+              activeTab={blogTab}
+              onTab={onBlogTab}
+              onSubmit={handleSubmit}
+            />
+          )}
+
+          {drawerError ? (
+            <div className="admin-drawer-message is-error">
+              {drawerError}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {previewOpen ? (
+        <div className="admin-preview-layer" role="dialog" aria-modal="true" aria-label="Saytda görünüş">
+          <button type="button" className="admin-preview-backdrop" onClick={() => setPreviewOpen(false)} aria-label="Preview bağla" />
+          <section className="admin-preview-modal">
+            <header>
+              <div>
+                <span>Saytda görünüş</span>
+                <strong>{title}</strong>
+              </div>
+              <button type="button" className="admin-icon-button" onClick={() => setPreviewOpen(false)}>
+                <X size={16} />
+              </button>
+            </header>
+            <div className={`admin-editor-preview-card${editor.type === "blog" ? " is-blog" : ""}`}>
+              <div>
+                {image ? <Image src={image} alt={title} fill sizes="640px" /> : editor.type === "car" ? <CarFront size={44} /> : <Newspaper size={44} />}
+              </div>
+              <span>{editor.type === "car" ? editor.car?.brand ?? "CARBON" : editor.blog?.category ?? "BLOG"}</span>
+              <strong>{title}</strong>
+              <small>{editor.type === "car" ? startingPrice !== null ? `${startingPrice} ₼-dan` : "Qiymət yoxdur" : editor.blog?.readingTime ?? "Oxu müddəti"}</small>
+            </div>
+            {publicHref ? (
+              <Link href={publicHref} target="_blank" rel="noopener noreferrer" className="admin-primary-button">
+                Saytda aç
+                <ExternalLink size={14} />
+              </Link>
+            ) : null}
+          </section>
+        </div>
+      ) : null}
+
+      <footer className="admin-editor-footer">
+        <button
+          type="button"
+          className="admin-secondary-button"
+          onClick={requestClose}
+          disabled={isSaving || isDeleting}
+        >
+          Geri qayıt
+        </button>
+        <button
+          type="submit"
+          form={formId}
+          className={`admin-primary-button${justSaved ? " is-saved" : ""}`}
+          disabled={isSaving || isDeleting || (!dirty && !justSaved)}
+        >
+          {justSaved ? <CheckCircle2 size={15} /> : <Save size={15} />}
+          {isSaving
+            ? "Saxlanılır..."
+            : justSaved
+              ? "Saxlanıldı"
+              : "Dəyişiklikləri saxla"}
+        </button>
+      </footer>
 
       {confirmDelete ? (
         <div className="admin-confirm-layer" role="dialog" aria-modal="true" aria-labelledby="admin-delete-title">
@@ -2380,7 +2783,7 @@ function EditorDrawer({
           </section>
         </div>
       ) : null}
-    </div>
+    </section>
   );
 }
 
@@ -2399,6 +2802,43 @@ function TabButton<T extends string>({
     <button type="button" className={active === value ? "is-active" : ""} onClick={() => onClick(value)}>
       {children}
     </button>
+  );
+}
+
+function HiddenVariantFields({
+  index,
+  variant,
+  car,
+}: {
+  index: number;
+  variant:
+    | (Partial<CarVariant> & {
+        rentalPrices?: Partial<Car["rentalPrices"]>;
+      })
+    | undefined;
+  car?: AdminCar;
+}) {
+  const fallbackLabel =
+    variant?.label ??
+    (index === 0
+      ? car?.manufactureYear
+        ? String(car.manufactureYear)
+        : "Əsas variant"
+      : "");
+  const fallbackPrices = variant?.rentalPrices ?? (index === 0 ? car?.rentalPrices : undefined);
+
+  return (
+    <>
+      <input name={`variant_${index}_id`} type="hidden" defaultValue={variant?.id ?? ""} />
+      <input name={`variant_${index}_label`} type="hidden" defaultValue={fallbackLabel} />
+      <input name={`variant_${index}_manufactureYear`} type="hidden" defaultValue={variant?.manufactureYear ?? (index === 0 ? car?.manufactureYear ?? "" : "")} />
+      <input name={`variant_${index}_bodyStyle`} type="hidden" defaultValue={variant?.bodyStyle ?? ""} />
+      <input name={`variant_${index}_engine`} type="hidden" defaultValue={variant?.engine ?? (index === 0 ? car?.engine ?? "" : "")} />
+      <input name={`variant_${index}_thumbnail`} type="hidden" defaultValue={variant?.thumbnail ?? ""} />
+      {rentalPriceKeys.map((key) => (
+        <input key={key} type="hidden" name={`variant_${index}_rental_${key}`} defaultValue={fallbackPrices?.[key] ?? ""} />
+      ))}
+    </>
   );
 }
 
@@ -2438,10 +2878,9 @@ function CarEditorForm({
       variant: formVariants[index],
     })),
   );
-  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
-  const [activeHelp, setActiveHelp] = useState<"prices" | "variants" | null>(null);
+  const [variantEditorIndex, setVariantEditorIndex] = useState<number | null>(null);
+  const [variantEditorTab, setVariantEditorTab] = useState<VariantEditorTab>("general");
   const variantCount = variantSlots.length;
-  const selectedVariant = Math.min(selectedVariantIndex, variantCount - 1);
 
   function addVariant() {
     const nextIndex = variantSlots.length;
@@ -2453,7 +2892,8 @@ function CarEditorForm({
         variant: undefined,
       },
     ]);
-    setSelectedVariantIndex(nextIndex);
+    setVariantEditorTab("general");
+    setVariantEditorIndex(nextIndex);
   }
 
   function removeVariant(index: number) {
@@ -2462,17 +2902,7 @@ function CarEditorForm({
     }
 
     setVariantSlots((slots) => slots.filter((_, slotIndex) => slotIndex !== index));
-    setSelectedVariantIndex((current) => {
-      if (current === index) {
-        return Math.max(0, index - 1);
-      }
-
-      if (current > index) {
-        return current - 1;
-      }
-
-      return Math.min(current, Math.max(0, variantCount - 2));
-    });
+    setVariantEditorIndex(null);
   }
 
   return (
@@ -2480,16 +2910,26 @@ function CarEditorForm({
       <nav className="admin-drawer-tabs">
         <TabButton value="general" active={activeTab} onClick={onTab}>Ümumi</TabButton>
         <TabButton value="technical" active={activeTab} onClick={onTab}>Texniki</TabButton>
-        <TabButton value="images" active={activeTab} onClick={onTab}>Şəkillər</TabButton>
-        <TabButton value="prices" active={activeTab} onClick={onTab}>Qiymətlər</TabButton>
         <TabButton value="variants" active={activeTab} onClick={onTab}>Variantlar {variantCount}</TabButton>
+        <TabButton value="images" active={activeTab} onClick={onTab}>Şəkillər</TabButton>
         <TabButton value="services" active={activeTab} onClick={onTab}>Xidmətlər</TabButton>
-        <TabButton value="wedding" active={activeTab} onClick={onTab}>Toy</TabButton>
+        <TabButton value="description" active={activeTab} onClick={onTab}>Təsvir</TabButton>
+        <TabButton value="seo" active={activeTab} onClick={onTab}>SEO</TabButton>
       </nav>
 
       <form id={formId} onSubmit={onSubmit} className="admin-editor-form">
         <input name="id" type="hidden" defaultValue={car?.id ?? ""} />
         <input name="variantCount" type="hidden" value={variantCount} readOnly />
+        {variantSlots.map((slot, index) =>
+          activeTab === "variants" && variantEditorIndex === index ? null : (
+            <HiddenVariantFields
+              key={`${slot.key}-hidden`}
+              index={index}
+              variant={slot.variant}
+              car={car}
+            />
+          ),
+        )}
 
         <section className={`admin-tab-panel${activeTab === "general" ? "" : " is-hidden"}`}>
           <div className="admin-form-grid">
@@ -2541,200 +2981,268 @@ function CarEditorForm({
           </div>
         </section>
 
-        <section className={`admin-tab-panel${activeTab === "prices" ? "" : " is-hidden"}`}>
-          <div className="admin-mini-section">
-            <div className="admin-section-heading">
-              <h3>İcarə qiymətləri</h3>
-              <button type="button" onClick={() => setActiveHelp(activeHelp === "prices" ? null : "prices")}>
-                ?
-              </button>
-              {activeHelp === "prices" ? (
-                <div className="admin-context-help">
-                  <strong>Bu qiymət harada görünür?</strong>
-                  <p>Əsas variantın 1-3 gün qiyməti avtomobil kartında başlanğıc qiymət kimi görünür. Digər aralıqlar rezervasiya müddəti seçiləndə istifadə olunur.</p>
-                  <button type="button" onClick={() => setActiveHelp(null)}>Bağla</button>
-                </div>
-              ) : null}
-            </div>
-            <div className="admin-price-grid">
-              {rentalPriceKeys.map((key) => (
-                <PriceField key={key} label={rentalPriceLabels[key]} name={`rental_${key}`} defaultValue={car?.rentalPrices[key]} />
-              ))}
-            </div>
-          </div>
-          <div className="admin-mini-section">
-            <h3>Transfer qiymətləri</h3>
-            <div className="admin-price-grid">
-              {transferPriceKeys.map((key) => (
-                <PriceField key={key} label={transferPriceLabels[key]} name={`transfer_${key}`} defaultValue={car?.transferPrices[key]} />
-              ))}
-            </div>
-          </div>
-        </section>
-
         <section className={`admin-tab-panel${activeTab === "variants" ? "" : " is-hidden"}`}>
-          <div className="admin-variant-overview">
-            <div>
-              <div className="admin-section-heading">
-                <h3>Variantlar</h3>
-                <button type="button" onClick={() => setActiveHelp(activeHelp === "variants" ? null : "variants")}>
-                  ?
+          {variantEditorIndex === null ? (
+            <>
+              <div className="admin-clean-section-head">
+                <div>
+                  <h2>Variantlar</h2>
+                  <p>{car?.title ?? "Bu model"} üçün {variantCount} versiya</p>
+                </div>
+                <button type="button" className="admin-secondary-button" onClick={addVariant}>
+                  <Plus size={14} />
+                  Variant əlavə et
                 </button>
-                {activeHelp === "variants" ? (
-                  <div className="admin-context-help">
-                    <strong>Variant nədir?</strong>
-                    <p>Eyni avtomobil modelinin fərqli il və ya versiyasıdır. Məsələn, Hyundai Sonata modelində 2022 və 2024 ayrı variant ola bilər.</p>
-                    <button type="button" onClick={() => setActiveHelp(null)}>Bağla</button>
-                  </div>
-                ) : null}
               </div>
-              <p>
-                Bu modelin fərqli il və versiyalarını idarə edin. Birinci sətir əsas variantdır və saytda əsas qiymət kimi görünür.
-              </p>
-            </div>
 
-            <button
-              type="button"
-              className="admin-secondary-button"
-              onClick={addVariant}
-            >
-              <Plus size={14} />
-              Variant əlavə et
-            </button>
-          </div>
+              <div className="admin-variant-card-grid">
+                {variantSlots.map((slot, index) => {
+                  const variant = slot.variant;
+                  const isMainVariant = index === 0;
+                  const price = variantStartingPrice(variant);
 
-          <div className="admin-variant-table">
-            <div className="admin-variant-table-head">
-              <span>Variant</span>
-              <span>İl</span>
-              <span>Mühərrik</span>
-              <span>İcarə</span>
-              <span>Transfer</span>
-              <span>Toy</span>
-              <span>Status</span>
-            </div>
+                  return (
+                    <button
+                      key={`${slot.key}-card`}
+                      type="button"
+                      className="admin-variant-object-card"
+                      onClick={() => {
+                        setVariantEditorTab("general");
+                        setVariantEditorIndex(index);
+                      }}
+                    >
+                      <span>{isMainVariant ? "★ ƏSAS" : "VARIANT"}</span>
+                      <strong>{variant?.manufactureYear ?? car?.manufactureYear ?? "İl"}</strong>
+                      <small>{variant?.label && variant.label !== String(variant?.manufactureYear) ? variant.label : car?.title ?? "Yeni variant"}</small>
+                      <em>{[variant?.engine ?? car?.engine, car?.transmission, car?.fuel].filter(Boolean).join(" · ") || "Texniki məlumat yoxdur"}</em>
+                      <i>
+                        {car?.rentalVisible !== false ? <span>İcarə</span> : null}
+                        {car?.transferAvailable ? <span>Transfer</span> : null}
+                        {car?.weddingAvailable ? <span>Toy</span> : null}
+                      </i>
+                      <b>{price !== null ? `${price} ₼-dan` : "Qiymət yoxdur"}</b>
+                      <ArrowRight size={16} />
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="admin-variant-workspace">
+              {variantSlots.map((slot, index) => {
+                if (index !== variantEditorIndex) return null;
 
-            {variantSlots.map((slot, index) => {
-              const variant = slot.variant;
-              const isMainVariant = index === 0;
-              const price = variantStartingPrice(variant);
+                const variant = slot.variant;
+                const isMainVariant = index === 0;
 
-              return (
-                <button
-                  key={`${slot.key}-row`}
-                  type="button"
-                  className={`admin-variant-table-row${selectedVariant === index ? " is-active" : ""}`}
-                  onClick={() => setSelectedVariantIndex(index)}
-                >
-                  <span>
-                    <strong>{variantDisplayName(variant, index)}</strong>
-                    {isMainVariant ? <small>Əsas</small> : null}
-                  </span>
-                  <span>{variant?.manufactureYear ?? "-"}</span>
-                  <span>{variant?.engine ?? car?.engine ?? "-"}</span>
-                  <span>{price !== null ? `${price} ₼-dan` : "-"}</span>
-                  <span>{car?.transferAvailable ? "Aktiv" : "-"}</span>
-                  <span>{car?.weddingAvailable ? "Aktiv" : "-"}</span>
-                  <StatusDot active />
-                </button>
-              );
-            })}
-          </div>
+                return (
+	                  <section key={`${slot.key}-workspace`}>
+	                    <input name={`variant_${index}_id`} type="hidden" defaultValue={variant?.id ?? ""} />
+	                    {variantEditorTab !== "general" ? (
+	                      <>
+	                        <input name={`variant_${index}_label`} type="hidden" defaultValue={variant?.label ?? (index === 0 && car?.manufactureYear ? String(car.manufactureYear) : "")} />
+	                        <input name={`variant_${index}_manufactureYear`} type="hidden" defaultValue={variant?.manufactureYear ?? (index === 0 ? car?.manufactureYear ?? "" : "")} />
+	                      </>
+	                    ) : null}
+	                    {variantEditorTab !== "technical" ? (
+	                      <>
+	                        <input name={`variant_${index}_bodyStyle`} type="hidden" defaultValue={variant?.bodyStyle ?? ""} />
+	                        <input name={`variant_${index}_engine`} type="hidden" defaultValue={variant?.engine ?? (index === 0 ? car?.engine ?? "" : "")} />
+	                      </>
+	                    ) : null}
+	                    {variantEditorTab !== "images" ? (
+	                      <input name={`variant_${index}_thumbnail`} type="hidden" defaultValue={variant?.thumbnail ?? ""} />
+	                    ) : null}
+	                    {variantEditorTab !== "services" ? (
+	                      rentalPriceKeys.map((key) => (
+	                        <input key={key} type="hidden" name={`variant_${index}_rental_${key}`} defaultValue={variant?.rentalPrices[key] ?? (index === 0 ? car?.rentalPrices[key] ?? "" : "")} />
+	                      ))
+	                    ) : null}
 
-          <div className="admin-variant-editors">
-            {variantSlots.map((slot, index) => {
-              const variant = slot.variant;
-              const isMainVariant = index === 0;
-
-              return (
-                <div
-                  className={`admin-variant-card${selectedVariant === index ? "" : " is-hidden"}`}
-                  key={`${slot.key}-editor`}
-                >
-                  <input name={`variant_${index}_id`} type="hidden" defaultValue={variant?.id ?? ""} />
-
-                  <div className="admin-variant-card-head">
-                    <div>
-                      <span>
-                        <Rows3 size={14} />
-                        {variantDisplayName(variant, index)}
-                      </span>
-                      {isMainVariant ? <small>Saytda əsas qiymət</small> : <small>Əlavə variant · silmək üçün sonra yadda saxlayın</small>}
+                    <div className="admin-variant-workspace-head">
+                      <button type="button" onClick={() => setVariantEditorIndex(null)}>
+                        <ArrowRight size={14} />
+                        Variantlar
+                      </button>
+                      <div>
+                        <p>{car?.title ?? "Model"}</p>
+                        <h2>{variantDisplayName(variant, index)}</h2>
+                      </div>
+                      {isMainVariant ? <span>★ Əsas variant</span> : null}
                     </div>
 
-                    {!isMainVariant ? (
-                      <button
-                        type="button"
-                        className="admin-variant-delete-button"
-                        onClick={() => removeVariant(index)}
-                      >
-                        <Trash2 size={13} />
-                        Variantı sil
-                      </button>
-                    ) : null}
-                  </div>
+	                    <div className="admin-variant-subtabs">
+	                      {[
+	                        ["general", "Ümumi"],
+	                        ["technical", "Texniki"],
+	                        ["images", "Şəkillər"],
+	                        ["services", "Xidmətlər"],
+	                      ].map(([tab, label]) => (
+	                        <button
+	                          key={tab}
+	                          type="button"
+	                          className={variantEditorTab === tab ? "is-active" : ""}
+	                          onClick={() => setVariantEditorTab(tab as VariantEditorTab)}
+	                        >
+	                          {label}
+	                        </button>
+	                      ))}
+	                    </div>
 
-                  <div className="admin-variant-subtabs">
-                    <span>Ümumi</span>
-                    <span>Texniki</span>
-                    <span>Şəkillər</span>
-                    <span>Xidmət qiymətləri</span>
-                  </div>
+	                    {variantEditorTab === "general" ? (
+	                      <div className="admin-variant-workspace-panel">
+	                        <div className="admin-clean-section-head">
+	                          <div>
+	                            <h2>Ümumi məlumat</h2>
+	                            <p>Variantın ilini və public adını idarə edin.</p>
+	                          </div>
+	                          {!isMainVariant ? (
+	                            <button type="button" className="admin-variant-delete-button" onClick={() => removeVariant(index)}>
+	                              <Trash2 size={13} />
+	                              Variantı sil
+	                            </button>
+	                          ) : null}
+	                        </div>
+	                        <div className="admin-form-grid admin-form-grid-comfort">
+	                          <Field label="İl" name={`variant_${index}_manufactureYear`} type="number" defaultValue={variant?.manufactureYear ?? (index === 0 ? car?.manufactureYear : undefined)} placeholder="2024" />
+	                          <Field label="Variant adı" name={`variant_${index}_label`} defaultValue={variant?.label ?? (index === 0 && car?.manufactureYear ? String(car.manufactureYear) : undefined)} placeholder="E 200" />
+	                        </div>
+	                      </div>
+	                    ) : null}
 
-                  {!isMainVariant ? (
-                    <p className="admin-muted-copy">
-                      Yalnız il və qiymət yazmaq kifayətdir. Boş saxlanan mühərrik, şəkil və texniki məlumatlar saytda əsas avtomobildən götürüləcək.
-                    </p>
-                  ) : null}
+	                    {variantEditorTab === "technical" ? (
+	                      <div className="admin-variant-workspace-panel">
+	                        <div className="admin-clean-section-head">
+	                          <div>
+	                            <h2>Texniki fərqlər</h2>
+	                            <p>Bu versiyanın mühərrik və kuzov fərqlərini ayrıca saxlayın.</p>
+	                          </div>
+	                        </div>
+	                        <div className="admin-form-grid admin-form-grid-comfort">
+	                          <Field label="Nəsil / kuzov" name={`variant_${index}_bodyStyle`} defaultValue={variant?.bodyStyle} placeholder="W214 / Sedan" />
+	                          <Field label="Mühərrik" name={`variant_${index}_engine`} defaultValue={variant?.engine ?? (index === 0 ? car?.engine : undefined)} placeholder={car?.engine ?? "2.0 L"} />
+	                        </div>
+	                      </div>
+	                    ) : null}
 
-                  <div className="admin-form-grid">
-                    <Field
-                      label="Variant adı (istəyə bağlı)"
-                      name={`variant_${index}_label`}
-                      defaultValue={variant?.label}
-                      placeholder="E 200 AMG"
-                    />
-                    <Field label="İl" name={`variant_${index}_manufactureYear`} type="number" defaultValue={variant?.manufactureYear} placeholder="2024" />
-                    <Field label="Kuzov" name={`variant_${index}_bodyStyle`} defaultValue={variant?.bodyStyle} placeholder={isMainVariant ? "W214 / Sedan" : "Boş qalarsa əsas məlumat istifadə olunur"} />
-                    <Field label="Mühərrik" name={`variant_${index}_engine`} defaultValue={variant?.engine} placeholder={isMainVariant ? "2.0 L" : car?.engine ?? "Boş qalarsa əsas məlumat istifadə olunur"} />
-                    <Field
-                      label={isMainVariant ? "Şəkil URL-i (boş olsa modelin əsas şəkli)" : "Variant şəkli (boş olsa modelin əsas şəkli)"}
-                      name={`variant_${index}_thumbnail`}
-                      defaultValue={variant?.thumbnail}
-                      placeholder="https://..."
-                      span
-                    />
-                  </div>
+	                    {variantEditorTab === "images" ? (
+	                      <div className="admin-variant-workspace-panel">
+	                        <div className="admin-clean-section-head">
+	                          <div>
+	                            <h2>Variant şəkli</h2>
+	                            <p>Bu il və versiya üçün ayrıca PNG və ya şəkil linki əlavə edin.</p>
+	                          </div>
+	                        </div>
+	                        <div className="admin-form-grid admin-form-grid-comfort">
+	                          <Field
+	                            label="Variant şəkli"
+	                            name={`variant_${index}_thumbnail`}
+	                            defaultValue={variant?.thumbnail}
+	                            placeholder="https://..."
+	                            span
+	                          />
+	                        </div>
+	                      </div>
+	                    ) : null}
 
-                  <div className="admin-price-grid">
-                    {rentalPriceKeys.map((key) => (
-                      <PriceField
-                        key={key}
-                        label={rentalPriceLabels[key]}
-                        name={`variant_${index}_rental_${key}`}
-                        defaultValue={variant?.rentalPrices[key]}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+	                    {variantEditorTab === "services" ? (
+	                      <div className="admin-variant-workspace-panel">
+	                        <div className="admin-clean-section-head">
+	                          <div>
+	                            <h2>Variant qiymətləri</h2>
+	                            <p>Bu versiyanın icarə qiymətlərini əsas modeldən fərqli yazın.</p>
+	                          </div>
+	                        </div>
+	                        <div className="admin-price-grid">
+	                          {rentalPriceKeys.map((key) => (
+	                            <PriceField
+	                              key={key}
+	                              label={rentalPriceLabels[key]}
+	                              name={`variant_${index}_rental_${key}`}
+	                              defaultValue={variant?.rentalPrices[key] ?? (index === 0 ? car?.rentalPrices[key] : undefined)}
+	                            />
+	                          ))}
+	                        </div>
+	                        <p className="admin-variant-service-note">Transfer və toy qiymətləri hələlik model səviyyəsində saxlanır. İcarə qiymətləri isə hər variant üçün ayrıca işləyir.</p>
+	                      </div>
+	                    ) : null}
+	                  </section>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         <section className={`admin-tab-panel${activeTab === "services" ? "" : " is-hidden"}`}>
-          <div className="admin-toggle-row">
+          <div className="admin-service-card-grid">
             <Toggle label="Saytda aktiv" name="isActive" defaultChecked={car?.isActive ?? true} description="Avtomobil saytda görünür." />
             <Toggle label="İcarədə göstər" name="rentalVisible" defaultChecked={car?.rentalVisible ?? true} description="İcarə siyahısında göstər." />
             <Toggle label="Transfer üçün aktiv" name="transferAvailable" defaultChecked={car?.transferAvailable} description="Transfer bölməsində istifadə et." />
             <Toggle label="Toy avtomobili" name="weddingAvailable" defaultChecked={car?.weddingAvailable} description="Toy kolleksiyasında göstər." />
           </div>
+
+          <div className="admin-service-settings">
+            <section>
+              <div className="admin-clean-section-head">
+                <div>
+                  <h2>İcarə</h2>
+                  <p>Gün sayına görə public rezervasiya qiymətləri.</p>
+                </div>
+              </div>
+              <div className="admin-price-grid">
+                {rentalPriceKeys.map((key) => (
+                  <PriceField key={key} label={rentalPriceLabels[key]} name={`rental_${key}`} defaultValue={car?.rentalPrices[key]} />
+                ))}
+              </div>
+            </section>
+            <section>
+              <div className="admin-clean-section-head">
+                <div>
+                  <h2>Transfer</h2>
+                  <p>Marşrut üzrə sürücülü transfer qiymətləri.</p>
+                </div>
+              </div>
+              <div className="admin-price-grid">
+                {transferPriceKeys.map((key) => (
+                  <PriceField key={key} label={transferPriceLabels[key]} name={`transfer_${key}`} defaultValue={car?.transferPrices[key]} />
+                ))}
+              </div>
+            </section>
+            <section>
+              <div className="admin-clean-section-head">
+                <div>
+                  <h2>Toy xidməti</h2>
+                  <p>Xüsusi gün kolleksiyası üçün görünüş və qiymət.</p>
+                </div>
+              </div>
+              <div className="admin-form-grid admin-form-grid-comfort">
+                <PriceField label="Toy qiyməti" name="weddingPrice" defaultValue={car?.weddingPrice} />
+                <TextAreaField label="Toy təsviri" name="weddingDescription" rows={5} defaultValue={car?.weddingDescription} />
+              </div>
+            </section>
+          </div>
         </section>
 
-        <section className={`admin-tab-panel${activeTab === "wedding" ? "" : " is-hidden"}`}>
-          <div className="admin-form-grid">
-            <PriceField label="Toy qiyməti" name="weddingPrice" defaultValue={car?.weddingPrice} />
-            <TextAreaField label="Toy təsviri" name="weddingDescription" rows={5} defaultValue={car?.weddingDescription} />
+        <section className={`admin-tab-panel${activeTab === "description" ? "" : " is-hidden"}`}>
+          <div className="admin-clean-section-head">
+            <div>
+              <h2>Təsvir</h2>
+              <p>Model üçün public səhifədə istifadə olunacaq redaksiya məzmunu.</p>
+            </div>
+          </div>
+          <TextAreaField label="Qısa təsvir" name="carDescription" rows={6} placeholder="Premium avtomobil, komfortlu salon və gündəlik istifadə üçün uyğun seçim." />
+        </section>
+
+        <section className={`admin-tab-panel${activeTab === "seo" ? "" : " is-hidden"}`}>
+          <div className="admin-clean-section-head">
+            <div>
+              <h2>SEO</h2>
+              <p>Meta başlıq, axtarış təsviri və indeksləmə qeydləri.</p>
+            </div>
+          </div>
+          <div className="admin-form-grid admin-form-grid-comfort">
+            <Field label="Meta başlıq" name="seoTitle" defaultValue={car?.title ? `${car.title} icarəsi Bakıda` : ""} />
+            <TextAreaField label="Meta təsvir" name="seoDescription" rows={4} placeholder="Bakıda sürətli və rahat avtomobil icarəsi." />
           </div>
         </section>
       </form>

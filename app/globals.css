@@ -3914,6 +3914,8 @@ button {
   align-items: center;
   gap: 15px;
   border-bottom: 1px solid rgba(0,0,0,.085);
+  color: inherit;
+  text-decoration: none;
 }
 
 .route-number {
@@ -13495,6 +13497,132 @@ button {
   .carbon-calendar-months {
     gap: 0;
   }
+}
+
+/* Calendar selection final authority: no white selected/focus blocks. */
+.hb-calendar-days button.is-start,
+.hb-calendar-days button.is-end,
+.carbon-calendar-day.is-start,
+.carbon-calendar-day.is-end,
+.carbon-calendar-day.is-selected,
+.reservation-calendar-day.is-start,
+.reservation-calendar-day.is-end,
+.reservation-calendar-day.is-selected {
+  outline: 0 !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.hb-calendar-days button.is-start::before,
+.hb-calendar-days button.is-end::before,
+.carbon-calendar-day.is-start::before,
+.carbon-calendar-day.is-end::before,
+.carbon-calendar-day.is-selected::before,
+.reservation-calendar-day.is-start::before,
+.reservation-calendar-day.is-end::before,
+.reservation-calendar-day.is-selected::before {
+  background: #931d4f !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.hb-calendar-days button.is-start::after,
+.hb-calendar-days button.is-end::after,
+.carbon-calendar-day.is-start::after,
+.carbon-calendar-day.is-end::after,
+.carbon-calendar-day.is-selected::after,
+.reservation-calendar-day.is-start::after,
+.reservation-calendar-day.is-end::after,
+.reservation-calendar-day.is-selected::after {
+  display: none !important;
+  content: none !important;
+}
+
+.hb-calendar-days button.is-start > span,
+.hb-calendar-days button.is-end > span,
+.carbon-calendar-day.is-start > span,
+.carbon-calendar-day.is-end > span,
+.carbon-calendar-day.is-selected > span,
+.reservation-calendar-day.is-start > span,
+.reservation-calendar-day.is-end > span,
+.reservation-calendar-day.is-selected > span,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-start > span,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-end > span,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-selected > span,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-start > span,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-end > span,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-selected > span {
+  background: #931d4f !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.hb-calendar-days button.is-range::before,
+.carbon-calendar-day.is-range::before,
+.carbon-calendar-day.is-in-range::before,
+.reservation-calendar-day.is-range::before,
+.reservation-calendar-day.is-in-range::before,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-range::before,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-in-range::before,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-range::before,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-in-range::before {
+  background: rgba(147, 29, 79, .09) !important;
+  box-shadow: none !important;
+}
+
+/* Calendar selected-day repair: remove the confusing white focus/halo box site-wide. */
+.hb-calendar-days button,
+.carbon-calendar-day,
+.reservation-calendar-day {
+  outline: 0 !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hb-calendar-days button:focus,
+.hb-calendar-days button:focus-visible,
+.carbon-calendar-day:focus,
+.carbon-calendar-day:focus-visible,
+.reservation-calendar-day:focus,
+.reservation-calendar-day:focus-visible {
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.hb-calendar-days button.is-start::before,
+.hb-calendar-days button.is-end::before,
+.carbon-calendar-day.is-start > span,
+.carbon-calendar-day.is-end > span,
+.carbon-calendar-day.is-selected > span,
+.reservation-calendar-day.is-start > span,
+.reservation-calendar-day.is-end > span,
+.reservation-calendar-day.is-selected > span,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-start > span,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-end > span,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-selected > span,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-start > span,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-end > span,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-selected > span {
+  background: #931d4f !important;
+  border-color: #931d4f !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.hb-calendar-days button.is-range::before,
+.carbon-calendar-day.is-range::before,
+.carbon-calendar-day.is-in-range::before,
+.reservation-calendar-day.is-range::before,
+.reservation-calendar-day.is-in-range::before,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-range::before,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-in-range::before,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-range::before,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-in-range::before {
+  background: rgba(147, 29, 79, .09) !important;
+  box-shadow: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -28990,4 +29118,78 @@ body:has(.carbon-shared-navbar-light) {
   .home-service-card {
     padding: 18px !important;
   }
+}
+
+/* Calendar selection final authority: no white selected/focus blocks. */
+.hb-calendar-days button.is-start,
+.hb-calendar-days button.is-end,
+.carbon-calendar-day.is-start,
+.carbon-calendar-day.is-end,
+.carbon-calendar-day.is-selected,
+.reservation-calendar-day.is-start,
+.reservation-calendar-day.is-end,
+.reservation-calendar-day.is-selected {
+  outline: 0 !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.hb-calendar-days button.is-start::before,
+.hb-calendar-days button.is-end::before,
+.carbon-calendar-day.is-start::before,
+.carbon-calendar-day.is-end::before,
+.carbon-calendar-day.is-selected::before,
+.reservation-calendar-day.is-start::before,
+.reservation-calendar-day.is-end::before,
+.reservation-calendar-day.is-selected::before {
+  background: #931d4f !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.hb-calendar-days button.is-start::after,
+.hb-calendar-days button.is-end::after,
+.carbon-calendar-day.is-start::after,
+.carbon-calendar-day.is-end::after,
+.carbon-calendar-day.is-selected::after,
+.reservation-calendar-day.is-start::after,
+.reservation-calendar-day.is-end::after,
+.reservation-calendar-day.is-selected::after {
+  display: none !important;
+  content: none !important;
+}
+
+.hb-calendar-days button.is-start > span,
+.hb-calendar-days button.is-end > span,
+.carbon-calendar-day.is-start > span,
+.carbon-calendar-day.is-end > span,
+.carbon-calendar-day.is-selected > span,
+.reservation-calendar-day.is-start > span,
+.reservation-calendar-day.is-end > span,
+.reservation-calendar-day.is-selected > span,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-start > span,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-end > span,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-selected > span,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-start > span,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-end > span,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-selected > span {
+  background: #931d4f !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.hb-calendar-days button.is-range::before,
+.carbon-calendar-day.is-range::before,
+.carbon-calendar-day.is-in-range::before,
+.reservation-calendar-day.is-range::before,
+.reservation-calendar-day.is-in-range::before,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-range::before,
+html body > .carbon-calendar-popover .carbon-calendar-day.is-in-range::before,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-range::before,
+html body > .reservation-calendar-shell .reservation-calendar-day.is-in-range::before {
+  background: rgba(147, 29, 79, .09) !important;
+  box-shadow: none !important;
 }
