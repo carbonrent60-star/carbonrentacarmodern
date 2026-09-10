@@ -244,6 +244,7 @@ function Field({
   type = "text",
   placeholder,
   span,
+  icon,
 }: {
   label: string;
   name: string;
@@ -251,16 +252,20 @@ function Field({
   type?: string;
   placeholder?: string;
   span?: boolean;
+  icon?: ReactNode;
 }) {
   return (
-    <label className={`admin-field${span ? " admin-field-span" : ""}`}>
+    <label className={`admin-field${span ? " admin-field-span" : ""}${icon ? " has-icon" : ""}`}>
       <span>{label}</span>
-      <input
-        name={name}
-        type={type}
-        placeholder={placeholder}
-        defaultValue={defaultValue ?? ""}
-      />
+      <span className="admin-field-control">
+        {icon ? <i>{icon}</i> : null}
+        <input
+          name={name}
+          type={type}
+          placeholder={placeholder}
+          defaultValue={defaultValue ?? ""}
+        />
+      </span>
     </label>
   );
 }
@@ -293,25 +298,31 @@ function SelectField({
   name,
   defaultValue,
   options,
+  icon,
 }: {
   label: string;
   name: string;
   defaultValue?: string | null;
   options: string[];
+  icon?: ReactNode;
 }) {
   const value = defaultValue ?? "";
   const optionSet = value && !options.includes(value) ? [value, ...options] : options;
 
   return (
-    <label className="admin-field">
+    <label className={`admin-field${icon ? " has-icon" : ""}`}>
       <span>{label}</span>
-      <select name={name} defaultValue={value}>
-        {optionSet.map((option) => (
-          <option key={option} value={option}>
-            {categoryLabels[option] ?? option}
-          </option>
-        ))}
-      </select>
+      <span className="admin-field-control is-select">
+        {icon ? <i>{icon}</i> : null}
+        <select name={name} defaultValue={value}>
+          {optionSet.map((option) => (
+            <option key={option} value={option}>
+              {categoryLabels[option] ?? option}
+            </option>
+          ))}
+        </select>
+        <ChevronDown size={15} />
+      </span>
     </label>
   );
 }
@@ -3293,12 +3304,12 @@ function CarEditorForm({
 	        <section className={`admin-tab-panel${activeTab === "technical" ? "" : " is-hidden"}`}>
 	          <FormSection icon={<Gauge size={18} />} title="Texniki məlumatlar" subtitle="Komfort, mühərrik və istifadə göstəricilərini yeniləyin.">
 	            <div className="admin-form-grid">
-	              <Field label="Oturacaq sayı" name="seats" type="number" defaultValue={car?.seats} />
-	              <Field label="Baqaj" name="baggage" type="number" defaultValue={car?.baggage} />
-	              <Field label="Kiçik baqaj" name="smallBaggage" type="number" defaultValue={car?.smallBaggage} />
-	              <SelectField label="Yanacaq" name="fuel" defaultValue={car?.fuel ?? "Benzin"} options={["Benzin", "Dizel", "Hibrid", "Elektrik"]} />
-	              <Field label="Mühərrik" name="engine" defaultValue={car?.engine} placeholder="2.0" />
-	              <SelectField label="Sürətlər qutusu" name="transmission" defaultValue={car?.transmission ?? "Avtomat"} options={["Avtomat", "Mexanika"]} />
+	              <Field label="Oturacaq sayı" name="seats" type="number" defaultValue={car?.seats} icon={<Users size={16} />} />
+	              <Field label="Baqaj" name="baggage" type="number" defaultValue={car?.baggage} icon={<Database size={16} />} />
+	              <Field label="Kiçik baqaj" name="smallBaggage" type="number" defaultValue={car?.smallBaggage} icon={<Rows3 size={16} />} />
+	              <SelectField label="Yanacaq" name="fuel" defaultValue={car?.fuel ?? "Benzin"} options={["Benzin", "Dizel", "Hibrid", "Elektrik"]} icon={<CarFront size={16} />} />
+	              <Field label="Mühərrik" name="engine" defaultValue={car?.engine} placeholder="2.0" icon={<Gauge size={16} />} />
+	              <SelectField label="Sürətlər qutusu" name="transmission" defaultValue={car?.transmission ?? "Avtomat"} options={["Avtomat", "Mexanika"]} icon={<Settings size={16} />} />
 	            </div>
 	          </FormSection>
 	        </section>

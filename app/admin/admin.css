@@ -5178,8 +5178,105 @@ kbd {
   font-size: 14px;
 }
 
+.admin-field-control {
+  min-height: 48px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, .14);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .035), transparent),
+    rgba(7, 13, 25, .76);
+  transition:
+    border-color 170ms var(--ease-out),
+    background 170ms var(--ease-out),
+    box-shadow 170ms var(--ease-out),
+    transform 170ms var(--ease-out);
+}
+
+.admin-field-control:hover {
+  border-color: rgba(203, 213, 225, .24);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .05), transparent),
+    rgba(10, 18, 34, .9);
+}
+
+.admin-field-control:focus-within {
+  border-color: rgba(236, 72, 153, .48);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, .1);
+}
+
+.admin-field-control > i {
+  width: 38px;
+  align-self: stretch;
+  flex: 0 0 38px;
+  border-right: 1px solid rgba(148, 163, 184, .10);
+  display: grid;
+  place-items: center;
+  color: var(--admin-soft);
+  font-style: normal;
+  transition:
+    color 170ms var(--ease-out),
+    background 170ms var(--ease-out);
+}
+
+.admin-field-control:hover > i,
+.admin-field-control:focus-within > i {
+  background: rgba(236, 72, 153, .08);
+  color: var(--admin-accent-hover);
+}
+
+.admin-field-control input,
+.admin-field-control select {
+  min-width: 0;
+  min-height: 46px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-field-control input {
+  padding: 0 14px;
+}
+
+.admin-field-control select {
+  padding: 0 42px 0 14px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.admin-field-control input[type="number"]::-webkit-outer-spin-button,
+.admin-field-control input[type="number"]::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.admin-field-control.is-select > svg {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  color: var(--admin-soft);
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: color 170ms var(--ease-out), transform 170ms var(--ease-out);
+}
+
+.admin-field-control.is-select:hover > svg,
+.admin-field-control.is-select:focus-within > svg {
+  color: var(--admin-accent-hover);
+  transform: translateY(-50%) rotate(180deg);
+}
+
 .admin-field textarea {
   padding-top: 13px;
+}
+
+.admin-field-control input:focus,
+.admin-field-control select:focus {
+  box-shadow: none;
 }
 
 .admin-field input:focus,
@@ -5188,6 +5285,12 @@ kbd {
   border-color: rgba(236, 72, 153, .48);
   box-shadow: 0 0 0 3px rgba(236, 72, 153, .1);
   transform: none;
+}
+
+.admin-field-control input:focus,
+.admin-field-control select:focus {
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .admin-form-status-row {
