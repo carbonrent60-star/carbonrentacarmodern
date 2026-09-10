@@ -129,6 +129,14 @@ export default function AdminImageField({
     return () => revokePreviewUrl(preview);
   }, [preview]);
 
+  function notifyFormChanged() {
+    window.requestAnimationFrame(() => {
+      fileInputRef.current?.form?.dispatchEvent(
+        new Event("input", { bubbles: true })
+      );
+    });
+  }
+
   async function setUploadFile(file: File, nextFlipX = flipX, nextFlipY = flipY) {
     setIsProcessing(true);
 
@@ -146,6 +154,7 @@ export default function AdminImageField({
         return URL.createObjectURL(processedFile);
       });
       setSelectedFile(processedFile.name);
+      notifyFormChanged();
     } finally {
       setIsProcessing(false);
     }
@@ -247,6 +256,7 @@ export default function AdminImageField({
               setPreview(url);
               originalFileRef.current = null;
               setHasSelectedUpload(false);
+              notifyFormChanged();
               return;
             }
 
@@ -300,6 +310,7 @@ export default function AdminImageField({
               if (fileInputRef.current) {
                 fileInputRef.current.value = "";
               }
+              notifyFormChanged();
             }}
           >
             <X size={14} />

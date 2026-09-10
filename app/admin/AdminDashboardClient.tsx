@@ -1270,29 +1270,34 @@ function CarsView({
   const activeCount = allCars.filter((car) => car.isActive !== false).length;
   const transferCount = allCars.filter((car) => car.transferAvailable).length;
   const weddingCount = allCars.filter((car) => car.weddingAvailable).length;
+  const activePercent = Math.round((activeCount / Math.max(allCars.length, 1)) * 100);
+  const heroImage = allCars.find((car) => displayImage(car))?.thumbnail;
   const fleetStats = [
-    { value: allCars.length, label: "Avtomobil", note: "+3 bu ay", icon: CarFront },
-    { value: activeCount, label: "Aktiv", note: `${Math.round((activeCount / Math.max(allCars.length, 1)) * 100)}% park`, icon: Gauge },
-    { value: transferCount, label: "Transfer", note: "Mövcuddur", icon: Plane },
-    { value: weddingCount, label: "Toy", note: "Kolleksiya", icon: Heart },
+    { value: allCars.length, label: "Avtomobil", note: `${categories.length} kateqoriya`, icon: CarFront },
+    { value: activeCount, label: "Aktiv", note: `${activePercent}% park`, icon: Gauge },
+    { value: transferCount, label: "Transfer", note: "Xidmət aktiv", icon: Plane },
+    { value: weddingCount, label: "Toy", note: "Toy xidməti", icon: Heart },
   ];
 
   return (
     <div className="admin-view">
-      <PageTitle
-        eyebrow="AVTOMOBİL PARKI"
-        title="Avtomobillər"
-        subtitle={`${allCars.length} avtomobil · ${activeCount} aktiv`}
-        action={
-          <div className="admin-title-actions">
-            <button type="button" className="admin-secondary-button">
-              <Upload size={15} />
-              Import
-            </button>
-            <button type="button" className="admin-primary-button" onClick={onNew}><Plus size={16} /> Yeni avtomobil</button>
-          </div>
-        }
-      />
+      <section className="admin-fleet-hero">
+        {heroImage ? (
+          <Image className="admin-fleet-hero-image" src={heroImage} alt="" fill sizes="760px" aria-hidden="true" />
+        ) : null}
+        <div>
+          <p>AVTOMOBİL PARKI</p>
+          <h1>Avtomobillər</h1>
+          <span>Avtomobil parkını idarə edin, yeni avtomobillər əlavə edin və məlumatlarını yeniləyin.</span>
+        </div>
+        <div className="admin-title-actions">
+          <button type="button" className="admin-secondary-button">
+            <Upload size={15} />
+            Import
+          </button>
+          <button type="button" className="admin-primary-button" onClick={onNew}><Plus size={16} /> Yeni avtomobil</button>
+        </div>
+      </section>
 
       <section className="admin-fleet-stat-strip">
         {fleetStats.map((stat) => {
@@ -1418,19 +1423,21 @@ function CarsView({
 
 function CarIdentity({ car, mode = "fleet" }: { car: AdminCar; mode?: CarTableMode }) {
   const image = displayImage(car, mode);
+  const yearText = car.manufactureYear ? String(car.manufactureYear) : carVariantRange(car);
+  const year = yearText ? ` • ${yearText}` : "";
 
   return (
     <span className="admin-car-identity">
       <span className="admin-thumb">
         {image ? (
-          <Image src={image} alt={car.title} fill sizes="52px" />
+          <Image src={image} alt={car.title} fill sizes="76px" />
         ) : (
           <CarFront size={18} />
         )}
       </span>
       <span>
         <strong>{car.title}</strong>
-        <small>{car.brand}</small>
+        <small>{car.brand}{year}</small>
       </span>
     </span>
   );
@@ -1478,10 +1485,9 @@ function CarTable({
         <span>Avtomobil</span>
         <span>Variantlar</span>
         <span>Kateqoriya</span>
-        <span>Xidmətlər</span>
         <span>Qiymət</span>
         <span>Status</span>
-        <span />
+        <span>Əməliyyatlar</span>
       </div>
       <div className="admin-data-table">
         {cars.map((car, index) => (
@@ -1491,11 +1497,13 @@ function CarTable({
               <strong>{variantPriceLabel(car)}</strong>
               <small>{carVariantRange(car)}</small>
             </span>
-            <span className="admin-category-cell">{categoryLabels[car.category] ?? car.category}</span>
-            <ServicePills car={car} />
-            <span className="admin-price-cell">{displayPrice(car, mode) ? `${displayPrice(car, mode)} ₼-dan` : "-"}</span>
+            <span className="admin-category-cell"><CarFront size={13} />{categoryLabels[car.category] ?? car.category}</span>
+            <span className="admin-price-cell"><Database size={14} />{displayPrice(car, mode) ? `${displayPrice(car, mode)} ₼-dan` : "-"}</span>
             <StatusDot active={car.isActive} />
-            <MoreHorizontal size={18} />
+            <span className="admin-row-actions">
+              <ServicePills car={car} />
+              <i><MoreHorizontal size={16} /></i>
+            </span>
           </button>
         ))}
       </div>
