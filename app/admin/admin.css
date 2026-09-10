@@ -3193,6 +3193,10 @@ kbd {
   animation: adminSoftRise .28s var(--ease-out);
 }
 
+.admin-variant-workspace-panel.is-hidden {
+  display: none;
+}
+
 .admin-variant-service-note {
   max-width: 620px;
   margin: 0;

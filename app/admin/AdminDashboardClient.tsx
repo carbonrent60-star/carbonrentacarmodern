@@ -39,7 +39,7 @@ import {
   CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteBlogInlineAction,
   deleteCarInlineAction,
@@ -110,6 +110,48 @@ type AdminToast = {
   title: string;
   text?: string;
 };
+
+function editorFormSignature(form: HTMLFormElement) {
+  const values: string[] = [];
+
+  Array.from(form.elements).forEach((element) => {
+    if (
+      !(
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLSelectElement ||
+        element instanceof HTMLTextAreaElement
+      ) ||
+      !element.name ||
+      element.disabled
+    ) {
+      return;
+    }
+
+    if (element instanceof HTMLInputElement) {
+      if (element.type === "checkbox" || element.type === "radio") {
+        values.push(`${element.name}=${element.checked ? element.value || "on" : ""}`);
+        return;
+      }
+
+      if (element.type === "file") {
+        const fileValue = Array.from(element.files ?? [])
+          .map((file) => `${file.name}:${file.size}:${file.lastModified}`)
+          .join(",");
+        values.push(`${element.name}=${fileValue}`);
+        return;
+      }
+    }
+
+    if (element instanceof HTMLSelectElement && element.multiple) {
+      values.push(`${element.name}=${Array.from(element.selectedOptions).map((option) => option.value).join(",")}`);
+      return;
+    }
+
+    values.push(`${element.name}=${element.value}`);
+  });
+
+  return values.sort().join("\n");
+}
 
 const categoryLabels: Record<string, string> = {
   Econom: "Ekonom",
@@ -2447,6 +2489,7 @@ function EditorWorkspace({
   const [dirty, setDirty] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [drawerError, setDrawerError] = useState<string | null>(null);
+  const originalFormSignatureRef = useRef<string | null>(null);
   const formId = editor.type === "car" ? "admin-car-editor-form" : "admin-blog-editor-form";
   const title =
     editor.type === "car"
@@ -2466,6 +2509,42 @@ function EditorWorkspace({
     editor.type === "car"
       ? "Bu avtomobil idarə panelindən və bağlı siyahılardan silinəcək."
       : "Bu məqalə idarə panelindən və saytdakı blog siyahısından silinəcək.";
+
+  const getEditorForm = useCallback(() => {
+    const form = document.getElementById(formId);
+    return form instanceof HTMLFormElement ? form : null;
+  }, [formId]);
+
+  const updateDirtyFromForm = useCallback((form?: HTMLFormElement | null) => {
+    const targetForm = form ?? getEditorForm();
+
+    if (!targetForm) {
+      return;
+    }
+
+    const nextSignature = editorFormSignature(targetForm);
+
+    if (originalFormSignatureRef.current === null) {
+      originalFormSignatureRef.current = nextSignature;
+    }
+
+    const nextDirty = nextSignature !== originalFormSignatureRef.current;
+    setDirty(nextDirty);
+
+    if (nextDirty) {
+      setJustSaved(false);
+    }
+  }, [getEditorForm]);
+
+  useEffect(() => {
+    originalFormSignatureRef.current = null;
+
+    const frame = window.requestAnimationFrame(() => {
+      updateDirtyFromForm();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [editor, formId, updateDirtyFromForm]);
 
   useEffect(() => {
     onDirtyChange(dirty);
@@ -2493,6 +2572,7 @@ function EditorWorkspace({
     setJustSaved(false);
     setIsSaving(true);
 
+    const submittedSignature = editorFormSignature(event.currentTarget);
     const formData = new FormData(event.currentTarget);
 
     try {
@@ -2510,6 +2590,7 @@ function EditorWorkspace({
           return;
         }
 
+        originalFormSignatureRef.current = submittedSignature;
         onCarSaved(result.car);
         setDirty(false);
         setJustSaved(true);
@@ -2530,6 +2611,7 @@ function EditorWorkspace({
         return;
       }
 
+      originalFormSignatureRef.current = submittedSignature;
       onBlogSaved(result.blog);
       setDirty(false);
       setJustSaved(true);
@@ -2537,6 +2619,10 @@ function EditorWorkspace({
     } finally {
       setIsSaving(false);
     }
+  };
+  const handleEditorFormMutation = (event: FormEvent<HTMLDivElement>) => {
+    const form = (event.target as HTMLElement).closest("form");
+    updateDirtyFromForm(form instanceof HTMLFormElement ? form : null);
   };
   const handleDelete = async () => {
     setDrawerError(null);
@@ -2658,11 +2744,11 @@ function EditorWorkspace({
             <MoreHorizontal size={16} />
           </button>
           <button
-            type="submit"
-            form={formId}
-            className={`admin-primary-button${justSaved ? " is-saved" : ""}`}
-            disabled={isSaving || isDeleting || (!dirty && !justSaved)}
-          >
+	            type="submit"
+	            form={formId}
+	            className={`admin-primary-button${justSaved ? " is-saved" : ""}`}
+	            disabled={isSaving || isDeleting || !dirty}
+	          >
             {justSaved ? <CheckCircle2 size={15} /> : <Save size={15} />}
             {isSaving
               ? "Saxlanılır..."
@@ -2673,7 +2759,7 @@ function EditorWorkspace({
         </div>
       </header>
 
-      <div className="admin-editor-page-body" onChange={() => setDirty(true)}>
+      <div className="admin-editor-page-body" onChange={handleEditorFormMutation} onInput={handleEditorFormMutation}>
         <div className="admin-editor-main">
           {editor.type === "car" ? (
             <CarEditorForm
@@ -2743,11 +2829,11 @@ function EditorWorkspace({
           Geri qayıt
         </button>
         <button
-          type="submit"
-          form={formId}
-          className={`admin-primary-button${justSaved ? " is-saved" : ""}`}
-          disabled={isSaving || isDeleting || (!dirty && !justSaved)}
-        >
+	          type="submit"
+	          form={formId}
+	          className={`admin-primary-button${justSaved ? " is-saved" : ""}`}
+	          disabled={isSaving || isDeleting || !dirty}
+	        >
           {justSaved ? <CheckCircle2 size={15} /> : <Save size={15} />}
           {isSaving
             ? "Saxlanılır..."
@@ -3038,27 +3124,6 @@ function CarEditorForm({
                 return (
 	                  <section key={`${slot.key}-workspace`}>
 	                    <input name={`variant_${index}_id`} type="hidden" defaultValue={variant?.id ?? ""} />
-	                    {variantEditorTab !== "general" ? (
-	                      <>
-	                        <input name={`variant_${index}_label`} type="hidden" defaultValue={variant?.label ?? (index === 0 && car?.manufactureYear ? String(car.manufactureYear) : "")} />
-	                        <input name={`variant_${index}_manufactureYear`} type="hidden" defaultValue={variant?.manufactureYear ?? (index === 0 ? car?.manufactureYear ?? "" : "")} />
-	                      </>
-	                    ) : null}
-	                    {variantEditorTab !== "technical" ? (
-	                      <>
-	                        <input name={`variant_${index}_bodyStyle`} type="hidden" defaultValue={variant?.bodyStyle ?? ""} />
-	                        <input name={`variant_${index}_engine`} type="hidden" defaultValue={variant?.engine ?? (index === 0 ? car?.engine ?? "" : "")} />
-	                      </>
-	                    ) : null}
-	                    {variantEditorTab !== "images" ? (
-	                      <input name={`variant_${index}_thumbnail`} type="hidden" defaultValue={variant?.thumbnail ?? ""} />
-	                    ) : null}
-	                    {variantEditorTab !== "services" ? (
-	                      rentalPriceKeys.map((key) => (
-	                        <input key={key} type="hidden" name={`variant_${index}_rental_${key}`} defaultValue={variant?.rentalPrices[key] ?? (index === 0 ? car?.rentalPrices[key] ?? "" : "")} />
-	                      ))
-	                    ) : null}
-
                     <div className="admin-variant-workspace-head">
                       <button type="button" onClick={() => setVariantEditorIndex(null)}>
                         <ArrowRight size={14} />
@@ -3089,8 +3154,7 @@ function CarEditorForm({
 	                      ))}
 	                    </div>
 
-	                    {variantEditorTab === "general" ? (
-	                      <div className="admin-variant-workspace-panel">
+		                    <div className={`admin-variant-workspace-panel${variantEditorTab === "general" ? "" : " is-hidden"}`}>
 	                        <div className="admin-clean-section-head">
 	                          <div>
 	                            <h2>Ümumi məlumat</h2>
@@ -3107,11 +3171,9 @@ function CarEditorForm({
 	                          <Field label="İl" name={`variant_${index}_manufactureYear`} type="number" defaultValue={variant?.manufactureYear ?? (index === 0 ? car?.manufactureYear : undefined)} placeholder="2024" />
 	                          <Field label="Variant adı" name={`variant_${index}_label`} defaultValue={variant?.label ?? (index === 0 && car?.manufactureYear ? String(car.manufactureYear) : undefined)} placeholder="E 200" />
 	                        </div>
-	                      </div>
-	                    ) : null}
+		                    </div>
 
-	                    {variantEditorTab === "technical" ? (
-	                      <div className="admin-variant-workspace-panel">
+		                    <div className={`admin-variant-workspace-panel${variantEditorTab === "technical" ? "" : " is-hidden"}`}>
 	                        <div className="admin-clean-section-head">
 	                          <div>
 	                            <h2>Texniki fərqlər</h2>
@@ -3122,11 +3184,9 @@ function CarEditorForm({
 	                          <Field label="Nəsil / kuzov" name={`variant_${index}_bodyStyle`} defaultValue={variant?.bodyStyle} placeholder="W214 / Sedan" />
 	                          <Field label="Mühərrik" name={`variant_${index}_engine`} defaultValue={variant?.engine ?? (index === 0 ? car?.engine : undefined)} placeholder={car?.engine ?? "2.0 L"} />
 	                        </div>
-	                      </div>
-	                    ) : null}
+		                    </div>
 
-	                    {variantEditorTab === "images" ? (
-	                      <div className="admin-variant-workspace-panel">
+		                    <div className={`admin-variant-workspace-panel${variantEditorTab === "images" ? "" : " is-hidden"}`}>
 	                        <div className="admin-clean-section-head">
 	                          <div>
 	                            <h2>Variant şəkli</h2>
@@ -3142,11 +3202,9 @@ function CarEditorForm({
 	                            span
 	                          />
 	                        </div>
-	                      </div>
-	                    ) : null}
+		                    </div>
 
-	                    {variantEditorTab === "services" ? (
-	                      <div className="admin-variant-workspace-panel">
+		                    <div className={`admin-variant-workspace-panel${variantEditorTab === "services" ? "" : " is-hidden"}`}>
 	                        <div className="admin-clean-section-head">
 	                          <div>
 	                            <h2>Variant qiymətləri</h2>
@@ -3164,8 +3222,7 @@ function CarEditorForm({
 	                          ))}
 	                        </div>
 	                        <p className="admin-variant-service-note">Transfer və toy qiymətləri hələlik model səviyyəsində saxlanır. İcarə qiymətləri isə hər variant üçün ayrıca işləyir.</p>
-	                      </div>
-	                    ) : null}
+		                    </div>
 	                  </section>
                 );
               })}
