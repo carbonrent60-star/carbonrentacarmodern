@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
+import { createPortal } from "react-dom";
 import {
   BMWIconDark,
   ChevroletIconDark,
@@ -43,6 +44,7 @@ import {
   Settings,
   ShieldCheck,
   SlidersHorizontal,
+  Sun,
   Trash2,
   Upload,
   Users,
@@ -55,16 +57,19 @@ import {
   WandSparkles,
   type LucideIcon,
 } from "lucide-react";
-import { type ElementType, type FormEvent, type ReactNode, type SVGProps, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ElementType, type FormEvent, type PointerEvent, type ReactNode, type SVGProps, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteBlogInlineAction,
   deleteCarInlineAction,
   bulkUpdateCarsInlineAction,
   logoutAction,
+  recordAdminActivityInlineAction,
+  restoreCarInlineAction,
   saveBlogInlineAction,
   saveCarInlineAction,
   seedBlogsAction,
   seedCarsAction,
+  type AdminActivityLog,
 } from "./actions";
 import AdminImageField from "./AdminImageField";
 import type { Car, CarCategory, CarVariant } from "@/data/cars";
@@ -134,6 +139,8 @@ type AdminToast = {
   type: "success" | "error";
   title: string;
   text?: string;
+  actionLabel?: string;
+  onAction?: () => void;
 };
 type ChangeLogEntry = {
   id: number;
@@ -141,6 +148,19 @@ type ChangeLogEntry = {
   text: string;
   time: string;
 };
+type SaveDiff = {
+  label: string;
+  before: string;
+  after: string;
+};
+
+function AdminPortal({ children }: { children: ReactNode }) {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(children, document.body);
+}
 
 function editorFormSignature(form: HTMLFormElement) {
   const values: string[] = [];
@@ -182,6 +202,101 @@ function editorFormSignature(form: HTMLFormElement) {
   });
 
   return values.sort().join("\n");
+}
+
+function editorFormValues(form: HTMLFormElement) {
+  const values: Record<string, string | boolean> = {};
+
+  Array.from(form.elements).forEach((element) => {
+    if (
+      !(
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLSelectElement ||
+        element instanceof HTMLTextAreaElement
+      ) ||
+      !element.name ||
+      element.type === "file"
+    ) {
+      return;
+    }
+
+    values[element.name] =
+      element instanceof HTMLInputElement && element.type === "checkbox"
+        ? element.checked
+        : element.value;
+  });
+
+  return values;
+}
+
+function restoreEditorFormValues(form: HTMLFormElement, values: Record<string, string | boolean>) {
+  Array.from(form.elements).forEach((element) => {
+    if (
+      !(
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLSelectElement ||
+        element instanceof HTMLTextAreaElement
+      ) ||
+      !element.name ||
+      element.type === "file" ||
+      !(element.name in values)
+    ) {
+      return;
+    }
+
+    const value = values[element.name];
+
+    if (element instanceof HTMLInputElement && element.type === "checkbox") {
+      element.checked = Boolean(value);
+    } else {
+      element.value = String(value ?? "");
+    }
+  });
+
+  form.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+const carDiffFields: Array<{ name: string; label: string; kind?: "checkbox" }> = [
+  { name: "title", label: "Model adı" },
+  { name: "slug", label: "URL adı" },
+  { name: "brand", label: "Brend" },
+  { name: "category", label: "Kateqoriya" },
+  { name: "manufactureYear", label: "Buraxılış ili" },
+  { name: "engine", label: "Mühərrik" },
+  { name: "fuel", label: "Yanacaq" },
+  { name: "transmission", label: "Sürətlər qutusu" },
+  { name: "seats", label: "Oturacaq" },
+  { name: "rental_days1to3", label: "1-3 gün qiyməti" },
+  { name: "rental_days30plus", label: "30+ gün qiyməti" },
+  { name: "rentalVisible", label: "İcarə kanalı", kind: "checkbox" },
+  { name: "transferAvailable", label: "Transfer kanalı", kind: "checkbox" },
+  { name: "weddingAvailable", label: "Toy kanalı", kind: "checkbox" },
+  { name: "isActive", label: "Dərc statusu", kind: "checkbox" },
+];
+
+function formatDiffValue(value: string | boolean | undefined, kind?: "checkbox") {
+  if (kind === "checkbox") {
+    return value ? "Aktiv" : "Gizli";
+  }
+
+  return typeof value === "string" && value.trim() ? value : "Boş";
+}
+
+function buildCarSaveDiffs(before: Record<string, string | boolean>, after: Record<string, string | boolean>) {
+  return carDiffFields
+    .map((field) => {
+      const beforeValue = formatDiffValue(before[field.name], field.kind);
+      const afterValue = formatDiffValue(after[field.name], field.kind);
+
+      return beforeValue === afterValue
+        ? null
+        : {
+            label: field.label,
+            before: beforeValue,
+            after: afterValue,
+          };
+    })
+    .filter(Boolean) as SaveDiff[];
 }
 
 const categoryLabels: Record<string, string> = {
@@ -656,6 +771,24 @@ function ShellButton({
   );
 }
 
+function moveMagneticItem(event: PointerEvent<HTMLElement>) {
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  const pullX = (x - rect.width / 2) * 0.08;
+  const pullY = (y - rect.height / 2) * 0.08;
+
+  event.currentTarget.style.setProperty("--mx", `${x}px`);
+  event.currentTarget.style.setProperty("--my", `${y}px`);
+  event.currentTarget.style.setProperty("--pull-x", `${pullX}px`);
+  event.currentTarget.style.setProperty("--pull-y", `${pullY}px`);
+}
+
+function resetMagneticItem(event: PointerEvent<HTMLElement>) {
+  event.currentTarget.style.setProperty("--pull-x", "0px");
+  event.currentTarget.style.setProperty("--pull-y", "0px");
+}
+
 function PageTitle({
   eyebrow,
   title,
@@ -705,11 +838,13 @@ function MetricCard({
 function AdminDashboardClient({
   carsResult,
   blogsResult,
+  activityLogs,
   alerts,
   flags,
 }: {
   carsResult: CarsResult;
   blogsResult: BlogsResult;
+  activityLogs: AdminActivityLog[];
   alerts: {
     error: string | null;
     carError: string | null;
@@ -724,6 +859,7 @@ function AdminDashboardClient({
       typeof window !== "undefined" &&
       window.localStorage.getItem("carbon-admin-sidebar") === "collapsed"
   );
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
   const [editor, setEditor] = useState<EditorState>(null);
@@ -740,7 +876,17 @@ function AdminDashboardClient({
   const [cars, setCars] = useState(() => carsResult.cars);
   const [blogs, setBlogs] = useState(() => blogsResult.blogs);
   const [toast, setToast] = useState<AdminToast | null>(null);
-  const [changeLog, setChangeLog] = useState<ChangeLogEntry[]>([]);
+  const [changeLog, setChangeLog] = useState<ChangeLogEntry[]>(() =>
+    activityLogs.map((entry) => ({
+      id: new Date(entry.createdAt).getTime() || Date.now(),
+      title: entry.action,
+      text: [entry.entityTitle, entry.summary].filter(Boolean).join(" · "),
+      time: new Intl.DateTimeFormat("az-AZ", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(entry.createdAt)),
+    }))
+  );
 
   const rentalCount = cars.filter((car) => car.rentalVisible !== false).length;
   const transferCars = cars.filter((car) => car.transferAvailable);
@@ -762,6 +908,19 @@ function AdminDashboardClient({
 
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (!commandOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [commandOpen]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -808,7 +967,33 @@ function AdminDashboardClient({
     setView(nextView);
   };
 
-  const upsertCar = (car: AdminCar) => {
+  async function restoreCarsSnapshot(snapshot: AdminCar[], label: string) {
+    if (!snapshot.length) return;
+
+    setCars((items) => {
+      const restored = snapshot.reduce((next, car) => {
+        const exists = next.some((item) => item.id === car.id);
+        return exists
+          ? next.map((item) => (item.id === car.id ? car : item))
+          : [...next, car];
+      }, items);
+
+      return restored.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    });
+
+    const results = await Promise.all(snapshot.map((car) => restoreCarInlineAction(car)));
+    const failed = results.find((result) => !result.ok);
+
+    setToast({
+      id: Date.now(),
+      type: failed ? "error" : "success",
+      title: failed ? "Geri alma tam alınmadı" : "Geri alındı",
+      text: failed ? adminClientMessage(failed.error) : label,
+    });
+    addChange("Undo", label, { entityType: "car", entityTitle: snapshot[0]?.title ?? "Avtomobil" });
+  }
+
+  const upsertCar = (car: AdminCar, previousCar?: AdminCar | null, summary?: string) => {
     setCars((items) => {
       const exists = items.some((item) => item.id === car.id);
       const next = exists
@@ -822,9 +1007,11 @@ function AdminDashboardClient({
       id: Date.now(),
       type: "success",
       title: "Avtomobil yadda saxlanıldı",
-      text: "Dəyişikliklər saytda yenilənir.",
+      text: summary || "Dəyişikliklər saytda yenilənir.",
+      actionLabel: previousCar ? "Geri al" : undefined,
+      onAction: previousCar ? () => void restoreCarsSnapshot([previousCar], `${car.title} əvvəlki vəziyyətə qaytarıldı.`) : undefined,
     });
-    addChange("Avtomobil yeniləndi", car.title);
+    addChange("Avtomobil yeniləndi", summary || car.title, { entityType: "car", entityId: car.id, entityTitle: car.title });
   };
 
   const upsertBlog = (blog: AdminBlogPost) => {
@@ -846,15 +1033,18 @@ function AdminDashboardClient({
     addChange("Blog yeniləndi", blog.title);
   };
 
-  const removeCar = (id: string) => {
+  const removeCar = (id: string, deletedCar?: AdminCar | null) => {
     setCars((items) => items.filter((item) => item.id !== id));
     setEditor(null);
     setToast({
       id: Date.now(),
       type: "success",
       title: "Avtomobil silindi",
+      text: deletedCar?.title,
+      actionLabel: deletedCar ? "Geri al" : undefined,
+      onAction: deletedCar ? () => void restoreCarsSnapshot([deletedCar], `${deletedCar.title} bərpa edildi.`) : undefined,
     });
-    addChange("Avtomobil silindi", id);
+    addChange("Avtomobil silindi", deletedCar?.title ?? id, { entityType: "car", entityId: id, entityTitle: deletedCar?.title ?? id });
   };
 
   const removeBlog = (slug: string) => {
@@ -955,7 +1145,7 @@ function AdminDashboardClient({
     { label: "Sayta bax", hint: "Carbon", run: () => window.open("/", "_blank") },
   ].filter((command) => command.label.toLowerCase().includes(commandQuery.toLowerCase()));
 
-  function addChange(title: string, text: string) {
+  function addChange(title: string, text: string, meta?: { entityType?: string; entityId?: string | null; entityTitle?: string | null }) {
     setChangeLog((items) => [
       {
         id: Date.now(),
@@ -968,6 +1158,13 @@ function AdminDashboardClient({
       },
       ...items,
     ].slice(0, 8));
+    void recordAdminActivityInlineAction({
+      action: title,
+      entityType: meta?.entityType ?? "admin",
+      entityId: meta?.entityId ?? null,
+      entityTitle: meta?.entityTitle ?? text,
+      summary: text,
+    });
   }
 
   function openCarAtTab(car?: AdminCar, index = cars.length, tab: CarTab = "general") {
@@ -979,9 +1176,10 @@ function AdminDashboardClient({
 
   async function bulkUpdateCars(ids: string[], patch: Partial<AdminCar>, label: string) {
     if (!ids.length) return;
+    const previousCars = cars.filter((car) => ids.includes(car.id));
 
     setCars((items) => items.map((car) => (ids.includes(car.id) ? { ...car, ...patch } : car)));
-    addChange("Bulk edit", `${ids.length} avtomobil: ${label}`);
+    addChange("Bulk edit", `${ids.length} avtomobil: ${label}`, { entityType: "car", entityTitle: `${ids.length} avtomobil` });
 
     const result = await bulkUpdateCarsInlineAction(ids.map((id) => ({ id, patch })));
 
@@ -1006,19 +1204,20 @@ function AdminDashboardClient({
       type: "success",
       title: "Bulk dəyişiklik yadda saxlanıldı",
       text: `${ids.length} avtomobil yeniləndi.`,
+      actionLabel: previousCars.length ? "Geri al" : undefined,
+      onAction: previousCars.length ? () => void restoreCarsSnapshot(previousCars, `${previousCars.length} bulk dəyişiklik geri alındı.`) : undefined,
     });
   }
 
   return (
-    <main className={`admin-app-shell${collapsed ? " is-sidebar-collapsed" : ""}`}>
+    <main className={`admin-app-shell${collapsed ? " is-sidebar-collapsed" : ""}${theme === "light" ? " is-light-theme" : ""}`}>
       <aside className="admin-sidebar">
         <div className="admin-brand-lockup">
-            <span>C</span>
-            <div>
-              <strong>CARBON</strong>
-              <small>İdarə paneli</small>
-            </div>
-          </div>
+          <span className="admin-brand-logo">
+            <Image src="/images/carbon-logo.webp" alt="Carbon Rent A Car" width={138} height={80} priority />
+          </span>
+          <small>İdarə paneli</small>
+        </div>
 
         <nav className="admin-sidebar-nav">
           {navGroups.map((group) => (
@@ -1041,6 +1240,9 @@ function AdminDashboardClient({
                       setView(item.key);
                     }}
                     title={collapsed ? item.label : undefined}
+                    aria-label={item.label}
+                    onPointerMove={moveMagneticItem}
+                    onPointerLeave={resetMagneticItem}
                   >
                     <Icon size={17} />
                     <span>{item.label}</span>
@@ -1052,7 +1254,15 @@ function AdminDashboardClient({
         </nav>
 
         <div className="admin-sidebar-footer">
-          <Link href="/" target="_blank" rel="noopener noreferrer" title={collapsed ? "Sayta bax" : undefined}>
+          <Link
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title={collapsed ? "Sayta bax" : undefined}
+            aria-label="Sayta bax"
+            onPointerMove={moveMagneticItem}
+            onPointerLeave={resetMagneticItem}
+          >
             <ExternalLink size={16} />
             <span>Sayta bax</span>
           </Link>
@@ -1062,7 +1272,13 @@ function AdminDashboardClient({
               <strong>JS Carbon</strong>
               <small>Administrator</small>
             </span>
-            <button type="submit" title={collapsed ? "Çıxış" : undefined}>
+            <button
+              type="submit"
+              title={collapsed ? "Çıxış" : undefined}
+              aria-label="Çıxış"
+              onPointerMove={moveMagneticItem}
+              onPointerLeave={resetMagneticItem}
+            >
               <LogOut size={15} />
             </button>
           </form>
@@ -1084,13 +1300,17 @@ function AdminDashboardClient({
           </button>
 
           <div className="admin-topbar-actions">
-            <ShellButton onClick={() => undefined} title="Görünüş">
-              <Moon size={16} />
+            <ShellButton
+              active={theme === "light"}
+              onClick={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
+              title={theme === "dark" ? "Light mode" : "Dark mode"}
+            >
+              {theme === "dark" ? <Moon size={16} /> : <Sun size={16} />}
             </ShellButton>
             <ShellButton onClick={() => undefined} title="Bildirişlər">
               <Bell size={16} />
             </ShellButton>
-            <ShellButton onClick={() => setCollapsed((value) => !value)} title="Menyunu yığ">
+            <ShellButton onClick={() => setCollapsed((value) => !value)} title={collapsed ? "Menyunu aç" : "Menyunu yığ"}>
               {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
             </ShellButton>
           </div>
@@ -1247,36 +1467,38 @@ function AdminDashboardClient({
       </section>
 
       {commandOpen ? (
-        <div className="admin-command-backdrop" onMouseDown={() => setCommandOpen(false)}>
-          <section className="admin-command-palette" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="admin-command-input">
-              <Search size={17} />
-              <input
-                autoFocus
-                value={commandQuery}
-                onChange={(event) => setCommandQuery(event.target.value)}
-                placeholder="Əmr və ya səhifə axtar..."
-              />
-              <kbd>Esc</kbd>
-            </div>
-            <div className="admin-command-list">
-              {commands.map((command) => (
-                <button
-                  key={command.label}
-                  type="button"
-                  onClick={() => {
-                    command.run();
-                    setCommandOpen(false);
-                    setCommandQuery("");
-                  }}
-                >
-                  <span>{command.label}</span>
-                  <small>{command.hint}</small>
-                </button>
-              ))}
-            </div>
-          </section>
-        </div>
+        <AdminPortal>
+          <div className="admin-command-backdrop" onMouseDown={() => setCommandOpen(false)}>
+            <section className="admin-command-palette" onMouseDown={(event) => event.stopPropagation()}>
+              <div className="admin-command-input">
+                <Search size={17} />
+                <input
+                  autoFocus
+                  value={commandQuery}
+                  onChange={(event) => setCommandQuery(event.target.value)}
+                  placeholder="Əmr və ya səhifə axtar..."
+                />
+                <kbd>Esc</kbd>
+              </div>
+              <div className="admin-command-list">
+                {commands.map((command) => (
+                  <button
+                    key={command.label}
+                    type="button"
+                    onClick={() => {
+                      command.run();
+                      setCommandOpen(false);
+                      setCommandQuery("");
+                    }}
+                  >
+                    <span>{command.label}</span>
+                    <small>{command.hint}</small>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+        </AdminPortal>
       ) : null}
 
       {toast ? (
@@ -1302,9 +1524,21 @@ function AdminToastMessage({
       <span>
         <strong>{toast.title}</strong>
         {toast.text ? <small>{toast.text}</small> : null}
+        {toast.actionLabel && toast.onAction ? (
+          <button
+            type="button"
+            className="admin-toast-action"
+            onClick={() => {
+              toast.onAction?.();
+              onClose();
+            }}
+          >
+            {toast.actionLabel}
+          </button>
+        ) : null}
       </span>
 
-      <button type="button" onClick={onClose} aria-label="Bildirişi bağla">
+      <button type="button" className="admin-toast-close" onClick={onClose} aria-label="Bildirişi bağla">
         <X size={14} />
       </button>
     </div>
@@ -1742,6 +1976,8 @@ function CarIdentity({ car, mode = "fleet" }: { car: AdminCar; mode?: CarTableMo
   const yearText = car.manufactureYear ? String(car.manufactureYear) : carVariantRange(car);
   const year = yearText ? ` • ${yearText}` : "";
   const missingInfo = carMissingInfo(car, mode);
+  const rentalHidden = car.rentalVisible === false;
+  const publicHidden = car.isActive === false;
 
   return (
     <span className="admin-car-identity">
@@ -1765,6 +2001,16 @@ function CarIdentity({ car, mode = "fleet" }: { car: AdminCar; mode?: CarTableMo
             ))}
           </span>
         ) : null}
+        {rentalHidden ? (
+          <span className="admin-catalog-hidden-label">
+            İcarə kataloqunda gizli
+          </span>
+        ) : null}
+        {publicHidden ? (
+          <span className="admin-catalog-hidden-label">
+            Saytda görünmür
+          </span>
+        ) : null}
       </span>
     </span>
   );
@@ -1778,11 +2024,26 @@ function ServicePills({ car }: { car: AdminCar }) {
   ].filter(Boolean) as Array<{ label: string; icon: LucideIcon }>;
 
   if (!services.length) {
-    return <span className="admin-service-empty">—</span>;
+    return car.rentalVisible === false ? (
+      <span className="admin-service-pills">
+        <i className="is-hidden-service">
+          <CarFront size={12} />
+          İcarə gizli
+        </i>
+      </span>
+    ) : (
+      <span className="admin-service-empty">—</span>
+    );
   }
 
   return (
     <span className="admin-service-pills">
+      {car.rentalVisible === false ? (
+        <i className="is-hidden-service">
+          <CarFront size={12} />
+          İcarə gizli
+        </i>
+      ) : null}
       {services.map((service) => {
         const Icon = service.icon;
 
@@ -1894,6 +2155,11 @@ function CarGrid({
               {car.brand}
               {car.manufactureYear ? ` · ${car.manufactureYear}` : ""}
             </small>
+            {car.rentalVisible === false ? (
+              <span className="admin-catalog-hidden-label">
+                İcarə kataloqunda gizli
+              </span>
+            ) : null}
             <span>
               <i>{categoryLabels[car.category] ?? car.category}</i>
               <StatusDot active={car.isActive} />
@@ -1924,6 +2190,9 @@ function ServiceCarsView({
   onEdit: (car?: AdminCar, index?: number) => void;
   mode?: CarTableMode;
 }) {
+  const publicVisibleCount = cars.filter((car) => car.isActive !== false).length;
+  const publicHiddenCount = cars.length - publicVisibleCount;
+
   return (
     <div className="admin-view">
       <PageTitle eyebrow="XİDMƏTLƏR" title={title} subtitle={subtitle} />
@@ -1931,7 +2200,11 @@ function ServiceCarsView({
         <div className="admin-panel-title">
           <div>
             <p>{title.toLocaleUpperCase("az-AZ")}</p>
-            <h2>{cars.length} avtomobil</h2>
+            <h2>{publicVisibleCount} avtomobil</h2>
+            <small className="admin-service-count-note">
+              Saytda görünür · {cars.length} idarədə
+              {publicHiddenCount ? ` · ${publicHiddenCount} saytda gizli` : ""}
+            </small>
           </div>
           {icon}
         </div>
@@ -2944,9 +3217,9 @@ function EditorWorkspace({
   blogTab: BlogTab;
   onCarTab: (tab: CarTab) => void;
   onBlogTab: (tab: BlogTab) => void;
-  onCarSaved: (car: AdminCar) => void;
+  onCarSaved: (car: AdminCar, previousCar?: AdminCar | null, summary?: string) => void;
   onBlogSaved: (blog: AdminBlogPost) => void;
-  onCarDeleted: (id: string) => void;
+  onCarDeleted: (id: string, deletedCar?: AdminCar | null) => void;
   onBlogDeleted: (slug: string) => void;
   onToast: (toast: Omit<AdminToast, "id">) => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -2958,10 +3231,15 @@ function EditorWorkspace({
   const [justSaved, setJustSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [draftAvailable, setDraftAvailable] = useState(false);
+  const [saveDiffs, setSaveDiffs] = useState<SaveDiff[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [drawerError, setDrawerError] = useState<string | null>(null);
   const originalFormSignatureRef = useRef<string | null>(null);
+  const originalFormValuesRef = useRef<Record<string, string | boolean>>({});
+  const pendingSubmitRef = useRef<{ formData: FormData; signature: string; summary: string } | null>(null);
   const formId = editor.type === "car" ? "admin-car-editor-form" : "admin-blog-editor-form";
+  const draftKey = `carbon-admin-draft-${editor.type}-${editor.type === "car" ? editor.car?.id ?? "new-car" : editor.blog?.slug ?? "new-blog"}`;
   const title =
     editor.type === "car"
       ? editor.car?.title ?? "Yeni avtomobil"
@@ -3009,6 +3287,7 @@ function EditorWorkspace({
 
     if (originalFormSignatureRef.current === null) {
       originalFormSignatureRef.current = nextSignature;
+      originalFormValuesRef.current = editorFormValues(targetForm);
     }
 
     const nextDirty = nextSignature !== originalFormSignatureRef.current;
@@ -3016,18 +3295,28 @@ function EditorWorkspace({
 
     if (nextDirty) {
       setJustSaved(false);
+      window.localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          time: Date.now(),
+          title,
+          values: editorFormValues(targetForm),
+        })
+      );
     }
-  }, [getEditorForm]);
+  }, [draftKey, getEditorForm, title]);
 
   useEffect(() => {
     originalFormSignatureRef.current = null;
 
     const frame = window.requestAnimationFrame(() => {
       updateDirtyFromForm();
+      const draft = window.localStorage.getItem(draftKey);
+      setDraftAvailable(Boolean(draft));
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [editor, formId, updateDirtyFromForm]);
+  }, [draftKey, editor, formId, updateDirtyFromForm]);
 
   useEffect(() => {
     onDirtyChange(dirty);
@@ -3045,21 +3334,33 @@ function EditorWorkspace({
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
+  useEffect(() => {
+    const modalOpen = previewOpen || confirmDelete || saveDiffs.length > 0;
+
+    if (!modalOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [confirmDelete, previewOpen, saveDiffs.length]);
+
   function requestClose() {
     onClose();
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  async function submitEditorForm(formData: FormData, submittedSignature: string, summary: string) {
     setDrawerError(null);
     setJustSaved(false);
     setIsSaving(true);
 
-    const submittedSignature = editorFormSignature(event.currentTarget);
-    const formData = new FormData(event.currentTarget);
-
     try {
       if (editor.type === "car") {
+        const previousCar = editor.car ?? null;
         const result = await saveCarInlineAction(formData);
 
         if (!result.ok) {
@@ -3074,7 +3375,14 @@ function EditorWorkspace({
         }
 
         originalFormSignatureRef.current = submittedSignature;
-        onCarSaved(result.car);
+        originalFormValuesRef.current = Object.fromEntries(
+          Array.from(formData.entries())
+            .filter(([, value]) => typeof value === "string")
+            .map(([key, value]) => [key, String(value)])
+        );
+        window.localStorage.removeItem(draftKey);
+        setDraftAvailable(false);
+        onCarSaved(result.car, previousCar, summary);
         setDirty(false);
         setJustSaved(true);
         window.setTimeout(() => setJustSaved(false), 1800);
@@ -3095,6 +3403,8 @@ function EditorWorkspace({
       }
 
       originalFormSignatureRef.current = submittedSignature;
+      window.localStorage.removeItem(draftKey);
+      setDraftAvailable(false);
       onBlogSaved(result.blog);
       setDirty(false);
       setJustSaved(true);
@@ -3102,6 +3412,26 @@ function EditorWorkspace({
     } finally {
       setIsSaving(false);
     }
+  }
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const submittedSignature = editorFormSignature(event.currentTarget);
+    const formData = new FormData(event.currentTarget);
+    const nextValues = editorFormValues(event.currentTarget);
+    const diffs = editor.type === "car" ? buildCarSaveDiffs(originalFormValuesRef.current, nextValues) : [];
+    const summary = diffs.length
+      ? diffs.slice(0, 3).map((diff) => `${diff.label}: ${diff.before} → ${diff.after}`).join("; ")
+      : "Dəyişikliklər saytda yenilənir.";
+
+    if (editor.type === "car" && diffs.length && !pendingSubmitRef.current) {
+      pendingSubmitRef.current = { formData, signature: submittedSignature, summary };
+      setSaveDiffs(diffs);
+      return;
+    }
+
+    await submitEditorForm(formData, submittedSignature, summary);
   };
   const handleEditorFormMutation = (event: FormEvent<HTMLDivElement>) => {
     const form = (event.target as HTMLElement).closest("form");
@@ -3112,6 +3442,51 @@ function EditorWorkspace({
       updateDirtyFromForm();
     });
   }, [updateDirtyFromForm]);
+
+  function recoverDraft() {
+    const form = getEditorForm();
+    const raw = window.localStorage.getItem(draftKey);
+
+    if (!form || !raw) return;
+
+    try {
+      const draft = JSON.parse(raw) as { values?: Record<string, string | boolean> };
+
+      if (draft.values) {
+        restoreEditorFormValues(form, draft.values);
+        updateDirtyFromForm(form);
+        setDraftAvailable(false);
+        onToast({
+          type: "success",
+          title: "Draft bərpa olundu",
+          text: "Saxlanılmamış məlumatlar forma qaytarıldı.",
+        });
+      }
+    } catch {
+      window.localStorage.removeItem(draftKey);
+      setDraftAvailable(false);
+    }
+  }
+
+  function discardDraft() {
+    window.localStorage.removeItem(draftKey);
+    setDraftAvailable(false);
+  }
+
+  function cancelSaveDiff() {
+    pendingSubmitRef.current = null;
+    setSaveDiffs([]);
+  }
+
+  async function confirmSaveDiff() {
+    const pending = pendingSubmitRef.current;
+
+    if (!pending) return;
+
+    pendingSubmitRef.current = null;
+    setSaveDiffs([]);
+    await submitEditorForm(pending.formData, pending.signature, pending.summary);
+  }
   const handleDelete = async () => {
     setDrawerError(null);
     setIsDeleting(true);
@@ -3144,7 +3519,7 @@ function EditorWorkspace({
           return;
         }
 
-        onCarDeleted(result.id);
+        onCarDeleted(result.id, editor.car ?? null);
         return;
       }
 
@@ -3237,6 +3612,16 @@ function EditorWorkspace({
 	        </div>
 	      </div>
 
+      {draftAvailable ? (
+        <div className="admin-editor-recovery">
+          <span><History size={15} /></span>
+          <strong>Autosave draft tapıldı</strong>
+          <small>Bu forma üçün əvvəl saxlanmamış dəyişiklik var.</small>
+          <button type="button" onClick={recoverDraft}>Bərpa et</button>
+          <button type="button" onClick={discardDraft}>Sil</button>
+        </div>
+      ) : null}
+
 	      {editor.type === "car" ? (
 	        <CarEditorHero car={editor.car} title={title} image={image} variantCount={variantCount} startingPrice={startingPrice} />
 	      ) : (
@@ -3296,37 +3681,77 @@ function EditorWorkspace({
 	            startingPrice={startingPrice}
 	          />
 	        ) : null}
-	      </div>
+      </div>
 
       {previewOpen ? (
-        <div className="admin-preview-layer" role="dialog" aria-modal="true" aria-label="Saytda görünüş">
-          <button type="button" className="admin-preview-backdrop" onClick={() => setPreviewOpen(false)} aria-label="Preview bağla" />
-          <section className="admin-preview-modal">
-            <header>
-              <div>
-                <span>Saytda görünüş</span>
+        <AdminPortal>
+          <div className="admin-preview-layer" role="dialog" aria-modal="true" aria-label="Saytda görünüş">
+            <button type="button" className="admin-preview-backdrop" onClick={() => setPreviewOpen(false)} aria-label="Preview bağla" />
+            <section className="admin-preview-modal">
+              <header>
+                <div>
+                  <span>Saytda görünüş</span>
+                  <strong>{title}</strong>
+                </div>
+                <button type="button" className="admin-icon-button" onClick={() => setPreviewOpen(false)}>
+                  <X size={16} />
+                </button>
+              </header>
+              <div className={`admin-editor-preview-card${editor.type === "blog" ? " is-blog" : ""}`}>
+                <div>
+                  {image ? <Image src={image} alt={title} fill sizes="640px" /> : editor.type === "car" ? <CarFront size={44} /> : <Newspaper size={44} />}
+                </div>
+                <span>{editor.type === "car" ? editor.car?.brand ?? "CARBON" : editor.blog?.category ?? "BLOG"}</span>
                 <strong>{title}</strong>
+                <small>{editor.type === "car" ? startingPrice !== null ? `${startingPrice} ₼-dan` : "Qiymət yoxdur" : editor.blog?.readingTime ?? "Oxu müddəti"}</small>
               </div>
-              <button type="button" className="admin-icon-button" onClick={() => setPreviewOpen(false)}>
-                <X size={16} />
-              </button>
-            </header>
-            <div className={`admin-editor-preview-card${editor.type === "blog" ? " is-blog" : ""}`}>
-              <div>
-                {image ? <Image src={image} alt={title} fill sizes="640px" /> : editor.type === "car" ? <CarFront size={44} /> : <Newspaper size={44} />}
+              {publicHref ? (
+                <Link href={publicHref} target="_blank" rel="noopener noreferrer" className="admin-primary-button">
+                  Saytda aç
+                  <ExternalLink size={14} />
+                </Link>
+              ) : null}
+            </section>
+          </div>
+        </AdminPortal>
+      ) : null}
+
+      {saveDiffs.length ? (
+        <AdminPortal>
+          <div className="admin-confirm-layer" role="dialog" aria-modal="true" aria-labelledby="admin-save-diff-title">
+            <button type="button" className="admin-preview-backdrop" onClick={cancelSaveDiff} aria-label="Dəyişiklik önizləməsini bağla" />
+            <section className="admin-diff-card">
+              <header>
+                <div>
+                  <span>PREVIEW DIFF</span>
+                  <h2 id="admin-save-diff-title">Bu dəyişikliklər yadda saxlanılacaq</h2>
+                </div>
+                <button type="button" className="admin-icon-button" onClick={cancelSaveDiff} aria-label="Bağla">
+                  <X size={16} />
+                </button>
+              </header>
+              <div className="admin-diff-list">
+                {saveDiffs.map((diff) => (
+                  <article key={diff.label}>
+                    <strong>{diff.label}</strong>
+                    <span>{diff.before}</span>
+                    <ArrowRight size={14} />
+                    <span>{diff.after}</span>
+                  </article>
+                ))}
               </div>
-              <span>{editor.type === "car" ? editor.car?.brand ?? "CARBON" : editor.blog?.category ?? "BLOG"}</span>
-              <strong>{title}</strong>
-              <small>{editor.type === "car" ? startingPrice !== null ? `${startingPrice} ₼-dan` : "Qiymət yoxdur" : editor.blog?.readingTime ?? "Oxu müddəti"}</small>
-            </div>
-            {publicHref ? (
-              <Link href={publicHref} target="_blank" rel="noopener noreferrer" className="admin-primary-button">
-                Saytda aç
-                <ExternalLink size={14} />
-              </Link>
-            ) : null}
-          </section>
-        </div>
+              <footer>
+                <button type="button" className="admin-secondary-button" onClick={cancelSaveDiff}>
+                  Düzəlişə qayıt
+                </button>
+                <button type="button" className="admin-primary-button" onClick={confirmSaveDiff}>
+                  Yadda saxla
+                  <Save size={14} />
+                </button>
+              </footer>
+            </section>
+          </div>
+        </AdminPortal>
       ) : null}
 
       <footer className="admin-editor-footer">
@@ -3354,30 +3779,32 @@ function EditorWorkspace({
       </footer>
 
       {confirmDelete ? (
-        <div className="admin-confirm-layer" role="dialog" aria-modal="true" aria-labelledby="admin-delete-title">
-          <section className="admin-confirm-card">
-            <div>
-              <span className="admin-confirm-icon"><Trash2 size={18} /></span>
+        <AdminPortal>
+          <div className="admin-confirm-layer" role="dialog" aria-modal="true" aria-labelledby="admin-delete-title">
+            <section className="admin-confirm-card">
               <div>
-                <h2 id="admin-delete-title">{deleteTitle}</h2>
-                <p>{deleteCopy}</p>
+                <span className="admin-confirm-icon"><Trash2 size={18} /></span>
+                <div>
+                  <h2 id="admin-delete-title">{deleteTitle}</h2>
+                  <p>{deleteCopy}</p>
+                </div>
               </div>
-            </div>
-            <footer>
-              <button type="button" className="admin-secondary-button" onClick={() => setConfirmDelete(false)}>
-                Ləğv et
-              </button>
-              <button
-                type="button"
-                className="admin-danger-button"
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? "Silinir..." : "Bəli, sil"}
-              </button>
-            </footer>
-          </section>
-        </div>
+              <footer>
+                <button type="button" className="admin-secondary-button" onClick={() => setConfirmDelete(false)}>
+                  Ləğv et
+                </button>
+                <button
+                  type="button"
+                  className="admin-danger-button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Silinir..." : "Bəli, sil"}
+                </button>
+              </footer>
+            </section>
+          </div>
+        </AdminPortal>
       ) : null}
     </section>
   );
@@ -3462,6 +3889,28 @@ function CarEditorSidePanel({
     car?.transferAvailable ? "Transfer" : null,
     car?.weddingAvailable ? "Toy" : null,
   ].filter(Boolean);
+  const visibilityItems = [
+    {
+      label: "Detal səhifəsi",
+      active: car?.isActive !== false && Boolean(car?.slug),
+      note: car?.isActive === false ? "Qaralama statusundadır" : "URL aktivdir",
+    },
+    {
+      label: "Avtomobillər",
+      active: car?.isActive !== false && car?.rentalVisible !== false,
+      note: "İcarə kataloqu",
+    },
+    {
+      label: "Transfer",
+      active: car?.isActive !== false && Boolean(car?.transferAvailable),
+      note: "Transfer axını",
+    },
+    {
+      label: "Toy",
+      active: car?.isActive !== false && Boolean(car?.weddingAvailable),
+      note: "Toy kolleksiyası",
+    },
+  ];
 
   function moveImage(direction: -1 | 1) {
     if (!images.length) return;
@@ -3523,6 +3972,25 @@ function CarEditorSidePanel({
             <span><b>{services.length || 0}</b><small>Kanal</small></span>
           </div>
         </section>
+
+      <section className="admin-car-info-card admin-visibility-card">
+        <header>
+          <span><ShieldCheck size={16} /></span>
+          <div>
+            <strong>Public görünürlük</strong>
+            <small>Saytda harada görünür</small>
+          </div>
+        </header>
+        <div className="admin-visibility-list">
+          {visibilityItems.map((item) => (
+            <span key={item.label} className={item.active ? "is-visible" : "is-hidden"}>
+              <i />
+              <b>{item.label}</b>
+              <small>{item.active ? "Görünür" : "Gizli"} · {item.note}</small>
+            </span>
+          ))}
+        </div>
+      </section>
     </aside>
   );
 }
@@ -3685,6 +4153,19 @@ function CarEditorForm({
   const copySourceVariant = variantSlots[Math.min(copySourceIndex, Math.max(variantSlots.length - 1, 0))]?.variant;
   const copySourcePrice = variantStartingPrice(copySourceVariant) ?? startPrice(car);
   const suggestedPrice = copySourcePrice !== null ? Math.max(1, Math.round(copySourcePrice * 0.9)) : null;
+
+  useEffect(() => {
+    if (!variantCreateOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [variantCreateOpen]);
 
   function addVariant() {
     setVariantCreateOpen(true);
@@ -4318,77 +4799,79 @@ function CarEditorForm({
         </section>
       </form>
       {variantCreateOpen ? (
-        <div className="admin-variant-modal-layer" role="dialog" aria-modal="true" aria-labelledby="admin-new-variant-title">
-          <button type="button" className="admin-variant-modal-backdrop" onClick={() => setVariantCreateOpen(false)} aria-label="Modalı bağla" />
-          <section className="admin-variant-modal">
-            <header>
-              <div>
-                <span>Variantlar</span>
-                <h2 id="admin-new-variant-title">Yeni variant yarat</h2>
-              </div>
-              <button type="button" className="admin-icon-button" onClick={() => setVariantCreateOpen(false)} aria-label="Bağla">
-                <X size={16} />
-              </button>
-            </header>
-            <div className="admin-variant-modal-grid">
-              <label className="admin-field">
-                <span>İl</span>
-                <span className="admin-field-control">
-                  <input type="number" value={newVariantYear} onChange={(event) => setNewVariantYear(event.target.value)} placeholder="2023" />
-                </span>
-              </label>
-              <label className="admin-field">
-                <span>Başqa variantdan məlumatları kopyala</span>
-                <span className="admin-field-control is-select">
-                  <select value={copySourceIndex} onChange={(event) => setCopySourceIndex(Number(event.target.value))}>
-                    {variantSlots.map((slot, index) => (
-                      <option key={`${slot.key}-copy`} value={index}>
-                        {variantTitleParts(slot.variant, index).title}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={15} />
-                </span>
-              </label>
-              {suggestedPrice !== null ? (
-                <div className="admin-price-suggestion">
-                  <span><WandSparkles size={16} /></span>
-                  <div>
-                    <strong>Təklif olunan başlanğıc qiymət: {suggestedPrice} ₼ / gün</strong>
-                    <small>Mənbə qiymətindən təxminən 10% aşağı hesablandı. İstəsəniz Qiyməti kopyala seçimini yandırın.</small>
-                  </div>
+        <AdminPortal>
+          <div className="admin-variant-modal-layer" role="dialog" aria-modal="true" aria-labelledby="admin-new-variant-title">
+            <button type="button" className="admin-variant-modal-backdrop" onClick={() => setVariantCreateOpen(false)} aria-label="Modalı bağla" />
+            <section className="admin-variant-modal">
+              <header>
+                <div>
+                  <span>Variantlar</span>
+                  <h2 id="admin-new-variant-title">Yeni variant yarat</h2>
                 </div>
-              ) : null}
-              <div className="admin-variant-copy-options">
-                <label>
-                  <input type="checkbox" checked={copyTechnical} onChange={(event) => setCopyTechnical(event.target.checked)} />
-                  <span>Texniki məlumatları kopyala</span>
+                <button type="button" className="admin-icon-button" onClick={() => setVariantCreateOpen(false)} aria-label="Bağla">
+                  <X size={16} />
+                </button>
+              </header>
+              <div className="admin-variant-modal-grid">
+                <label className="admin-field">
+                  <span>İl</span>
+                  <span className="admin-field-control">
+                    <input type="number" value={newVariantYear} onChange={(event) => setNewVariantYear(event.target.value)} placeholder="2023" />
+                  </span>
                 </label>
-                <label>
-                  <input type="checkbox" checked={copyServices} onChange={(event) => setCopyServices(event.target.checked)} />
-                  <span>Xidmətləri kopyala</span>
+                <label className="admin-field">
+                  <span>Başqa variantdan məlumatları kopyala</span>
+                  <span className="admin-field-control is-select">
+                    <select value={copySourceIndex} onChange={(event) => setCopySourceIndex(Number(event.target.value))}>
+                      {variantSlots.map((slot, index) => (
+                        <option key={`${slot.key}-copy`} value={index}>
+                          {variantTitleParts(slot.variant, index).title}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={15} />
+                  </span>
                 </label>
-                <label>
-                  <input type="checkbox" checked={copyImages} onChange={(event) => setCopyImages(event.target.checked)} />
-                  <span>Şəkilləri kopyala</span>
-                </label>
-                <label>
-                  <input type="checkbox" checked={copyPricing} onChange={(event) => setCopyPricing(event.target.checked)} />
-                  <span>Qiyməti kopyala</span>
-                </label>
+                {suggestedPrice !== null ? (
+                  <div className="admin-price-suggestion">
+                    <span><WandSparkles size={16} /></span>
+                    <div>
+                      <strong>Təklif olunan başlanğıc qiymət: {suggestedPrice} ₼ / gün</strong>
+                      <small>Mənbə qiymətindən təxminən 10% aşağı hesablandı. İstəsəniz Qiyməti kopyala seçimini yandırın.</small>
+                    </div>
+                  </div>
+                ) : null}
+                <div className="admin-variant-copy-options">
+                  <label>
+                    <input type="checkbox" checked={copyTechnical} onChange={(event) => setCopyTechnical(event.target.checked)} />
+                    <span>Texniki məlumatları kopyala</span>
+                  </label>
+                  <label>
+                    <input type="checkbox" checked={copyServices} onChange={(event) => setCopyServices(event.target.checked)} />
+                    <span>Xidmətləri kopyala</span>
+                  </label>
+                  <label>
+                    <input type="checkbox" checked={copyImages} onChange={(event) => setCopyImages(event.target.checked)} />
+                    <span>Şəkilləri kopyala</span>
+                  </label>
+                  <label>
+                    <input type="checkbox" checked={copyPricing} onChange={(event) => setCopyPricing(event.target.checked)} />
+                    <span>Qiyməti kopyala</span>
+                  </label>
+                </div>
               </div>
-            </div>
-            <footer>
-              <button type="button" className="admin-secondary-button" onClick={() => setVariantCreateOpen(false)}>
-                Ləğv et
-              </button>
-              <button type="button" className="admin-primary-button" onClick={createVariantFromDialog}>
-                Variant yarat
-                <ArrowRight size={14} />
-              </button>
-            </footer>
-          </section>
-        </div>
+              <footer>
+                <button type="button" className="admin-secondary-button" onClick={() => setVariantCreateOpen(false)}>
+                  Ləğv et
+                </button>
+                <button type="button" className="admin-primary-button" onClick={createVariantFromDialog}>
+                  Variant yarat
+                  <ArrowRight size={14} />
+                </button>
+              </footer>
+            </section>
+          </div>
+        </AdminPortal>
       ) : null}
     </>
   );

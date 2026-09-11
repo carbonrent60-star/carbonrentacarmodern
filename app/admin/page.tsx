@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { ArrowRight, KeyRound, ShieldCheck } from "lucide-react";
 import "./admin.css";
 import {
   isAdminAuthenticated,
+  listAdminActivityLogs,
   listAdminBlogs,
   listAdminCars,
   loginAction,
@@ -62,7 +64,9 @@ export default async function AdminPage({
       <main className="admin-login-shell">
         <section className="admin-login-card">
           <div className="admin-login-brand">
-            <span>C</span>
+            <span className="admin-brand-mark">
+              <Image src="/images/carbon-logo.webp" alt="Carbon Rent A Car" width={86} height={50} priority />
+            </span>
             <div>
               <p>CARBON ADMIN</p>
               <strong>Fleet management console</strong>
@@ -126,11 +130,13 @@ export default async function AdminPage({
 
   const result = await listAdminCars();
   const blogResult = await listAdminBlogs();
+  const activityResult = await listAdminActivityLogs();
 
   return (
     <AdminDashboardClient
       carsResult={result}
       blogsResult={blogResult}
+      activityLogs={activityResult.logs}
       alerts={{
         error: errorMessage,
         carError: result.error,

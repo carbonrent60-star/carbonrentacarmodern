@@ -25,6 +25,41 @@ import type { CarRow } from "@/lib/supabase/database.types";
 const adminCookieName = "carbon_admin";
 const carImageBucket = "carbon-car-images";
 const maxUploadBytes = 50 * 1024 * 1024;
+export type AdminActivityLog = {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  entityTitle: string | null;
+  summary: string;
+  createdAt: string;
+};
+type AdminActivityLogRow = {
+  id: string;
+  action: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  entity_title: string | null;
+  summary: string | null;
+  created_at: string | null;
+};
+type ActivityLogQuery = {
+  select: (columns: string) => {
+    order: (column: string, options: { ascending: boolean }) => {
+      limit: (count: number) => Promise<{
+        data: AdminActivityLogRow[] | null;
+        error: { code?: string; message?: string } | null;
+      }>;
+    };
+  };
+  insert: (row: {
+    action: string;
+    entity_type: string;
+    entity_id: string | null;
+    entity_title: string | null;
+    summary: string;
+  }) => Promise<{ error: { code?: string; message?: string } | null }>;
+};
 
 function adminErrorRedirect(code: string): never {
   redirect(`/admin?error=${encodeURIComponent(code)}`);
@@ -532,6 +567,78 @@ export async function listAdminBlogs() {
   };
 }
 
+export async function listAdminActivityLogs() {
+  const supabase = createSupabaseAdminClient();
+
+  if (!supabase) {
+    return {
+      configured: Boolean(getSupabaseAdminConfig()),
+      logs: [] as AdminActivityLog[],
+      error: null,
+    };
+  }
+
+  const activityLogs = supabase.from("admin_activity_logs" as never) as unknown as ActivityLogQuery;
+  const { data, error } = await activityLogs
+    .select("id, action, entity_type, entity_id, entity_title, summary, created_at")
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  if (error) {
+    return {
+      configured: true,
+      logs: [] as AdminActivityLog[],
+      error: isMissingSupabaseTable(error) ? null : error.message,
+    };
+  }
+
+  return {
+    configured: true,
+    logs: (data ?? []).map((row) => ({
+      id: String(row.id),
+      action: String(row.action ?? ""),
+      entityType: String(row.entity_type ?? ""),
+      entityId: row.entity_id ? String(row.entity_id) : null,
+      entityTitle: row.entity_title ? String(row.entity_title) : null,
+      summary: String(row.summary ?? ""),
+      createdAt: String(row.created_at ?? new Date().toISOString()),
+    })),
+    error: null,
+  };
+}
+
+export async function recordAdminActivityInlineAction(entry: {
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  entityTitle?: string | null;
+  summary: string;
+}) {
+  if (!(await isAdminAuthenticated())) {
+    return { ok: false as const, error: "unauthenticated" };
+  }
+
+  try {
+    const supabase = requireAdminConfig();
+    const activityLogs = supabase.from("admin_activity_logs" as never) as unknown as ActivityLogQuery;
+    const { error } = await activityLogs.insert({
+      action: entry.action,
+      entity_type: entry.entityType,
+      entity_id: entry.entityId ?? null,
+      entity_title: entry.entityTitle ?? null,
+      summary: entry.summary,
+    });
+
+    if (error && !isMissingSupabaseTable(error)) {
+      throw new Error("database-save-failed");
+    }
+
+    return { ok: true as const };
+  } catch (error) {
+    return { ok: false as const, error: normalizeAdminError(error) };
+  }
+}
+
 export async function seedCarsAction() {
   if (!(await isAdminAuthenticated())) {
     redirect("/admin");
@@ -791,6 +898,42 @@ export async function bulkUpdateCarsInlineAction(updates: Array<{ id: string; pa
         isActive: row.is_active,
         sortOrder: row.sort_order,
       })),
+    };
+  } catch (error) {
+    return { ok: false as const, error: normalizeAdminError(error) };
+  }
+}
+
+export async function restoreCarInlineAction(car: Car & { isActive?: boolean; sortOrder?: number }) {
+  if (!(await isAdminAuthenticated())) {
+    return { ok: false as const, error: "unauthenticated" };
+  }
+
+  try {
+    const supabase = requireAdminConfig();
+    const row = {
+      ...carToRow(car, car.sortOrder ?? 0),
+      is_active: car.isActive !== false,
+    };
+    const error = await upsertCarRows(supabase, row);
+
+    if (error) {
+      throw new Error("database-save-failed");
+    }
+
+    revalidatePath("/");
+    revalidatePath("/avtomobiller");
+    revalidatePath(`/avtomobiller/${car.slug}`);
+    revalidatePath("/toy-avtomobilleri");
+    revalidatePath("/transfer");
+
+    return {
+      ok: true as const,
+      car: {
+        ...rowToCar(row),
+        isActive: row.is_active,
+        sortOrder: row.sort_order,
+      },
     };
   } catch (error) {
     return { ok: false as const, error: normalizeAdminError(error) };

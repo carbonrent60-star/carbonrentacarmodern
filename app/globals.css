@@ -13573,6 +13573,49 @@ html body > .reservation-calendar-shell .reservation-calendar-day.is-in-range::b
   box-shadow: none !important;
 }
 
+/* Fixed popup safety net: centered viewport overlays with internal scrolling. */
+.hb-calendar-layer,
+.carbon-calendar-modal-layer,
+.reservation-calendar-modal-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: clamp(12px, 4dvh, 28px) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+}
+
+.hb-calendar-layer .hb-calendar-panel,
+html body > .carbon-calendar-modal-layer > .carbon-calendar-popover,
+html body > .reservation-calendar-modal-layer > .reservation-calendar-shell {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  margin: 0 !important;
+  max-height: calc(100dvh - 32px) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+}
+
+@media (max-width: 620px), (max-height: 720px) {
+  .hb-calendar-layer,
+  .carbon-calendar-modal-layer,
+  .reservation-calendar-modal-layer {
+    padding: 10px !important;
+  }
+
+  .hb-calendar-layer .hb-calendar-panel,
+  html body > .carbon-calendar-modal-layer > .carbon-calendar-popover,
+  html body > .reservation-calendar-modal-layer > .reservation-calendar-shell {
+    width: min(100%, 860px) !important;
+    max-height: calc(100dvh - 20px) !important;
+  }
+}
+
 /* Calendar selected-day repair: remove the confusing white focus/halo box site-wide. */
 .hb-calendar-days button,
 .carbon-calendar-day,
