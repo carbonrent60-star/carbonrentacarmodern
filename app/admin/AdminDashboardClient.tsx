@@ -4,6 +4,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import {
+  BMWIconDark,
+  ChevroletIconDark,
+  FordIconDark,
+  HyundaiIconDark,
+  JaguarIconDark,
+  KiaIconDark,
+  LandroverIconDark,
+  MBIconDark,
+  ToyotaIconDark,
+} from "@cardog-icons/react";
+import {
   ArrowRight,
   BadgeHelp,
   Bell,
@@ -37,12 +48,18 @@ import {
   Users,
   X,
   CheckCircle2,
+  AlertTriangle,
+  Clipboard,
+  History,
+  Percent,
+  WandSparkles,
   type LucideIcon,
 } from "lucide-react";
-import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ElementType, type FormEvent, type ReactNode, type SVGProps, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteBlogInlineAction,
   deleteCarInlineAction,
+  bulkUpdateCarsInlineAction,
   logoutAction,
   saveBlogInlineAction,
   saveCarInlineAction,
@@ -50,7 +67,7 @@ import {
   seedCarsAction,
 } from "./actions";
 import AdminImageField from "./AdminImageField";
-import type { Car, CarVariant } from "@/data/cars";
+import type { Car, CarCategory, CarVariant } from "@/data/cars";
 import type { AdminBlogPost } from "@/lib/supabase/blogs";
 import {
   carCategories,
@@ -88,6 +105,7 @@ type ViewKey =
   | "blog"
   | "media"
   | "tutorial"
+  | "quality"
   | "settings";
 type CarTab =
   | "general"
@@ -97,7 +115,14 @@ type CarTab =
   | "services"
   | "description"
   | "seo";
-type VariantEditorTab = "general" | "technical" | "images" | "services";
+type VariantEditorTab = "general" | "pricing" | "technical" | "images" | "services";
+type AdminVariantDraft = Omit<Partial<CarVariant>, "rentalPrices"> & {
+  rentalPrices?: Partial<Car["rentalPrices"]>;
+};
+type AdminVariantSlot = {
+  key: string;
+  variant?: AdminVariantDraft;
+};
 type BlogTab = "general" | "content" | "media" | "visibility";
 type EditorState =
   | { type: "car"; mode: "create" | "edit"; car?: AdminCar; index: number }
@@ -109,6 +134,12 @@ type AdminToast = {
   type: "success" | "error";
   title: string;
   text?: string;
+};
+type ChangeLogEntry = {
+  id: number;
+  title: string;
+  text: string;
+  time: string;
 };
 
 function editorFormSignature(form: HTMLFormElement) {
@@ -161,6 +192,28 @@ const categoryLabels: Record<string, string> = {
   Miniven: "Miniven",
   Sport: "Sport",
 };
+
+const brandLogoMap: Record<string, ElementType<SVGProps<SVGSVGElement>>> = {
+  BMW: BMWIconDark,
+  Chevrolet: ChevroletIconDark,
+  Ford: FordIconDark,
+  Hyundai: HyundaiIconDark,
+  Jaguar: JaguarIconDark,
+  Kia: KiaIconDark,
+  "Land Rover": LandroverIconDark,
+  "Mercedes-Benz": MBIconDark,
+  Toyota: ToyotaIconDark,
+};
+
+function BrandLogo({ brand, size = 42 }: { brand?: string | null; size?: number }) {
+  const Logo = brand ? brandLogoMap[brand] : null;
+
+  if (Logo) {
+    return <Logo width={size} height={size} aria-label={`${brand} loqosu`} />;
+  }
+
+  return <strong aria-label={`${brand ?? "Brend"} loqosu`}>{(brand ?? "C").slice(0, 2).toUpperCase()}</strong>;
+}
 
 const rentalPriceLabels: Record<(typeof rentalPriceKeys)[number], string> = {
   days1to3: "1-3 gün",
@@ -229,6 +282,7 @@ const navGroups: Array<{
       { key: "blog", label: "Blog", icon: Newspaper },
       { key: "media", label: "Şəkillər", icon: Images },
       { key: "tutorial", label: "Təlimat", icon: BadgeHelp },
+      { key: "quality", label: "Keyfiyyət", icon: AlertTriangle },
     ],
   },
   {
@@ -332,15 +386,18 @@ function Toggle({
   name,
   defaultChecked,
   description,
+  icon,
 }: {
   label: string;
   name: string;
   defaultChecked?: boolean;
   description?: string;
+  icon?: ReactNode;
 }) {
   return (
     <label className="admin-toggle">
       <input name={name} type="checkbox" defaultChecked={defaultChecked} />
+      {icon ? <i className="admin-toggle-icon">{icon}</i> : null}
       <span>
         <strong>{label}</strong>
         {description ? <small>{description}</small> : null}
@@ -372,7 +429,7 @@ function PriceField({
 function StatusDot({ active }: { active?: boolean }) {
   return (
     <span className={`admin-status-dot${active === false ? " is-muted" : ""}`}>
-      {active === false ? "Gizli" : "Aktiv"}
+      {active === false ? "Qaralama" : "Dərc olunub"}
     </span>
   );
 }
@@ -406,6 +463,80 @@ function displayImage(car: AdminCar, mode: CarTableMode = "fleet") {
   return mode === "wedding" ? car.weddingThumbnail ?? car.thumbnail : car.thumbnail;
 }
 
+function carMissingInfo(car: AdminCar, mode: CarTableMode = "fleet") {
+  return [
+    !car.manufactureYear ? "İl yoxdur" : null,
+    !displayImage(car, mode) ? "Şəkil yoxdur" : null,
+    displayPrice(car, mode) === null ? "Qiymət yoxdur" : null,
+    !car.engine ? "Mühərrik yoxdur" : null,
+    car.seats === null ? "Oturacaq yoxdur" : null,
+    car.variants?.some((variant) => variant.isActive === false) ? "Deaktiv variant var" : null,
+  ].filter(Boolean) as string[];
+}
+
+function fleetQuality(cars: AdminCar[]) {
+  const total = Math.max(cars.length, 1);
+  const issueCount = cars.reduce((sum, car) => sum + carMissingInfo(car).length, 0);
+  const completeCars = cars.filter((car) => carMissingInfo(car).length === 0).length;
+
+  return {
+    issueCount,
+    completeCars,
+    score: Math.max(0, Math.round((completeCars / total) * 100)),
+  };
+}
+
+function qualityIssueTarget(issue: string): CarTab {
+  if (issue.includes("İl")) return "general";
+  if (issue.includes("Şəkil")) return "images";
+  if (issue.includes("Qiymət")) return "services";
+  if (issue.includes("variant")) return "variants";
+  if (issue.includes("Mühərrik") || issue.includes("Oturacaq")) return "technical";
+  return "general";
+}
+
+function smartQueryMatches(car: AdminCar, query: string) {
+  const normalized = query.trim().toLowerCase();
+
+  if (!normalized) {
+    return true;
+  }
+
+  const haystack = [
+    car.title,
+    car.brand,
+    car.category,
+    car.slug,
+    car.id,
+    car.manufactureYear ? String(car.manufactureYear) : "",
+    ...carMissingInfo(car),
+    ...(car.variants ?? []).flatMap((variant) => [
+      variant.label,
+      variant.manufactureYear ? String(variant.manufactureYear) : "",
+    ]),
+  ].join(" ").toLowerCase();
+  const missingTerms: Array<[string, boolean]> = [
+    ["no year", !car.manufactureYear],
+    ["il yoxdur", !car.manufactureYear],
+    ["missing year", !car.manufactureYear],
+    ["no price", displayPrice(car) === null],
+    ["qiymət yoxdur", displayPrice(car) === null],
+    ["missing price", displayPrice(car) === null],
+    ["no image", !displayImage(car)],
+    ["şəkil yoxdur", !displayImage(car)],
+    ["missing image", !displayImage(car)],
+    ["draft", car.isActive === false],
+    ["qaralama", car.isActive === false],
+    ["active", car.isActive !== false],
+    ["aktiv", car.isActive !== false],
+    ["transfer", car.transferAvailable],
+    ["toy", car.weddingAvailable === true],
+    ["wedding", car.weddingAvailable === true],
+  ];
+
+  return haystack.includes(normalized) || missingTerms.some(([term, matches]) => normalized.includes(term) && matches);
+}
+
 function variantPriceLabel(car: AdminCar) {
   const count = car.variants?.length ?? 0;
 
@@ -432,8 +563,8 @@ function carVariantRange(car: AdminCar) {
   return min === max ? String(min) : `${min}-${max}`;
 }
 
-function variantStartingPrice(variant?: Pick<CarVariant, "rentalPrices">) {
-  if (!variant) {
+function variantStartingPrice(variant?: { rentalPrices?: Partial<Car["rentalPrices"]> }) {
+  if (!variant?.rentalPrices) {
     return null;
   }
 
@@ -443,11 +574,12 @@ function variantStartingPrice(variant?: Pick<CarVariant, "rentalPrices">) {
     variant.rentalPrices.days8to15 ??
     variant.rentalPrices.days16to24 ??
     variant.rentalPrices.days25to30 ??
-    variant.rentalPrices.days30plus
+    variant.rentalPrices.days30plus ??
+    null
   );
 }
 
-function variantDisplayName(variant: Partial<CarVariant> | undefined, index: number) {
+function variantDisplayName(variant: AdminVariantDraft | undefined, index: number) {
   if (!variant) {
     return index === 0 ? "Yeni əsas variant" : "Yeni variant";
   }
@@ -460,6 +592,32 @@ function variantDisplayName(variant: Partial<CarVariant> | undefined, index: num
   }
 
   return year || label || (index === 0 ? "Əsas variant" : "Yeni variant");
+}
+
+function variantTitleParts(variant: AdminVariantDraft | undefined, index: number) {
+  const year = variant?.manufactureYear ? String(variant.manufactureYear) : "";
+  const label = variant?.label?.trim() ?? "";
+  const cleanLabel = label && label !== year ? label : index === 0 ? "Əsas variant" : "";
+
+  return {
+    year: year || "İl",
+    label: cleanLabel,
+    title: [year || "İl", cleanLabel].filter(Boolean).join(" · "),
+  };
+}
+
+function variantImagesText(variant: AdminVariantDraft | undefined) {
+  return (variant?.images ?? []).join("\n");
+}
+
+function variantSpecValue<T>(variantValue: T | null | undefined, carValue: T | null | undefined) {
+  return variantValue ?? carValue ?? null;
+}
+
+function inheritedState(variantValue: unknown) {
+  return variantValue === null || typeof variantValue === "undefined" || variantValue === ""
+    ? "Inherited"
+    : "Dəyişdirilib";
 }
 
 function blogBodyText(blog?: AdminBlogPost) {
@@ -582,6 +740,7 @@ function AdminDashboardClient({
   const [cars, setCars] = useState(() => carsResult.cars);
   const [blogs, setBlogs] = useState(() => blogsResult.blogs);
   const [toast, setToast] = useState<AdminToast | null>(null);
+  const [changeLog, setChangeLog] = useState<ChangeLogEntry[]>([]);
 
   const rentalCount = cars.filter((car) => car.rentalVisible !== false).length;
   const transferCars = cars.filter((car) => car.transferAvailable);
@@ -665,6 +824,7 @@ function AdminDashboardClient({
       title: "Avtomobil yadda saxlanıldı",
       text: "Dəyişikliklər saytda yenilənir.",
     });
+    addChange("Avtomobil yeniləndi", car.title);
   };
 
   const upsertBlog = (blog: AdminBlogPost) => {
@@ -683,6 +843,7 @@ function AdminDashboardClient({
       title: "Blog məqaləsi yadda saxlanıldı",
       text: "Məzmun yeniləndi.",
     });
+    addChange("Blog yeniləndi", blog.title);
   };
 
   const removeCar = (id: string) => {
@@ -693,6 +854,7 @@ function AdminDashboardClient({
       type: "success",
       title: "Avtomobil silindi",
     });
+    addChange("Avtomobil silindi", id);
   };
 
   const removeBlog = (slug: string) => {
@@ -710,11 +872,7 @@ function AdminDashboardClient({
 
     return cars
       .filter((car) => {
-        const matchesQuery = !query
-          ? true
-          : [car.title, car.brand, car.category, car.slug, car.id].some((value) =>
-              value?.toLowerCase().includes(query)
-            );
+        const matchesQuery = smartQueryMatches(car, query);
         const matchesCategory = categoryFilter === "all" || car.category === categoryFilter;
         const matchesStatus =
           statusFilter === "all" ||
@@ -790,11 +948,66 @@ function AdminDashboardClient({
     { label: "Bloga keç", hint: "Məzmun", run: () => setView("blog") },
     { label: "Yeni məqalə əlavə et", hint: "Yarat", run: () => openBlogEditor() },
     { label: "Təlimatı aç", hint: "Admin kömək", run: () => setView("tutorial") },
+    { label: "Keyfiyyət mərkəzi", hint: "Çatışmayan məlumatlar", run: () => setView("quality") },
     { label: "İcarəyə keç", hint: "Xidmət", run: () => setView("rental") },
     { label: "Transferlərə keç", hint: "Xidmət", run: () => setView("transfer") },
     { label: "Toy avtomobillərinə keç", hint: "Xidmət", run: () => setView("weddings") },
     { label: "Sayta bax", hint: "Carbon", run: () => window.open("/", "_blank") },
   ].filter((command) => command.label.toLowerCase().includes(commandQuery.toLowerCase()));
+
+  function addChange(title: string, text: string) {
+    setChangeLog((items) => [
+      {
+        id: Date.now(),
+        title,
+        text,
+        time: new Intl.DateTimeFormat("az-AZ", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(new Date()),
+      },
+      ...items,
+    ].slice(0, 8));
+  }
+
+  function openCarAtTab(car?: AdminCar, index = cars.length, tab: CarTab = "general") {
+    setCarTab(tab);
+    setEditorReturnView(view);
+    setEditorDirty(false);
+    setEditor({ type: "car", mode: car ? "edit" : "create", car, index });
+  }
+
+  async function bulkUpdateCars(ids: string[], patch: Partial<AdminCar>, label: string) {
+    if (!ids.length) return;
+
+    setCars((items) => items.map((car) => (ids.includes(car.id) ? { ...car, ...patch } : car)));
+    addChange("Bulk edit", `${ids.length} avtomobil: ${label}`);
+
+    const result = await bulkUpdateCarsInlineAction(ids.map((id) => ({ id, patch })));
+
+    if (!result.ok) {
+      setToast({
+        id: Date.now(),
+        type: "error",
+        title: "Bulk dəyişiklik lokal qaldı",
+        text: adminClientMessage(result.error),
+      });
+      return;
+    }
+
+    if (result.cars.length) {
+      setCars((items) =>
+        items.map((car) => result.cars.find((savedCar) => savedCar.id === car.id) ?? car)
+      );
+    }
+
+    setToast({
+      id: Date.now(),
+      type: "success",
+      title: "Bulk dəyişiklik yadda saxlanıldı",
+      text: `${ids.length} avtomobil yeniləndi.`,
+    });
+  }
 
   return (
     <main className={`admin-app-shell${collapsed ? " is-sidebar-collapsed" : ""}`}>
@@ -938,7 +1151,8 @@ function AdminDashboardClient({
                   onNewCar={() => openCarEditor()}
                   onNewBlog={() => openBlogEditor()}
                   onView={setView}
-                  onEditCar={openCarEditor}
+                  onEditCar={openCarAtTab}
+                  changeLog={changeLog}
                 />
               ) : null}
 
@@ -959,7 +1173,8 @@ function AdminDashboardClient({
                   onSort={setSortKey}
                   onLayout={setLayout}
                   onNew={() => openCarEditor()}
-                  onEdit={openCarEditor}
+                  onEdit={openCarAtTab}
+                  onBulkUpdate={bulkUpdateCars}
                 />
               ) : null}
 
@@ -1016,6 +1231,12 @@ function AdminDashboardClient({
 
               {view === "media" ? <MediaView items={mediaItems} /> : null}
               {view === "tutorial" ? <TutorialView onView={setView} onNewCar={() => openCarEditor()} /> : null}
+              {view === "quality" ? (
+                <QualityView
+                  cars={cars}
+                  onEdit={(car, index, tab) => openCarAtTab(car, index, tab)}
+                />
+              ) : null}
               {view === "settings" ? (
                 <SettingsView carsResult={carsResult} blogsResult={blogsResult} />
               ) : null}
@@ -1144,6 +1365,7 @@ function OverviewView({
   onNewBlog,
   onView,
   onEditCar,
+  changeLog,
 }: {
   cars: AdminCar[];
   blogs: AdminBlogPost[];
@@ -1156,9 +1378,12 @@ function OverviewView({
   onNewCar: () => void;
   onNewBlog: () => void;
   onView: (view: ViewKey) => void;
-  onEditCar: (car?: AdminCar, index?: number) => void;
+  onEditCar: (car?: AdminCar, index?: number, tab?: CarTab) => void;
+  changeLog: ChangeLogEntry[];
 }) {
   const recentCars = cars.slice(0, 5);
+  const quality = fleetQuality(cars);
+  const issueCars = cars.filter((car) => carMissingInfo(car).length > 0);
 
   return (
     <div className="admin-view">
@@ -1180,9 +1405,26 @@ function OverviewView({
         <MetricCard label="Transfer" value={transferCount} note="Mövcuddur" icon={<Plane size={18} />} />
         <MetricCard label="Toy avtomobilləri" value={weddingCount} note="Kolleksiya" icon={<Heart size={18} />} />
         <MetricCard label="Aktiv məqalə" value={activeBlogCount} note="Blog" icon={<Newspaper size={18} />} />
+        <MetricCard label="Fleet health" value={quality.score} note={`${quality.issueCount} problem`} icon={<Percent size={18} />} />
       </section>
 
       <div className="admin-overview-grid">
+        <section className="admin-panel admin-health-card">
+          <div className="admin-panel-title">
+            <div>
+              <p>FLEET HEALTH</p>
+              <h2>{quality.score}% tamamlanıb</h2>
+            </div>
+            <AlertTriangle size={18} />
+          </div>
+          <i><span style={{ width: `${quality.score}%` }} /></i>
+          <p>{quality.completeCars} avtomobil tamdır, {issueCars.length} avtomobil yoxlanmalıdır.</p>
+          <button type="button" className="admin-secondary-button" onClick={() => onView("quality")}>
+            Keyfiyyət mərkəzinə keç
+            <ArrowRight size={14} />
+          </button>
+        </section>
+
         <section className="admin-panel admin-table-panel">
           <div className="admin-panel-title">
             <div>
@@ -1206,6 +1448,27 @@ function OverviewView({
         <section className="admin-panel">
           <div className="admin-panel-title">
             <div>
+              <p>CHANGE HISTORY</p>
+              <h2>Son dəyişikliklər</h2>
+            </div>
+            <History size={18} />
+          </div>
+          <div className="admin-change-log">
+            {changeLog.length ? changeLog.map((entry) => (
+              <span key={entry.id}>
+                <b>{entry.time}</b>
+                <strong>{entry.title}</strong>
+                <small>{entry.text}</small>
+              </span>
+            )) : (
+              <p>Bu sessiyada dəyişiklik yoxdur.</p>
+            )}
+          </div>
+        </section>
+
+        <section className="admin-panel">
+          <div className="admin-panel-title">
+            <div>
               <p>SÜRƏTLİ ƏMƏLİYYATLAR</p>
               <h2>Sürətli əməliyyatlar</h2>
             </div>
@@ -1213,7 +1476,7 @@ function OverviewView({
           <div className="admin-quick-actions">
             <button type="button" onClick={onNewCar}><Plus size={16} /> Avtomobil əlavə et</button>
             <button type="button" onClick={onNewBlog}><Plus size={16} /> Blog yazısı yarat</button>
-            <button type="button" onClick={() => onView("transfer")}><Plane size={16} /> Transferləri idarə et</button>
+            <button type="button" onClick={() => onView("quality")}><AlertTriangle size={16} /> Boş məlumatları yoxla</button>
             <button type="button" onClick={() => onView("weddings")}><Heart size={16} /> Toy kolleksiyası</button>
           </div>
         </section>
@@ -1254,6 +1517,7 @@ function CarsView({
   onLayout,
   onNew,
   onEdit,
+  onBulkUpdate,
 }: {
   cars: AdminCar[];
   allCars: AdminCar[];
@@ -1270,10 +1534,13 @@ function CarsView({
   onSort: (value: string) => void;
   onLayout: (value: "list" | "grid") => void;
   onNew: () => void;
-  onEdit: (car?: AdminCar, index?: number) => void;
+  onEdit: (car?: AdminCar, index?: number, tab?: CarTab) => void;
+  onBulkUpdate: (ids: string[], patch: Partial<AdminCar>, label: string) => void | Promise<void>;
 }) {
   const categories = Array.from(new Set(allCars.map((car) => car.category)));
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkCategory, setBulkCategory] = useState<CarCategory>("Business");
   const activeFilterCount =
     (category !== "all" ? 1 : 0) +
     (status !== "all" ? 1 : 0) +
@@ -1289,6 +1556,22 @@ function CarsView({
     { value: transferCount, label: "Transfer", note: "Xidmət aktiv", icon: Plane },
     { value: weddingCount, label: "Toy", note: "Toy xidməti", icon: Heart },
   ];
+  const selectedCars = allCars.filter((car) => selectedIds.includes(car.id));
+
+  function toggleSelected(id: string) {
+    setSelectedIds((items) =>
+      items.includes(id) ? items.filter((item) => item !== id) : [...items, id]
+    );
+  }
+
+  function clearSelection() {
+    setSelectedIds([]);
+  }
+
+  function runBulk(patch: Partial<AdminCar>, label: string) {
+    onBulkUpdate(selectedIds, patch, label);
+    clearSelection();
+  }
 
   return (
     <div className="admin-view">
@@ -1330,7 +1613,7 @@ function CarsView({
       <div className="admin-toolbar">
         <label className="admin-search-field">
           <Search size={15} />
-          <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Avtomobil, brend, ID və ya URL axtar..." />
+          <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder='Axtar: "BMW", "no price", "il yoxdur", "toy", "draft"...' />
           {query ? (
             <button type="button" onClick={() => onQuery("")} aria-label="Axtarışı təmizlə">
               <X size={14} />
@@ -1372,8 +1655,8 @@ function CarsView({
                 <span>Status</span>
                 <select value={status} onChange={(event) => onStatus(event.target.value)}>
                   <option value="all">Hamısı</option>
-                  <option value="active">Aktiv</option>
-                  <option value="hidden">Deaktiv</option>
+                  <option value="active">Dərc olunub</option>
+                  <option value="hidden">Qaralama</option>
                 </select>
               </label>
               <div>
@@ -1413,6 +1696,28 @@ function CarsView({
         </div>
       </div>
 
+      {selectedIds.length ? (
+        <section className="admin-bulk-bar">
+          <div>
+            <strong>{selectedIds.length} seçildi</strong>
+            <small>{selectedCars.map((car) => car.title).slice(0, 2).join(", ")}{selectedIds.length > 2 ? ` +${selectedIds.length - 2}` : ""}</small>
+          </div>
+          <button type="button" onClick={() => runBulk({ isActive: true }, "dərc olundu")}>Dərc et</button>
+          <button type="button" onClick={() => runBulk({ isActive: false }, "qaralamaya keçirildi")}>Qaralama et</button>
+          <button type="button" onClick={() => runBulk({ rentalVisible: true }, "icarə aktiv edildi")}>İcarəni aç</button>
+          <button type="button" onClick={() => runBulk({ transferAvailable: true }, "transfer aktiv edildi")}>Transfer aç</button>
+          <select value={bulkCategory} onChange={(event) => setBulkCategory(event.target.value as CarCategory)}>
+            {carCategories.map((item) => (
+              <option key={item} value={item}>{categoryLabels[item] ?? item}</option>
+            ))}
+          </select>
+          <button type="button" onClick={() => runBulk({ category: bulkCategory }, `${categoryLabels[bulkCategory] ?? bulkCategory} kateqoriyası`)}>
+            Kateqoriya
+          </button>
+          <button type="button" onClick={clearSelection}>Təmizlə</button>
+        </section>
+      ) : null}
+
       <div className="admin-results-line">
         <span>{cars.length} nəticə göstərilir</span>
       </div>
@@ -1424,9 +1729,9 @@ function CarsView({
           <p>Axtarış sözünü və ya filtr seçimlərini dəyişin.</p>
         </section>
       ) : layout === "list" ? (
-        <CarTable cars={cars} onEdit={onEdit} />
+        <CarTable cars={cars} onEdit={onEdit} selectedIds={selectedIds} onSelect={toggleSelected} />
       ) : (
-        <CarGrid cars={cars} onEdit={onEdit} />
+        <CarGrid cars={cars} onEdit={onEdit} selectedIds={selectedIds} onSelect={toggleSelected} />
       )}
     </div>
   );
@@ -1436,6 +1741,7 @@ function CarIdentity({ car, mode = "fleet" }: { car: AdminCar; mode?: CarTableMo
   const image = displayImage(car, mode);
   const yearText = car.manufactureYear ? String(car.manufactureYear) : carVariantRange(car);
   const year = yearText ? ` • ${yearText}` : "";
+  const missingInfo = carMissingInfo(car, mode);
 
   return (
     <span className="admin-car-identity">
@@ -1447,8 +1753,18 @@ function CarIdentity({ car, mode = "fleet" }: { car: AdminCar; mode?: CarTableMo
         )}
       </span>
       <span>
-        <strong>{car.title}</strong>
+        <strong>
+          <span className="admin-brand-mini-logo"><BrandLogo brand={car.brand} size={18} /></span>
+          {car.title}
+        </strong>
         <small>{car.brand}{year}</small>
+        {missingInfo.length ? (
+          <span className="admin-missing-labels">
+            {missingInfo.slice(0, 3).map((item) => (
+              <em key={item}>{item}</em>
+            ))}
+          </span>
+        ) : null}
       </span>
     </span>
   );
@@ -1485,14 +1801,19 @@ function CarTable({
   cars,
   onEdit,
   mode = "fleet",
+  selectedIds = [],
+  onSelect,
 }: {
   cars: AdminCar[];
-  onEdit: (car?: AdminCar, index?: number) => void;
+  onEdit: (car?: AdminCar, index?: number, tab?: CarTab) => void;
   mode?: CarTableMode;
+  selectedIds?: string[];
+  onSelect?: (id: string) => void;
 }) {
   return (
     <section className="admin-panel admin-table-panel">
-      <div className="admin-table-head">
+      <div className={`admin-table-head${onSelect ? " is-selectable" : ""}`}>
+        {onSelect ? <span /> : null}
         <span>Avtomobil</span>
         <span>Variantlar</span>
         <span>Kateqoriya</span>
@@ -1502,7 +1823,17 @@ function CarTable({
       </div>
       <div className="admin-data-table">
         {cars.map((car, index) => (
-          <button key={car.id} type="button" className="admin-table-row" onClick={() => onEdit(car, index)}>
+          <button key={car.id} type="button" className={`admin-table-row${onSelect ? " is-selectable" : ""}${selectedIds.includes(car.id) ? " is-selected" : ""}`} onClick={() => onEdit(car, index)}>
+            {onSelect ? (
+              <span className="admin-row-select" onClick={(event) => event.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(car.id)}
+                  onChange={() => onSelect(car.id)}
+                  aria-label={`${car.title} seç`}
+                />
+              </span>
+            ) : null}
             <CarIdentity car={car} mode={mode} />
             <span className="admin-variant-cell">
               <strong>{variantPriceLabel(car)}</strong>
@@ -1525,14 +1856,35 @@ function CarTable({
 function CarGrid({
   cars,
   onEdit,
+  selectedIds = [],
+  onSelect,
 }: {
   cars: AdminCar[];
-  onEdit: (car?: AdminCar, index?: number) => void;
+  onEdit: (car?: AdminCar, index?: number, tab?: CarTab) => void;
+  selectedIds?: string[];
+  onSelect?: (id: string) => void;
 }) {
   return (
     <section className="admin-card-grid">
       {cars.map((car, index) => (
-        <button key={car.id} type="button" className="admin-fleet-card" onClick={() => onEdit(car, index)}>
+        <button key={car.id} type="button" className={`admin-fleet-card${selectedIds.includes(car.id) ? " is-selected" : ""}`} onClick={() => onEdit(car, index)}>
+          {onSelect ? (
+            <span className="admin-card-select" onClick={(event) => event.stopPropagation()}>
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(car.id)}
+                onChange={() => onSelect(car.id)}
+                aria-label={`${car.title} seç`}
+              />
+            </span>
+          ) : null}
+          {carMissingInfo(car).length ? (
+            <span className="admin-card-missing-labels">
+              {carMissingInfo(car).slice(0, 2).map((item) => (
+                <em key={item}>{item}</em>
+              ))}
+            </span>
+          ) : null}
           <span className="admin-fleet-card-image">
             {car.thumbnail ? <Image src={car.thumbnail} alt={car.title} fill sizes="280px" /> : <CarFront size={24} />}
           </span>
@@ -2358,6 +2710,83 @@ function TutorialMock({ type }: { type: "new-car" | "fields" | "variant" | "serv
   );
 }
 
+function QualityView({
+  cars,
+  onEdit,
+}: {
+  cars: AdminCar[];
+  onEdit: (car?: AdminCar, index?: number, tab?: CarTab) => void;
+}) {
+  const quality = fleetQuality(cars);
+  const issueRows = cars.flatMap((car, index) =>
+    carMissingInfo(car).map((issue) => ({
+      car,
+      index,
+      issue,
+      tab: qualityIssueTarget(issue),
+    }))
+  );
+  const missingYear = issueRows.filter((row) => row.issue === "İl yoxdur").length;
+  const missingPrice = issueRows.filter((row) => row.issue === "Qiymət yoxdur").length;
+  const missingImage = issueRows.filter((row) => row.issue === "Şəkil yoxdur").length;
+
+  return (
+    <div className="admin-view admin-quality-view">
+      <PageTitle
+        eyebrow="KEYFİYYƏT"
+        title="Data Quality Center"
+        subtitle="Çatışmayan avtomobil məlumatlarını bir yerdən düzəldin."
+      />
+
+      <section className="admin-quality-hero">
+        <div>
+          <p>FLEET HEALTH</p>
+          <h2>{quality.score}%</h2>
+          <span>{quality.completeCars} tam avtomobil · {quality.issueCount} problem</span>
+        </div>
+        <i><span style={{ width: `${quality.score}%` }} /></i>
+      </section>
+
+      <section className="admin-quality-stat-grid">
+        <article><AlertTriangle size={16} /><strong>{missingYear}</strong><span>İl yoxdur</span></article>
+        <article><Images size={16} /><strong>{missingImage}</strong><span>Şəkil yoxdur</span></article>
+        <article><Gauge size={16} /><strong>{missingPrice}</strong><span>Qiymət yoxdur</span></article>
+        <article><CheckCircle2 size={16} /><strong>{quality.completeCars}</strong><span>Tam profil</span></article>
+      </section>
+
+      <section className="admin-panel admin-quality-table">
+        <div className="admin-panel-title">
+          <div>
+            <p>DÜZƏLDİLMƏLİ SAHƏLƏR</p>
+            <h2>{issueRows.length ? `${issueRows.length} problem tapıldı` : "Hər şey qaydasındadır"}</h2>
+          </div>
+        </div>
+        <div className="admin-data-table">
+          {issueRows.length ? issueRows.map((row) => (
+            <button
+              key={`${row.car.id}-${row.issue}`}
+              type="button"
+              className="admin-quality-row"
+              onClick={() => onEdit(row.car, row.index, row.tab)}
+            >
+              <CarIdentity car={row.car} />
+              <span className="admin-missing-labels"><em>{row.issue}</em></span>
+              <small>{row.tab === "services" ? "Xidmətlər" : row.tab === "images" ? "Şəkillər" : row.tab === "technical" ? "Texniki" : "Ümumi"}</small>
+              <ArrowRight size={15} />
+            </button>
+          )) : (
+            <div className="admin-quality-empty">
+              <CheckCircle2 size={22} />
+              <strong>Fleet tam görünür</strong>
+              <span>Hazırda əsas məlumat problemi tapılmadı.</span>
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function BlogView({
   blogs,
   onNew,
@@ -2986,7 +3415,7 @@ function CarEditorHero({
       <div className="admin-car-hero-copy">
         <span className={`admin-car-status${car?.isActive === false ? " is-muted" : ""}`}>
           <i />
-          {car?.isActive === false ? "Gizli" : "Aktiv"}
+          {car?.isActive === false ? "Qaralama" : "Dərc olunub"}
         </span>
         <h1>{title}</h1>
         <p>{car?.brand ?? "Carbon"} <b /> {category}</p>
@@ -3002,9 +3431,9 @@ function CarEditorHero({
       </div>
 
       <aside className="admin-car-brand-card">
-        <span><CarFront size={24} /></span>
+        <span><BrandLogo brand={car?.brand} size={42} /></span>
         <strong>{car?.brand ?? "Carbon"}</strong>
-        <small>Premium park idarəetməsi</small>
+        <small>{title}</small>
       </aside>
     </motion.header>
   );
@@ -3081,19 +3510,19 @@ function CarEditorSidePanel({
       </section>
 
       <section className="admin-car-info-card">
-        <header>
-          <span><Gauge size={16} /></span>
-          <div>
-            <strong>Məlumat</strong>
-            <small>Real avtomobil məlumatları</small>
+          <header>
+            <span><Gauge size={16} /></span>
+            <div>
+              <strong>Kanallar</strong>
+              <small>Aktiv satış kanalları</small>
+            </div>
+          </header>
+          <div className="admin-car-info-grid">
+            <span><b>{car?.variants?.length ? car.variants.length + 1 : 1}</b><small>Variant</small></span>
+            <span><b>{startingPrice !== null ? `${startingPrice} ₼` : "—"}</b><small>Başlanğıc</small></span>
+            <span><b>{services.length || 0}</b><small>Kanal</small></span>
           </div>
-        </header>
-        <div className="admin-car-info-grid">
-          <span><b>{car?.variants?.length ? car.variants.length + 1 : 1}</b><small>Variant</small></span>
-          <span><b>{startingPrice !== null ? `${startingPrice} ₼` : "—"}</b><small>Başlanğıc</small></span>
-          <span><b>{services.length || 0}</b><small>Xidmət</small></span>
-        </div>
-      </section>
+        </section>
     </aside>
   );
 }
@@ -3155,9 +3584,7 @@ function HiddenVariantFields({
 }: {
   index: number;
   variant:
-    | (Partial<CarVariant> & {
-        rentalPrices?: Partial<Car["rentalPrices"]>;
-      })
+    | AdminVariantDraft
     | undefined;
   car?: AdminCar;
 }) {
@@ -3177,6 +3604,16 @@ function HiddenVariantFields({
       <input name={`variant_${index}_manufactureYear`} type="hidden" defaultValue={variant?.manufactureYear ?? (index === 0 ? car?.manufactureYear ?? "" : "")} />
       <input name={`variant_${index}_bodyStyle`} type="hidden" defaultValue={variant?.bodyStyle ?? ""} />
       <input name={`variant_${index}_engine`} type="hidden" defaultValue={variant?.engine ?? (index === 0 ? car?.engine ?? "" : "")} />
+      <input name={`variant_${index}_fuel`} type="hidden" defaultValue={variant?.fuel ?? ""} />
+      <input name={`variant_${index}_transmission`} type="hidden" defaultValue={variant?.transmission ?? ""} />
+      <input name={`variant_${index}_seats`} type="hidden" defaultValue={variant?.seats ?? ""} />
+      <input name={`variant_${index}_baggage`} type="hidden" defaultValue={variant?.baggage ?? ""} />
+      <input name={`variant_${index}_power`} type="hidden" defaultValue={variant?.power ?? ""} />
+      <input name={`variant_${index}_images`} type="hidden" defaultValue={variantImagesText(variant)} />
+      <input name={`variant_${index}_isActive`} type="hidden" value={typeof variant?.isActive === "boolean" ? String(variant.isActive) : ""} readOnly />
+      <input name={`variant_${index}_popular`} type="hidden" value={typeof variant?.popular === "boolean" ? String(variant.popular) : ""} readOnly />
+      <input name={`variant_${index}_transferAvailable`} type="hidden" value={typeof variant?.transferAvailable === "boolean" ? String(variant.transferAvailable) : ""} readOnly />
+      <input name={`variant_${index}_weddingAvailable`} type="hidden" value={typeof variant?.weddingAvailable === "boolean" ? String(variant.weddingAvailable) : ""} readOnly />
       <input name={`variant_${index}_thumbnail`} type="hidden" defaultValue={variant?.thumbnail ?? ""} />
       {rentalPriceKeys.map((key) => (
         <input key={key} type="hidden" name={`variant_${index}_rental_${key}`} defaultValue={fallbackPrices?.[key] ?? ""} />
@@ -3210,6 +3647,15 @@ function CarEditorForm({
         manufactureYear: car.manufactureYear ?? null,
         bodyStyle: null,
         engine: car.engine ?? null,
+        fuel: null,
+        transmission: null,
+        seats: null,
+        baggage: null,
+        power: null,
+        isActive: car.isActive ?? true,
+        transferAvailable: car.transferAvailable,
+        weddingAvailable: car.weddingAvailable,
+        images: [],
         thumbnail: null,
         rentalPrices: car.rentalPrices,
       }
@@ -3220,21 +3666,86 @@ function CarEditorForm({
   const [variantSlots, setVariantSlots] = useState(() =>
     Array.from({ length: initialVariantCount }, (_, index) => ({
       key: `${car?.id ?? "new"}-${formVariants[index]?.id ?? "main"}-${index}`,
-      variant: formVariants[index],
-    })),
+      variant: formVariants[index] as AdminVariantDraft | undefined,
+    })) satisfies AdminVariantSlot[],
   );
   const [variantEditorIndex, setVariantEditorIndex] = useState<number | null>(null);
   const [variantEditorTab, setVariantEditorTab] = useState<VariantEditorTab>("general");
+  const [variantCreateOpen, setVariantCreateOpen] = useState(false);
+  const [newVariantYear, setNewVariantYear] = useState(() => {
+    const latestYear = car ? carVariantYears(car)[0] : new Date().getFullYear();
+    return String(latestYear - 1);
+  });
+  const [copySourceIndex, setCopySourceIndex] = useState(0);
+  const [copyTechnical, setCopyTechnical] = useState(true);
+  const [copyServices, setCopyServices] = useState(true);
+  const [copyImages, setCopyImages] = useState(true);
+  const [copyPricing, setCopyPricing] = useState(false);
   const variantCount = variantSlots.length;
+  const copySourceVariant = variantSlots[Math.min(copySourceIndex, Math.max(variantSlots.length - 1, 0))]?.variant;
+  const copySourcePrice = variantStartingPrice(copySourceVariant) ?? startPrice(car);
+  const suggestedPrice = copySourcePrice !== null ? Math.max(1, Math.round(copySourcePrice * 0.9)) : null;
 
   function addVariant() {
+    setVariantCreateOpen(true);
+  }
+
+  function createVariantFromDialog() {
     const nextIndex = variantSlots.length;
+    const source = variantSlots[Math.min(copySourceIndex, variantSlots.length - 1)]?.variant;
+    const sourcePrices = source?.rentalPrices ?? car?.rentalPrices;
+    const nextYear = Number(newVariantYear);
+    const createdVariant: AdminVariantDraft = {
+      id: "",
+      label: Number.isFinite(nextYear) ? String(nextYear) : "",
+      manufactureYear: Number.isFinite(nextYear) ? nextYear : null,
+      bodyStyle: copyTechnical ? source?.bodyStyle ?? null : null,
+      engine: copyTechnical ? source?.engine ?? null : null,
+      fuel: copyTechnical ? source?.fuel ?? null : null,
+      transmission: copyTechnical ? source?.transmission ?? null : null,
+      seats: copyTechnical ? source?.seats ?? null : null,
+      baggage: copyTechnical ? source?.baggage ?? null : null,
+      power: copyTechnical ? source?.power ?? null : null,
+      isActive: true,
+      transferAvailable: copyServices ? source?.transferAvailable ?? false : false,
+      weddingAvailable: copyServices ? source?.weddingAvailable ?? false : false,
+      images: copyImages ? source?.images ?? [] : [],
+      thumbnail: copyImages ? source?.thumbnail ?? null : null,
+      rentalPrices: copyPricing && sourcePrices ? { ...sourcePrices } : {},
+    };
 
     setVariantSlots((slots) => [
       ...slots,
       {
         key: `${car?.id ?? "new"}-new-variant-${Date.now()}`,
-        variant: undefined,
+        variant: createdVariant,
+      },
+    ]);
+    setVariantEditorTab("general");
+    setVariantEditorIndex(nextIndex);
+    setVariantCreateOpen(false);
+    onStructureChange();
+  }
+
+  function duplicateVariant(index: number) {
+    const source = variantSlots[index]?.variant;
+    const nextYear = source?.manufactureYear ? source.manufactureYear - 1 : new Date().getFullYear();
+    const createdVariant: AdminVariantDraft = {
+      ...source,
+      id: "",
+      label: String(nextYear),
+      manufactureYear: nextYear,
+      isActive: true,
+      rentalPrices: source?.rentalPrices ? { ...source.rentalPrices } : {},
+      images: source?.images ? [...source.images] : [],
+    };
+    const nextIndex = variantSlots.length;
+
+    setVariantSlots((slots) => [
+      ...slots,
+      {
+        key: `${car?.id ?? "new"}-duplicate-variant-${Date.now()}`,
+        variant: createdVariant,
       },
     ]);
     setVariantEditorTab("general");
@@ -3252,6 +3763,69 @@ function CarEditorForm({
     onStructureChange();
   }
 
+  function syncActiveVariant(form: HTMLFormElement) {
+    if (activeTab !== "variants" || variantEditorIndex === null) {
+      return;
+    }
+
+    const formData = new FormData(form);
+    const textValue = (key: string) => String(formData.get(key) ?? "").trim();
+    const optionalValue = (key: string) => textValue(key) || null;
+    const numberValue = (key: string) => {
+      const value = textValue(key);
+
+      if (!value) {
+        return null;
+      }
+
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+    const boolValue = (key: string) => {
+      const value = formData.get(key);
+      return value === "on" || value === "true";
+    };
+    const index = variantEditorIndex;
+    const rentalPrices = Object.fromEntries(
+      rentalPriceKeys.map((key) => [key, numberValue(`variant_${index}_rental_${key}`)])
+    ) as Partial<Car["rentalPrices"]>;
+    const images = textValue(`variant_${index}_images`)
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    setVariantSlots((slots) =>
+      slots.map((slot, slotIndex) =>
+        slotIndex === index
+          ? {
+              ...slot,
+              variant: {
+                ...slot.variant,
+                label: textValue(`variant_${index}_label`),
+                manufactureYear: numberValue(`variant_${index}_manufactureYear`),
+                bodyStyle: optionalValue(`variant_${index}_bodyStyle`),
+                engine: optionalValue(`variant_${index}_engine`),
+                fuel: optionalValue(`variant_${index}_fuel`),
+                transmission: optionalValue(`variant_${index}_transmission`),
+                seats: numberValue(`variant_${index}_seats`),
+                baggage: numberValue(`variant_${index}_baggage`),
+                power: optionalValue(`variant_${index}_power`),
+                thumbnail: optionalValue(`variant_${index}_thumbnail`),
+                images,
+                isActive: boolValue(`variant_${index}_isActive`),
+                transferAvailable: boolValue(`variant_${index}_transferAvailable`),
+                weddingAvailable: boolValue(`variant_${index}_weddingAvailable`),
+                popular: formData.has(`variant_${index}_popular`)
+                  ? boolValue(`variant_${index}_popular`)
+                  : slot.variant?.popular,
+                rentalPrices,
+              },
+            }
+          : slot
+      )
+    );
+  }
+
   return (
     <>
 	      <nav className="admin-drawer-tabs">
@@ -3264,7 +3838,13 @@ function CarEditorForm({
 	        <TabButton value="seo" active={activeTab} onClick={onTab} icon={<ShieldCheck size={15} />}>SEO</TabButton>
 	      </nav>
 
-      <form id={formId} onSubmit={onSubmit} className="admin-editor-form">
+      <form
+        id={formId}
+        onSubmit={onSubmit}
+        onInput={(event) => syncActiveVariant(event.currentTarget)}
+        onChange={(event) => syncActiveVariant(event.currentTarget)}
+        className="admin-editor-form"
+      >
         <input name="id" type="hidden" defaultValue={car?.id ?? ""} />
         <input name="variantCount" type="hidden" value={variantCount} readOnly />
         {variantSlots.map((slot, index) =>
@@ -3281,21 +3861,14 @@ function CarEditorForm({
 	        <section className={`admin-tab-panel${activeTab === "general" ? "" : " is-hidden"}`}>
 	          <FormSection icon={<CarFront size={18} />} title="Əsas məlumatlar" subtitle="Avtomobilin ümumi məlumatlarını daxil edin.">
 	            <div className="admin-form-grid">
-	              <Field label="Model adı" name="title" defaultValue={car?.title} placeholder="Mercedes S Class" />
-	              <Field label="URL adı" name="slug" defaultValue={car?.slug} placeholder="mercedes-s-class" />
-	              <Field label="Brend" name="brand" defaultValue={car?.brand} placeholder="Mercedes-Benz" />
-	              <label className="admin-field">
-	                <span>Kateqoriya</span>
-	                <select name="category" defaultValue={car?.category ?? "Business"}>
-	                  {carCategories.map((category) => (
-	                    <option key={category} value={category}>{categoryLabels[category] ?? category}</option>
-	                  ))}
-	                </select>
-	              </label>
-	              <Field label="Sıralama" name="sortOrder" type="number" defaultValue={car?.sortOrder ?? editor.index + 1} />
-	              <Field label="Buraxılış ili" name="manufactureYear" type="number" defaultValue={car?.manufactureYear} placeholder="2024" />
+	              <Field label="Model adı" name="title" defaultValue={car?.title} placeholder="Mercedes S Class" icon={<CarFront size={16} />} />
+	              <Field label="URL adı" name="slug" defaultValue={car?.slug} placeholder="mercedes-s-class" icon={<ExternalLink size={16} />} />
+	              <Field label="Brend" name="brand" defaultValue={car?.brand} placeholder="Mercedes-Benz" icon={<ShieldCheck size={16} />} />
+	              <SelectField label="Kateqoriya" name="category" defaultValue={car?.category ?? "Business"} options={[...carCategories]} icon={<Grid2X2 size={16} />} />
+	              <Field label="Sıralama" name="sortOrder" type="number" defaultValue={car?.sortOrder ?? editor.index + 1} icon={<Rows3 size={16} />} />
+	              <Field label="Buraxılış ili" name="manufactureYear" type="number" defaultValue={car?.manufactureYear} placeholder="2024" icon={<CalendarDays size={16} />} />
 	              <div className="admin-form-status-row">
-	                <Toggle label="Aktiv" name="isActive" defaultChecked={car?.isActive ?? true} description="Saytda göstərilsin." />
+	                <Toggle label="Dərc olunub" name="isActive" defaultChecked={car?.isActive ?? true} description="Avtomobil saytda göstərilsin." icon={<ShieldCheck size={16} />} />
 	              </div>
 	            </div>
 	          </FormSection>
@@ -3351,52 +3924,113 @@ function CarEditorForm({
 	              <div className="admin-clean-section-head">
 	                <div>
 	                  <h2>Variantlar</h2>
-                  <p>{car?.title ?? "Bu model"} üçün {variantCount} versiya</p>
+                  <p>Eyni avtomobilin fərqli il, qiymət və texniki versiyalarını idarə edin.</p>
                 </div>
-                <button type="button" className="admin-secondary-button" onClick={addVariant}>
+                <button type="button" className="admin-primary-button admin-variant-add-button" onClick={addVariant}>
                   <Plus size={14} />
-                  Variant əlavə et
+                  Yeni variant
                 </button>
               </div>
 
-	              <motion.div className="admin-variant-card-grid" layout>
+	              <motion.div className="admin-variant-table-card" layout>
+                  <div className="admin-variant-table-head">
+                    <span>İl / Variant</span>
+                    <span>Status</span>
+                    <span>Qiymət (günlük)</span>
+                    <span>Texniki məlumatlar</span>
+                    <span>Əməliyyatlar</span>
+                  </div>
 	                {variantSlots.map((slot, index) => {
 	                  const variant = slot.variant;
 	                  const isMainVariant = index === 0;
                   const price = variantStartingPrice(variant);
+                  const titleParts = variantTitleParts(variant, index);
+                  const image = variant?.thumbnail || (isMainVariant ? car?.thumbnail : null);
+                  const hasVariantYear = Boolean(variant?.manufactureYear || (isMainVariant && car?.manufactureYear));
+                  const specs = [
+                    variantSpecValue(variant?.engine, car?.engine),
+                    variantSpecValue(variant?.transmission, car?.transmission),
+                    variantSpecValue(variant?.fuel, car?.fuel),
+                  ].filter(Boolean);
 
 	                  return (
-	                    <motion.button
+	                    <motion.div
 	                      key={`${slot.key}-card`}
 	                      layout
 	                      initial={{ opacity: 0, y: 18, scale: 0.96 }}
 	                      animate={{ opacity: 1, y: 0, scale: 1 }}
 	                      exit={{ opacity: 0, y: -12, scale: 0.96 }}
-	                      whileHover={{ y: -4 }}
-	                      whileTap={{ scale: 0.985 }}
 	                      transition={{ duration: 0.24, delay: index * 0.025, ease: [0.22, 1, 0.36, 1] }}
-	                      type="button"
-	                      className="admin-variant-object-card"
-	                      onClick={() => {
-                        setVariantEditorTab("general");
-                        setVariantEditorIndex(index);
-                      }}
+	                      className={`admin-variant-row${isMainVariant ? " is-main" : ""}`}
                     >
-                      <span>{isMainVariant ? "★ ƏSAS" : "VARIANT"}</span>
-                      <strong>{variant?.manufactureYear ?? car?.manufactureYear ?? "İl"}</strong>
-                      <small>{variant?.label && variant.label !== String(variant?.manufactureYear) ? variant.label : car?.title ?? "Yeni variant"}</small>
-                      <em>{[variant?.engine ?? car?.engine, car?.transmission, car?.fuel].filter(Boolean).join(" · ") || "Texniki məlumat yoxdur"}</em>
-                      <i>
-                        {car?.rentalVisible !== false ? <span>İcarə</span> : null}
-                        {car?.transferAvailable ? <span>Transfer</span> : null}
-                        {car?.weddingAvailable ? <span>Toy</span> : null}
-                      </i>
-	                      <b>{price !== null ? `${price} ₼-dan` : "Qiymət yoxdur"}</b>
-	                      <ArrowRight size={16} />
-	                    </motion.button>
+                      <div className="admin-variant-name-cell">
+                        <span className="admin-variant-row-image">
+                          {image ? <Image src={image} alt={titleParts.title} fill sizes="86px" /> : <CarFront size={18} />}
+                        </span>
+                        <span>
+                          <strong>{titleParts.year}</strong>
+                          <small>{titleParts.label || car?.title || "Yeni variant"}</small>
+                          {!hasVariantYear ? (
+                            <span className="admin-missing-labels">
+                              <em>İl yoxdur</em>
+                            </span>
+                          ) : null}
+                        </span>
+                        {isMainVariant ? <em>Əsas variant</em> : null}
+                      </div>
+                      <span className={`admin-variant-status${variant?.isActive === false ? " is-muted" : ""}`}>
+                        <i />
+                        {variant?.isActive === false ? "Deaktiv" : "Aktiv"}
+                      </span>
+                      <span className="admin-variant-price-cell">
+                        <strong>{price !== null ? `${price} ₼` : "—"}</strong>
+                        <small>/ gün</small>
+                      </span>
+                      <span className="admin-variant-spec-cell">
+                        {specs.length ? specs.map((item) => <small key={item}>{item}</small>) : <small>Inherited</small>}
+                      </span>
+                      <span className="admin-variant-action-cell">
+                        <button
+                          type="button"
+                          className="admin-secondary-button"
+                          onClick={() => {
+                            setVariantEditorTab("general");
+                            setVariantEditorIndex(index);
+                          }}
+                        >
+                          Redaktə et
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-icon-button"
+                          title="Variantı kopyala"
+                          aria-label="Variantı kopyala"
+                          onClick={() => duplicateVariant(index)}
+                        >
+                          <Clipboard size={15} />
+                        </button>
+                      </span>
+	                    </motion.div>
 	                  );
 	                })}
 	              </motion.div>
+                <div className="admin-variant-quick-strip">
+                  <span><Plus size={16} /></span>
+                  <div>
+                    <strong>Sürətli əlavəetmə</strong>
+                    <small>Yeni ili mövcud variantdan kopyalayaraq yaradın.</small>
+                  </div>
+                  <span><Database size={16} /></span>
+                  <div>
+                    <strong>Məlumatları kopyala</strong>
+                    <small>Texniki məlumat, xidmət və şəkilləri bir kliklə daşıyın.</small>
+                  </div>
+                  <span><ShieldCheck size={16} /></span>
+                  <div>
+                    <strong>Çevik qiymətləndirmə</strong>
+                    <small>Hər il üçün günlük qiymətləri ayrıca saxlayın.</small>
+                  </div>
+                </div>
 	              </motion.div>
 	            ) : (
 	            <motion.div
@@ -3412,6 +4046,14 @@ function CarEditorForm({
 
                 const variant = slot.variant;
                 const isMainVariant = index === 0;
+                const titleParts = variantTitleParts(variant, index);
+                const previewImage = variant?.thumbnail || car?.thumbnail;
+                const previewPrice = variantStartingPrice(variant) ?? startPrice(car);
+                const previewSpecs = [
+                  variantSpecValue(variant?.engine, car?.engine),
+                  variantSpecValue(variant?.transmission, car?.transmission),
+                  variantSpecValue(variant?.fuel, car?.fuel),
+                ].filter(Boolean);
 
                 return (
 	                  <section key={`${slot.key}-workspace`}>
@@ -3423,7 +4065,15 @@ function CarEditorForm({
                       </button>
                       <div>
                         <p>{car?.title ?? "Model"}</p>
-                        <h2>{variantDisplayName(variant, index)}</h2>
+                        <h2>{titleParts.year}</h2>
+                        <span className="admin-variant-head-summary">
+                          {titleParts.label || "Variant adı yoxdur"}
+                          <b />
+                          {variant?.isActive === false ? "Deaktiv" : "Aktiv"}
+                          <b />
+                          {previewPrice !== null ? `${previewPrice} ₼ / gün` : "Qiymət yoxdur"}
+                          {previewSpecs.length ? ` · ${previewSpecs.join(" · ")}` : ""}
+                        </span>
                       </div>
                       {isMainVariant ? <span>★ Əsas variant</span> : null}
                     </div>
@@ -3431,6 +4081,7 @@ function CarEditorForm({
 	                    <div className="admin-variant-subtabs">
 	                      {[
 	                        ["general", "Ümumi"],
+	                        ["pricing", "Qiymət"],
 	                        ["technical", "Texniki"],
 	                        ["images", "Şəkillər"],
 	                        ["services", "Xidmətlər"],
@@ -3443,14 +4094,16 @@ function CarEditorForm({
 	                        >
 	                          {label}
 	                        </button>
-	                      ))}
+	                    ))}
 	                    </div>
 
+                    <div className="admin-variant-editor-grid">
+                      <div className="admin-variant-editor-main">
 		                    <div className={`admin-variant-workspace-panel${variantEditorTab === "general" ? "" : " is-hidden"}`}>
 	                        <div className="admin-clean-section-head">
 	                          <div>
 	                            <h2>Ümumi məlumat</h2>
-	                            <p>Variantın ilini və public adını idarə edin.</p>
+	                            <p>Bu versiyaya aid il, opsional ad və görünürlük.</p>
 	                          </div>
 	                          {!isMainVariant ? (
 	                            <button type="button" className="admin-variant-delete-button" onClick={() => removeVariant(index)}>
@@ -3461,20 +4114,55 @@ function CarEditorForm({
 	                        </div>
 	                        <div className="admin-form-grid admin-form-grid-comfort">
 	                          <Field label="İl" name={`variant_${index}_manufactureYear`} type="number" defaultValue={variant?.manufactureYear ?? (index === 0 ? car?.manufactureYear : undefined)} placeholder="2024" />
-	                          <Field label="Variant adı" name={`variant_${index}_label`} defaultValue={variant?.label ?? (index === 0 && car?.manufactureYear ? String(car.manufactureYear) : undefined)} placeholder="E 200" />
+	                          <Field label="Variant adı (opsional)" name={`variant_${index}_label`} defaultValue={variant?.label ?? (index === 0 && car?.manufactureYear ? String(car.manufactureYear) : undefined)} placeholder="Competition, Facelift, Premium" />
+                            <Field label="Sıralama" name={`variant_${index}_sortOrder`} type="number" defaultValue={index + 1} placeholder="1" />
+                            <div className="admin-form-status-row">
+                              <Toggle label="Aktiv" name={`variant_${index}_isActive`} defaultChecked={variant?.isActive ?? true} description="Bu il public səhifədə seçilə bilsin." icon={<ShieldCheck size={16} />} />
+                            </div>
+	                        </div>
+		                    </div>
+
+		                    <div className={`admin-variant-workspace-panel${variantEditorTab === "pricing" ? "" : " is-hidden"}`}>
+	                        <div className="admin-clean-section-head">
+	                          <div>
+	                            <h2>Qiymətləndirmə</h2>
+	                            <p>Variantın günlük tariflərini ayrıca saxlayın.</p>
+	                          </div>
+	                        </div>
+	                        <div className="admin-price-grid">
+	                          {rentalPriceKeys.map((key) => (
+	                            <PriceField
+	                              key={key}
+	                              label={rentalPriceLabels[key]}
+	                              name={`variant_${index}_rental_${key}`}
+	                              defaultValue={variant?.rentalPrices?.[key] ?? (index === 0 ? car?.rentalPrices[key] : undefined)}
+	                            />
+	                          ))}
 	                        </div>
 		                    </div>
 
 		                    <div className={`admin-variant-workspace-panel${variantEditorTab === "technical" ? "" : " is-hidden"}`}>
 	                        <div className="admin-clean-section-head">
 	                          <div>
-	                            <h2>Texniki fərqlər</h2>
-	                            <p>Bu versiyanın mühərrik və kuzov fərqlərini ayrıca saxlayın.</p>
+	                            <h2>Texniki məlumatlar</h2>
+	                            <p>Boş saxlanan sahələr avtomobilin əsas məlumatlarından istifadə edir.</p>
 	                          </div>
 	                        </div>
+                          <div className="admin-inheritance-banner">
+                            <span><Database size={16} /></span>
+                            <div>
+                              <strong>Avtomobil məlumatlarından istifadə: ON</strong>
+                              <small>Yalnız fərqlənən sahələri doldurun.</small>
+                            </div>
+                          </div>
 	                        <div className="admin-form-grid admin-form-grid-comfort">
 	                          <Field label="Nəsil / kuzov" name={`variant_${index}_bodyStyle`} defaultValue={variant?.bodyStyle} placeholder="W214 / Sedan" />
-	                          <Field label="Mühərrik" name={`variant_${index}_engine`} defaultValue={variant?.engine ?? (index === 0 ? car?.engine : undefined)} placeholder={car?.engine ?? "2.0 L"} />
+	                          <Field label={`Mühərrik · ${inheritedState(variant?.engine)}`} name={`variant_${index}_engine`} defaultValue={variant?.engine ?? (index === 0 ? car?.engine : undefined)} placeholder={car?.engine ?? "2.0 L"} />
+                            <SelectField label={`Sürətlər qutusu · ${inheritedState(variant?.transmission)}`} name={`variant_${index}_transmission`} defaultValue={variant?.transmission ?? ""} options={["", "Avtomat", "Mexanika"]} />
+                            <SelectField label={`Yanacaq · ${inheritedState(variant?.fuel)}`} name={`variant_${index}_fuel`} defaultValue={variant?.fuel ?? ""} options={["", "Benzin", "Dizel", "Hibrid", "Elektrik"]} />
+                            <Field label={`Oturacaq · ${inheritedState(variant?.seats)}`} name={`variant_${index}_seats`} type="number" defaultValue={variant?.seats ?? ""} placeholder={car?.seats ? String(car.seats) : "5"} />
+                            <Field label={`Baqaj · ${inheritedState(variant?.baggage)}`} name={`variant_${index}_baggage`} type="number" defaultValue={variant?.baggage ?? ""} placeholder={car?.baggage ? String(car.baggage) : "2"} />
+                            <Field label={`Güc · ${inheritedState(variant?.power)}`} name={`variant_${index}_power`} defaultValue={variant?.power ?? ""} placeholder="250 HP" />
 	                        </div>
 		                    </div>
 
@@ -3482,9 +4170,16 @@ function CarEditorForm({
 		                        <div className="admin-clean-section-head">
 		                          <div>
 		                            <h2>Variant şəkli</h2>
-		                            <p>Bu il və versiya üçün ayrıca PNG və ya şəkil linki əlavə edin.</p>
+		                            <p>Xüsusi şəkil yoxdursa, əsas avtomobil qalereyası istifadə olunur.</p>
 		                          </div>
 		                        </div>
+                            <div className="admin-inheritance-banner">
+                              <span><Images size={16} /></span>
+                              <div>
+                                <strong>Əsas avtomobil şəkillərindən istifadə</strong>
+                                <small>{variant?.thumbnail || variant?.images?.length ? "Xüsusi şəkillər əlavə edilib." : "Hazırda xüsusi şəkil yoxdur."}</small>
+                              </div>
+                            </div>
 		                        <div className="admin-image-editor-stack">
 		                          <AdminImageField
 		                            key={`variant-image-${slot.key}`}
@@ -3494,28 +4189,51 @@ function CarEditorForm({
 		                            defaultValue={variant?.thumbnail ?? (index === 0 ? car?.thumbnail : undefined)}
 		                            title={`${car?.title ?? "Avtomobil"} ${variantDisplayName(variant, index)}`}
 		                          />
+                              <TextAreaField label="Əlavə variant şəkilləri" name={`variant_${index}_images`} rows={4} placeholder="Hər sətrə bir şəkil URL-i yazın." defaultValue={variantImagesText(variant)} />
 		                        </div>
 			                    </div>
 
 		                    <div className={`admin-variant-workspace-panel${variantEditorTab === "services" ? "" : " is-hidden"}`}>
+                            <input name={`variant_${index}_popular`} type="hidden" value={typeof variant?.popular === "boolean" ? String(variant.popular) : ""} readOnly />
 	                        <div className="admin-clean-section-head">
 	                          <div>
-	                            <h2>Variant qiymətləri</h2>
-	                            <p>Bu versiyanın icarə qiymətlərini əsas modeldən fərqli yazın.</p>
+	                            <h2>Xidmətlər</h2>
+	                            <p>Bu ilin transfer və toy sifarişlərində istifadə olunmasını idarə edin.</p>
 	                          </div>
 	                        </div>
-	                        <div className="admin-price-grid">
-	                          {rentalPriceKeys.map((key) => (
-	                            <PriceField
-	                              key={key}
-	                              label={rentalPriceLabels[key]}
-	                              name={`variant_${index}_rental_${key}`}
-	                              defaultValue={variant?.rentalPrices[key] ?? (index === 0 ? car?.rentalPrices[key] : undefined)}
-	                            />
-	                          ))}
-	                        </div>
-	                        <p className="admin-variant-service-note">Transfer və toy qiymətləri hələlik model səviyyəsində saxlanır. İcarə qiymətləri isə hər variant üçün ayrıca işləyir.</p>
+	                        <div className="admin-service-card-grid">
+                            <Toggle label="Transfer" name={`variant_${index}_transferAvailable`} defaultChecked={variant?.transferAvailable ?? false} description="Bu il transfer sifarişlərində seçilə bilsin." icon={<Plane size={16} />} />
+                            <Toggle label="Toy avtomobili" name={`variant_${index}_weddingAvailable`} defaultChecked={variant?.weddingAvailable ?? false} description="Bu il toy avtomobili kimi təklif olunsun." icon={<Heart size={16} />} />
+                          </div>
+	                        <p className="admin-variant-service-note">İcarə üçün əsas açar avtomobilin Xidmətlər tabındadır. Bu variantın icarədə seçilməsi isə Ümumi tabdakı Aktiv statusu ilə idarə olunur.</p>
 		                    </div>
+                      </div>
+
+                      <aside className="admin-variant-live-preview">
+                        <header>
+                          <span><Images size={16} /></span>
+                          <strong>CANLI ÖNİZLƏMƏ</strong>
+                        </header>
+                        <div className="admin-variant-live-image">
+                          {previewImage ? <Image src={previewImage} alt={`${car?.title ?? "Avtomobil"} ${titleParts.title}`} fill sizes="340px" /> : <CarFront size={42} />}
+                        </div>
+                        <h3>{car?.title ?? "Yeni avtomobil"}</h3>
+                        <p>{titleParts.title}</p>
+                        <div className="admin-variant-live-specs">
+                          {previewSpecs.map((item) => <span key={item}>{item}</span>)}
+                        </div>
+                        <div className="admin-variant-live-price">
+                          <strong>{previewPrice !== null ? `${previewPrice} ₼` : "—"}</strong>
+                          <small>/ gün</small>
+                        </div>
+                        {car?.slug ? (
+                          <Link href={`/avtomobiller/${car.slug}`} target="_blank" rel="noopener noreferrer" className="admin-primary-button">
+                            Saytda bax
+                            <ExternalLink size={14} />
+                          </Link>
+                        ) : null}
+                      </aside>
+                    </div>
 	                  </section>
                 );
               })}
@@ -3526,12 +4244,15 @@ function CarEditorForm({
 
         <section className={`admin-tab-panel${activeTab === "services" ? "" : " is-hidden"}`}>
           <div className="admin-service-card-grid">
-	            <Toggle label="İcarədə göstər" name="rentalVisible" defaultChecked={car?.rentalVisible ?? true} description="İcarə siyahısında göstər." />
-            <Toggle label="Transfer üçün aktiv" name="transferAvailable" defaultChecked={car?.transferAvailable} description="Transfer bölməsində istifadə et." />
-            <Toggle label="Toy avtomobili" name="weddingAvailable" defaultChecked={car?.weddingAvailable} description="Toy kolleksiyasında göstər." />
-          </div>
+                <Toggle label="İcarədə göstər" name="rentalVisible" defaultChecked={car?.rentalVisible ?? true} description="İcarə siyahısı və rezervasiya axınında göstər." />
+                <Toggle label="Transfer üçün aktiv" name="transferAvailable" defaultChecked={car?.transferAvailable} description="Transfer bölməsində təklif et." />
+                <Toggle label="Toy avtomobili" name="weddingAvailable" defaultChecked={car?.weddingAvailable} description="Toy kolleksiyasında təklif et." />
+              </div>
+              <p className="admin-variant-service-note">
+                Detal səhifəsi avtomobil aktiv olduğu müddətdə görünür; bu seçimlər yalnız hansı satış kanallarında təklif ediləcəyini idarə edir.
+              </p>
 
-          <div className="admin-service-settings">
+              <div className="admin-service-settings">
             <section>
               <div className="admin-clean-section-head">
                 <div>
@@ -3596,6 +4317,79 @@ function CarEditorForm({
           </div>
         </section>
       </form>
+      {variantCreateOpen ? (
+        <div className="admin-variant-modal-layer" role="dialog" aria-modal="true" aria-labelledby="admin-new-variant-title">
+          <button type="button" className="admin-variant-modal-backdrop" onClick={() => setVariantCreateOpen(false)} aria-label="Modalı bağla" />
+          <section className="admin-variant-modal">
+            <header>
+              <div>
+                <span>Variantlar</span>
+                <h2 id="admin-new-variant-title">Yeni variant yarat</h2>
+              </div>
+              <button type="button" className="admin-icon-button" onClick={() => setVariantCreateOpen(false)} aria-label="Bağla">
+                <X size={16} />
+              </button>
+            </header>
+            <div className="admin-variant-modal-grid">
+              <label className="admin-field">
+                <span>İl</span>
+                <span className="admin-field-control">
+                  <input type="number" value={newVariantYear} onChange={(event) => setNewVariantYear(event.target.value)} placeholder="2023" />
+                </span>
+              </label>
+              <label className="admin-field">
+                <span>Başqa variantdan məlumatları kopyala</span>
+                <span className="admin-field-control is-select">
+                  <select value={copySourceIndex} onChange={(event) => setCopySourceIndex(Number(event.target.value))}>
+                    {variantSlots.map((slot, index) => (
+                      <option key={`${slot.key}-copy`} value={index}>
+                        {variantTitleParts(slot.variant, index).title}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={15} />
+                </span>
+              </label>
+              {suggestedPrice !== null ? (
+                <div className="admin-price-suggestion">
+                  <span><WandSparkles size={16} /></span>
+                  <div>
+                    <strong>Təklif olunan başlanğıc qiymət: {suggestedPrice} ₼ / gün</strong>
+                    <small>Mənbə qiymətindən təxminən 10% aşağı hesablandı. İstəsəniz Qiyməti kopyala seçimini yandırın.</small>
+                  </div>
+                </div>
+              ) : null}
+              <div className="admin-variant-copy-options">
+                <label>
+                  <input type="checkbox" checked={copyTechnical} onChange={(event) => setCopyTechnical(event.target.checked)} />
+                  <span>Texniki məlumatları kopyala</span>
+                </label>
+                <label>
+                  <input type="checkbox" checked={copyServices} onChange={(event) => setCopyServices(event.target.checked)} />
+                  <span>Xidmətləri kopyala</span>
+                </label>
+                <label>
+                  <input type="checkbox" checked={copyImages} onChange={(event) => setCopyImages(event.target.checked)} />
+                  <span>Şəkilləri kopyala</span>
+                </label>
+                <label>
+                  <input type="checkbox" checked={copyPricing} onChange={(event) => setCopyPricing(event.target.checked)} />
+                  <span>Qiyməti kopyala</span>
+                </label>
+              </div>
+            </div>
+            <footer>
+              <button type="button" className="admin-secondary-button" onClick={() => setVariantCreateOpen(false)}>
+                Ləğv et
+              </button>
+              <button type="button" className="admin-primary-button" onClick={createVariantFromDialog}>
+                Variant yarat
+                <ArrowRight size={14} />
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </>
   );
 }

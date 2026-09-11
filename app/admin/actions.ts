@@ -154,10 +154,35 @@ function boolValue(formData: FormData, key: string) {
   return formData.get(key) === "on";
 }
 
+function variantBoolValue(formData: FormData, key: string) {
+  if (!formData.has(key)) {
+    return false;
+  }
+
+  const value = text(formData, key);
+
+  if (value === "on" || value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
+  return undefined;
+}
+
 function readRentalPricesFromForm(formData: FormData, prefix: string) {
   return Object.fromEntries(
     rentalPriceKeys.map((key) => [key, numberValue(formData, `${prefix}_${key}`)])
   ) as Car["rentalPrices"];
+}
+
+function readLinesFromForm(formData: FormData, key: string) {
+  return text(formData, key)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function slugify(value: string) {
@@ -226,11 +251,21 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
     const manufactureYear = numberValue(formData, `variant_${index}_manufactureYear`);
     const bodyStyle = optionalText(formData, `variant_${index}_bodyStyle`);
     const engine = optionalText(formData, `variant_${index}_engine`);
+    const fuel = optionalText(formData, `variant_${index}_fuel`);
+    const transmission = optionalText(formData, `variant_${index}_transmission`);
+    const seats = numberValue(formData, `variant_${index}_seats`);
+    const baggage = numberValue(formData, `variant_${index}_baggage`);
+    const power = optionalText(formData, `variant_${index}_power`);
     const thumbnail = optionalText(formData, `variant_${index}_thumbnail`);
+    const images = readLinesFromForm(formData, `variant_${index}_images`);
     const variantPrices = readRentalPricesFromForm(formData, `variant_${index}_rental`);
     const hasPrice = Object.values(variantPrices).some(
       (price) => typeof price === "number"
     );
+    const isActive = variantBoolValue(formData, `variant_${index}_isActive`);
+    const popular = variantBoolValue(formData, `variant_${index}_popular`);
+    const transferAvailable = variantBoolValue(formData, `variant_${index}_transferAvailable`);
+    const weddingAvailable = variantBoolValue(formData, `variant_${index}_weddingAvailable`);
 
     const variantLabel =
       label ||
@@ -245,9 +280,31 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
       manufactureYear,
       bodyStyle,
       engine,
+      fuel,
+      transmission,
+      seats,
+      baggage,
+      power,
       thumbnail,
+      images,
       rentalPrices: variantPrices,
-      isEmpty: !label && !manufactureYear && !bodyStyle && !engine && !thumbnail && !hasPrice,
+      isActive,
+      popular,
+      transferAvailable,
+      weddingAvailable,
+      isEmpty:
+        !label &&
+        !manufactureYear &&
+        !bodyStyle &&
+        !engine &&
+        !fuel &&
+        !transmission &&
+        seats === null &&
+        baggage === null &&
+        !power &&
+        !thumbnail &&
+        !images.length &&
+        !hasPrice,
     };
   });
   const mainVariant = variantRows[0]?.isEmpty ? null : variantRows[0] ?? null;
@@ -260,6 +317,16 @@ function readCarFromForm(formData: FormData): Car & { isActive: boolean; sortOrd
       manufactureYear: variant.manufactureYear,
       bodyStyle: variant.bodyStyle,
       engine: variant.engine,
+      fuel: variant.fuel,
+      transmission: variant.transmission,
+      seats: variant.seats,
+      baggage: variant.baggage,
+      power: variant.power,
+      isActive: variant.isActive,
+      popular: variant.popular,
+      transferAvailable: variant.transferAvailable,
+      weddingAvailable: variant.weddingAvailable,
+      images: variant.images,
       thumbnail: variant.thumbnail,
       rentalPrices: variant.rentalPrices,
     }));
@@ -668,6 +735,63 @@ export async function saveCarInlineAction(formData: FormData) {
   try {
     const car = await saveCarRecord(formData);
     return { ok: true as const, car };
+  } catch (error) {
+    return { ok: false as const, error: normalizeAdminError(error) };
+  }
+}
+
+export async function bulkUpdateCarsInlineAction(updates: Array<{ id: string; patch: Partial<Car & { isActive: boolean; sortOrder: number }> }>) {
+  if (!(await isAdminAuthenticated())) {
+    return { ok: false as const, error: "unauthenticated" };
+  }
+
+  try {
+    const supabase = requireAdminConfig();
+    const ids = updates.map((update) => update.id).filter(Boolean);
+
+    if (!ids.length) {
+      return { ok: true as const, cars: [] };
+    }
+
+    const { data, error } = await supabase.from("cars").select("*").in("id", ids);
+
+    if (error) {
+      throw new Error("database-save-failed");
+    }
+
+    const rows = (data ?? []).map((row) => {
+      const update = updates.find((item) => item.id === row.id);
+      const car = {
+        ...rowToCar(row),
+        isActive: row.is_active,
+        sortOrder: row.sort_order,
+        ...update?.patch,
+      };
+
+      return {
+        ...carToRow(car, car.sortOrder),
+        is_active: car.isActive,
+      };
+    });
+    const upsertError = await upsertCarRows(supabase, rows);
+
+    if (upsertError) {
+      throw new Error("database-save-failed");
+    }
+
+    revalidatePath("/");
+    revalidatePath("/avtomobiller");
+    revalidatePath("/toy-avtomobilleri");
+    revalidatePath("/transfer");
+
+    return {
+      ok: true as const,
+      cars: rows.map((row) => ({
+        ...rowToCar(row),
+        isActive: row.is_active,
+        sortOrder: row.sort_order,
+      })),
+    };
   } catch (error) {
     return { ok: false as const, error: normalizeAdminError(error) };
   }
