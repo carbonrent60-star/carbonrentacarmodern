@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
 import {
   ArrowRight,
+  ArrowUpDown,
   BadgeHelp,
   Bell,
   CalendarDays,
@@ -41,12 +42,22 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clipboard,
+  Code2,
+  Eye,
+  Flag,
   History,
+  ImagePlus,
+  Italic,
+  Link2,
+  NotebookPen,
+  ListChecks,
+  ListTodo,
   Percent,
+  Underline,
   WandSparkles,
   type LucideIcon,
 } from "lucide-react";
-import { type CSSProperties, type FormEvent, type PointerEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type Dispatch, type FormEvent, type PointerEvent, type ReactNode, type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteBlogInlineAction,
   deleteCarInlineAction,
@@ -99,6 +110,7 @@ type ViewKey =
   | "weddings"
   | "blog"
   | "media"
+  | "notes"
   | "tutorial"
   | "quality"
   | "settings";
@@ -137,6 +149,16 @@ type ChangeLogEntry = {
   title: string;
   text: string;
   time: string;
+};
+type AdminNoteItem = {
+  id: string;
+  title: string;
+  body: string;
+  done: boolean;
+  priority: "low" | "normal" | "important" | "urgent";
+  image?: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 type SaveDiff = {
   label: string;
@@ -422,6 +444,7 @@ const navGroups: Array<{
     items: [
       { key: "blog", label: "Blog", icon: Newspaper },
       { key: "media", label: "Şəkillər", icon: Images },
+      { key: "notes", label: "Qeydlər", icon: NotebookPen },
       { key: "tutorial", label: "Təlimat", icon: BadgeHelp },
       { key: "quality", label: "Keyfiyyət", icon: AlertTriangle },
     ],
@@ -500,6 +523,120 @@ function TextAreaField({
   );
 }
 
+type AdminSelectOption = {
+  value: string;
+  label: string;
+};
+
+function AdminSelect({
+  options,
+  value,
+  defaultValue,
+  onChange,
+  name,
+  label,
+  icon,
+  compact = false,
+}: {
+  options: AdminSelectOption[];
+  value?: string;
+  defaultValue?: string | null;
+  onChange?: (value: string) => void;
+  name?: string;
+  label?: string;
+  icon?: ReactNode;
+  compact?: boolean;
+}) {
+  const selectRef = useRef<HTMLDivElement>(null);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+  const isControlled = typeof value === "string";
+  const [internalValue, setInternalValue] = useState(defaultValue ?? options[0]?.value ?? "");
+  const [open, setOpen] = useState(false);
+  const currentValue = isControlled ? value : internalValue;
+  const selected = options.find((option) => option.value === currentValue) ?? options[0];
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onPointerDown(event: globalThis.PointerEvent) {
+      if (!selectRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  function choose(nextValue: string) {
+    if (!isControlled) {
+      setInternalValue(nextValue);
+    }
+
+    onChange?.(nextValue);
+    setOpen(false);
+
+    window.requestAnimationFrame(() => {
+      hiddenInputRef.current?.dispatchEvent(new Event("input", { bubbles: true }));
+      hiddenInputRef.current?.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  }
+
+  return (
+    <div ref={selectRef} className={`admin-custom-select${open ? " is-open" : ""}${compact ? " is-compact" : ""}${icon ? " has-icon" : ""}`}>
+      {name ? <input ref={hiddenInputRef} type="hidden" name={name} value={currentValue} readOnly /> : null}
+      <button
+        type="button"
+        className="admin-custom-select-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={label}
+        onClick={() => setOpen((active) => !active)}
+      >
+        {icon ? <i>{icon}</i> : null}
+        <span>{selected?.label ?? "Seç"}</span>
+        <ChevronDown size={15} />
+      </button>
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            className="admin-custom-select-menu"
+            role="listbox"
+            initial={{ opacity: 0, y: 8, scale: 0.975, filter: "blur(8px)" }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: 6, scale: 0.985, filter: "blur(6px)" }}
+            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={option.value === currentValue}
+                className={option.value === currentValue ? "is-selected" : ""}
+                onClick={() => choose(option.value)}
+              >
+                <span>{option.label}</span>
+                {option.value === currentValue ? <CheckCircle2 size={14} /> : null}
+              </button>
+            ))}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function SelectField({
   label,
   name,
@@ -519,17 +656,16 @@ function SelectField({
   return (
     <label className={`admin-field${icon ? " has-icon" : ""}`}>
       <span>{label}</span>
-      <span className="admin-field-control is-select">
-        {icon ? <i>{icon}</i> : null}
-        <select name={name} defaultValue={value}>
-          {optionSet.map((option) => (
-            <option key={option} value={option}>
-              {categoryLabels[option] ?? option}
-            </option>
-          ))}
-        </select>
-        <ChevronDown size={15} />
-      </span>
+      <AdminSelect
+        name={name}
+        defaultValue={value}
+        options={optionSet.map((option) => ({
+          value: option,
+          label: categoryLabels[option] ?? option,
+        }))}
+        icon={icon}
+        label={label}
+      />
     </label>
   );
 }
@@ -1131,6 +1267,7 @@ function AdminDashboardClient({
   const [editor, setEditor] = useState<EditorState>(null);
   const [editorReturnView, setEditorReturnView] = useState<ViewKey>("cars");
   const [editorDirty, setEditorDirty] = useState(false);
+  const [pendingEditorCloseView, setPendingEditorCloseView] = useState<ViewKey | null>(null);
   const [carTab, setCarTab] = useState<CarTab>("general");
   const [blogTab, setBlogTab] = useState<BlogTab>("general");
   const [carQuery, setCarQuery] = useState("");
@@ -1141,6 +1278,7 @@ function AdminDashboardClient({
   const [layout, setLayout] = useState<"list" | "grid">("list");
   const [cars, setCars] = useState(() => carsResult.cars);
   const [blogs, setBlogs] = useState(() => blogsResult.blogs);
+  const [notes, setNotes] = useState<AdminNoteItem[]>(loadAdminNotes);
   const [toast, setToast] = useState<AdminToast | null>(null);
   const [changeLog, setChangeLog] = useState<ChangeLogEntry[]>(() =>
     activityLogs.map((entry) => ({
@@ -1160,6 +1298,7 @@ function AdminDashboardClient({
     (car) => car.weddingAvailable && car.weddingPrice != null
   );
   const activeBlogCount = blogs.filter((blog) => blog.isActive !== false).length;
+  const openNotesCount = notes.filter((note) => !note.done).length;
 
   useEffect(() => {
     window.localStorage.setItem("carbon-admin-sidebar", collapsed ? "collapsed" : "expanded");
@@ -1176,7 +1315,7 @@ function AdminDashboardClient({
   }, [toast]);
 
   useEffect(() => {
-    if (!commandOpen) {
+    if (!commandOpen && !pendingEditorCloseView) {
       return;
     }
 
@@ -1186,7 +1325,7 @@ function AdminDashboardClient({
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [commandOpen]);
+  }, [commandOpen, pendingEditorCloseView]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -1197,6 +1336,7 @@ function AdminDashboardClient({
 
       if (event.key === "Escape") {
         setCommandOpen(false);
+        setPendingEditorCloseView(null);
       }
     }
 
@@ -1218,18 +1358,15 @@ function AdminDashboardClient({
     setEditor({ type: "blog", mode: blog ? "edit" : "create", blog, index });
   };
 
-  const closeEditor = (nextView = editorReturnView) => {
-    if (
-      editorDirty &&
-      !window.confirm(
-        "Saxlanılmamış dəyişikliklər var.\n\nBu səhifədən çıxsanız etdiyiniz dəyişikliklər itiriləcək.",
-      )
-    ) {
+  const closeEditor = (nextView = editorReturnView, force = false) => {
+    if (editorDirty && !force) {
+      setPendingEditorCloseView(nextView);
       return;
     }
 
     setEditor(null);
     setEditorDirty(false);
+    setPendingEditorCloseView(null);
     setView(nextView);
   };
 
@@ -1512,6 +1649,7 @@ function AdminDashboardClient({
                   >
                     <Icon size={17} />
                     <span>{item.label}</span>
+                    {item.key === "notes" && openNotesCount > 0 ? <small>{openNotesCount}</small> : null}
                   </button>
                 );
               })}
@@ -1716,6 +1854,7 @@ function AdminDashboardClient({
               ) : null}
 
               {view === "media" ? <MediaView items={mediaItems} /> : null}
+              {view === "notes" ? <NotesView notes={notes} setNotes={setNotes} /> : null}
               {view === "tutorial" ? <TutorialView onView={setView} onNewCar={() => openCarEditor()} /> : null}
               {view === "quality" ? (
                 <QualityView
@@ -1731,6 +1870,40 @@ function AdminDashboardClient({
           </AnimatePresence>
         </div>
       </section>
+
+      {pendingEditorCloseView ? (
+        <AdminPortal>
+          <div className="admin-confirm-layer" role="dialog" aria-modal="true" aria-labelledby="admin-unsaved-title">
+            <button
+              type="button"
+              className="admin-preview-backdrop"
+              onClick={() => setPendingEditorCloseView(null)}
+              aria-label="Modalı bağla"
+            />
+            <section className="admin-confirm-card admin-unsaved-card">
+              <div>
+                <span className="admin-confirm-icon"><AlertTriangle size={18} /></span>
+                <div>
+                  <h2 id="admin-unsaved-title">Saxlanılmamış dəyişikliklər var</h2>
+                  <p>Bu səhifədən çıxsanız, redaktə etdiyiniz son dəyişikliklər itiriləcək.</p>
+                </div>
+              </div>
+              <footer>
+                <button type="button" className="admin-secondary-button" onClick={() => setPendingEditorCloseView(null)}>
+                  Redaktəyə qayıt
+                </button>
+                <button
+                  type="button"
+                  className="admin-danger-button"
+                  onClick={() => closeEditor(pendingEditorCloseView, true)}
+                >
+                  Çıx və dəyişiklikləri at
+                </button>
+              </footer>
+            </section>
+          </div>
+        </AdminPortal>
+      ) : null}
 
       {commandOpen ? (
         <AdminPortal>
@@ -2041,6 +2214,7 @@ function CarsView({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkCategory, setBulkCategory] = useState<CarCategory>("Business");
+  const filterShellRef = useRef<HTMLDivElement>(null);
   const activeFilterCount =
     (category !== "all" ? 1 : 0) +
     (status !== "all" ? 1 : 0) +
@@ -2057,6 +2231,56 @@ function CarsView({
     { value: weddingCount, label: "Toy", note: "Toy xidməti", icon: Heart },
   ];
   const selectedCars = allCars.filter((car) => selectedIds.includes(car.id));
+  const categoryOptions = [
+    { value: "all", label: "Hamısı" },
+    ...categories.map((item) => ({ value: item, label: categoryLabels[item] ?? item })),
+  ];
+  const serviceOptions = [
+    { value: "all", label: "Hamısı" },
+    { value: "rental", label: "İcarə" },
+    { value: "transfer", label: "Transfer" },
+    { value: "wedding", label: "Toy" },
+  ];
+  const statusOptions = [
+    { value: "all", label: "Hamısı" },
+    { value: "active", label: "Dərc olunub" },
+    { value: "hidden", label: "Qaralama" },
+  ];
+  const sortOptions = [
+    { value: "sort", label: "Ən köhnə" },
+    { value: "newest", label: "Son əlavə edilən" },
+    { value: "title", label: "A-Z" },
+    { value: "title-desc", label: "Z-A" },
+    { value: "price", label: "Qiymət ↑" },
+    { value: "price-desc", label: "Qiymət ↓" },
+  ];
+  const bulkCategoryOptions = carCategories.map((item) => ({
+    value: item,
+    label: categoryLabels[item] ?? item,
+  }));
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+
+    function onPointerDown(event: globalThis.PointerEvent) {
+      if (!filterShellRef.current?.contains(event.target as Node)) {
+        setFiltersOpen(false);
+      }
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setFiltersOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [filtersOpen]);
 
   function toggleSelected(id: string) {
     setSelectedIds((items) =>
@@ -2121,11 +2345,13 @@ function CarsView({
           ) : null}
         </label>
 
-        <div className="admin-filter-shell">
+        <div className="admin-filter-shell" ref={filterShellRef}>
           <button
             type="button"
             className={`admin-filter-button${filtersOpen ? " is-active" : ""}`}
             onClick={() => setFiltersOpen((value) => !value)}
+            onPointerMove={moveMagneticItem}
+            onPointerLeave={resetMagneticItem}
           >
             <SlidersHorizontal size={15} />
             Filter
@@ -2135,29 +2361,15 @@ function CarsView({
             <div className="admin-filter-popover">
               <label>
                 <span>Kateqoriya</span>
-                <select value={category} onChange={(event) => onCategory(event.target.value)}>
-                  <option value="all">Hamısı</option>
-                  {categories.map((item) => (
-                    <option key={item} value={item}>{categoryLabels[item] ?? item}</option>
-                  ))}
-                </select>
+                <AdminSelect value={category} onChange={onCategory} options={categoryOptions} label="Kateqoriya" />
               </label>
               <label>
                 <span>Xidmət</span>
-                <select value={service} onChange={(event) => onService(event.target.value)}>
-                  <option value="all">Hamısı</option>
-                  <option value="rental">İcarə</option>
-                  <option value="transfer">Transfer</option>
-                  <option value="wedding">Toy</option>
-                </select>
+                <AdminSelect value={service} onChange={onService} options={serviceOptions} label="Xidmət" />
               </label>
               <label>
                 <span>Status</span>
-                <select value={status} onChange={(event) => onStatus(event.target.value)}>
-                  <option value="all">Hamısı</option>
-                  <option value="active">Dərc olunub</option>
-                  <option value="hidden">Qaralama</option>
-                </select>
+                <AdminSelect value={status} onChange={onStatus} options={statusOptions} label="Status" />
               </label>
               <div>
                 <button
@@ -2178,14 +2390,7 @@ function CarsView({
           ) : null}
         </div>
 
-        <select value={sortKey} onChange={(event) => onSort(event.target.value)}>
-          <option value="sort">Ən köhnə</option>
-          <option value="newest">Son əlavə edilən</option>
-          <option value="title">A-Z</option>
-          <option value="title-desc">Z-A</option>
-          <option value="price">Qiymət ↑</option>
-          <option value="price-desc">Qiymət ↓</option>
-        </select>
+        <AdminSelect value={sortKey} onChange={onSort} options={sortOptions} label="Sıralama" icon={<ArrowUpDown size={15} />} compact />
         <div className="admin-segmented">
           <ShellButton active={layout === "list"} onClick={() => onLayout("list")} title="Siyahı görünüşü">
             <List size={15} />
@@ -2206,11 +2411,13 @@ function CarsView({
           <button type="button" onClick={() => runBulk({ isActive: false }, "qaralamaya keçirildi")}>Qaralama et</button>
           <button type="button" onClick={() => runBulk({ rentalVisible: true }, "icarə aktiv edildi")}>İcarəni aç</button>
           <button type="button" onClick={() => runBulk({ transferAvailable: true }, "transfer aktiv edildi")}>Transfer aç</button>
-          <select value={bulkCategory} onChange={(event) => setBulkCategory(event.target.value as CarCategory)}>
-            {carCategories.map((item) => (
-              <option key={item} value={item}>{categoryLabels[item] ?? item}</option>
-            ))}
-          </select>
+          <AdminSelect
+            value={bulkCategory}
+            onChange={(nextValue) => setBulkCategory(nextValue as CarCategory)}
+            options={bulkCategoryOptions}
+            label="Bulk kateqoriya"
+            compact
+          />
           <button type="button" onClick={() => runBulk({ category: bulkCategory }, `${categoryLabels[bulkCategory] ?? bulkCategory} kateqoriyası`)}>
             Kateqoriya
           </button>
@@ -3405,6 +3612,480 @@ function MediaView({ items }: { items: Array<{ id: string; title: string; src: s
       </section>
     </div>
   );
+}
+
+const notesStorageKey = "carbon-admin-notes";
+const notePriorityOptions: Array<{ value: AdminNoteItem["priority"]; label: string }> = [
+  { value: "low", label: "Aşağı" },
+  { value: "normal", label: "Normal" },
+  { value: "important", label: "Vacib" },
+  { value: "urgent", label: "Təcili" },
+];
+
+const notePriorityMeta: Record<AdminNoteItem["priority"], { label: string; color: string; soft: string; glow: string }> = {
+  low: {
+    label: "Aşağı",
+    color: "#60a5fa",
+    soft: "rgba(96, 165, 250, .09)",
+    glow: "rgba(96, 165, 250, .22)",
+  },
+  normal: {
+    label: "Normal",
+    color: "#34d399",
+    soft: "rgba(52, 211, 153, .09)",
+    glow: "rgba(52, 211, 153, .2)",
+  },
+  important: {
+    label: "Vacib",
+    color: "#f59e0b",
+    soft: "rgba(245, 158, 11, .1)",
+    glow: "rgba(245, 158, 11, .24)",
+  },
+  urgent: {
+    label: "Təcili",
+    color: "#fb7185",
+    soft: "rgba(251, 113, 133, .1)",
+    glow: "rgba(251, 113, 133, .26)",
+  },
+};
+
+function createAdminNote(): AdminNoteItem {
+  const now = new Date().toISOString();
+
+  return {
+    id: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `note-${Date.now()}`,
+    title: "",
+    body: "",
+    done: false,
+    priority: "normal",
+    image: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function normalizeAdminNote(note: Partial<AdminNoteItem>): AdminNoteItem {
+  const fallback = createAdminNote();
+  const rawPriority = String(note.priority ?? "");
+  const legacyPriority = rawPriority === "high" ? "urgent" : rawPriority;
+  const priority = legacyPriority && legacyPriority in notePriorityMeta ? legacyPriority : "normal";
+
+  return {
+    id: note.id ?? fallback.id,
+    title: note.title ?? "",
+    body: note.body ?? "",
+    done: Boolean(note.done),
+    priority: priority as AdminNoteItem["priority"],
+    image: note.image ?? null,
+    createdAt: note.createdAt ?? note.updatedAt ?? fallback.createdAt,
+    updatedAt: note.updatedAt ?? fallback.updatedAt,
+  };
+}
+
+function loadAdminNotes() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(notesStorageKey);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw) as Partial<AdminNoteItem>[];
+    return Array.isArray(parsed) ? parsed.map(normalizeAdminNote) : [];
+  } catch {
+    return [];
+  }
+}
+
+function NotesView({
+  notes,
+  setNotes,
+}: {
+  notes: AdminNoteItem[];
+  setNotes: Dispatch<SetStateAction<AdminNoteItem[]>>;
+}) {
+  const [draftNote, setDraftNote] = useState<AdminNoteItem | null>(() => notes[0] ?? null);
+  const [filter, setFilter] = useState<"all" | "open" | "done">("all");
+  const [query, setQuery] = useState("");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const noteBodyRef = useRef<HTMLTextAreaElement>(null);
+  const activeNote = draftNote;
+  const doneCount = notes.filter((note) => note.done).length;
+  const openCount = notes.length - doneCount;
+  const filteredNotes = notes.filter((note) => {
+    const matchesFilter =
+      filter === "all" ||
+      (filter === "open" && !note.done) ||
+      (filter === "done" && note.done);
+    const haystack = `${note.title} ${note.body} ${notePriorityMeta[note.priority].label}`.toLowerCase();
+
+    return matchesFilter && haystack.includes(query.trim().toLowerCase());
+  });
+
+  const persistNotes = useCallback((nextNotes: AdminNoteItem[]) => {
+    window.localStorage.setItem(notesStorageKey, JSON.stringify(nextNotes));
+  }, []);
+
+  function updateDraft(patch: Partial<AdminNoteItem>) {
+    setDraftNote((note) =>
+      note ? { ...note, ...patch, updatedAt: new Date().toISOString() } : note
+    );
+  }
+
+  function addNote() {
+    const next = createAdminNote();
+    setDraftNote(next);
+    setFilter("all");
+  }
+
+  const saveNote = useCallback(() => {
+    if (!draftNote) return;
+
+    const cleanNote = {
+      ...draftNote,
+      title: draftNote.title.trim(),
+      body: draftNote.body.trim(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setNotes((items) => {
+      const exists = items.some((note) => note.id === cleanNote.id);
+      const nextNotes = exists
+        ? items.map((note) => (note.id === cleanNote.id ? cleanNote : note))
+        : [cleanNote, ...items];
+
+      persistNotes(nextNotes);
+      return nextNotes;
+    });
+    setDraftNote(cleanNote);
+  }, [draftNote, persistNotes, setNotes]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        saveNote();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [saveNote]);
+
+  function deleteNote(id: string) {
+    const next = notes.filter((note) => note.id !== id);
+    setNotes(next);
+    persistNotes(next);
+
+    const nextActive = next[0] ?? null;
+    setDraftNote(nextActive);
+  }
+
+  function attachImage(file?: File | null) {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateDraft({ image: typeof reader.result === "string" ? reader.result : null });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function formatNote(command: "bold" | "italic" | "underline" | "list" | "checklist" | "link" | "code") {
+    if (!activeNote || !noteBodyRef.current) return;
+
+    const input = noteBodyRef.current;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const selected = activeNote.body.slice(start, end);
+    const formats: Record<typeof command, [string, number]> = {
+      bold: [`**${selected || "qalın mətn"}**`, selected ? 2 : 2],
+      italic: [`_${selected || "italik mətn"}_`, selected ? 1 : 1],
+      underline: [`<u>${selected || "altı xətli mətn"}</u>`, selected ? 3 : 3],
+      list: [`- ${selected || "siyahı elementi"}`, 2],
+      checklist: [`- [ ] ${selected || "tapşırıq"}`, 6],
+      link: [`[${selected || "link"}](https://)`, selected ? 1 : 1],
+      code: [`\`${selected || "kod"}\``, 1],
+    };
+    const [nextText, cursorOffset] = formats[command];
+    const body = `${activeNote.body.slice(0, start)}${nextText}${activeNote.body.slice(end)}`;
+
+    updateDraft({ body });
+    window.requestAnimationFrame(() => {
+      input.focus();
+      const cursor = start + nextText.length - cursorOffset;
+      input.setSelectionRange(cursor, cursor);
+    });
+  }
+
+  const activeMeta = activeNote ? notePriorityMeta[activeNote.priority] : notePriorityMeta.normal;
+  const filterItems = [
+    { key: "all", label: "Hamısı", count: notes.length },
+    { key: "open", label: "Açıq", count: openCount },
+    { key: "done", label: "Tamamlanan", count: doneCount },
+  ] as const;
+
+  return (
+    <div className="admin-view admin-notes-page">
+      <header className="admin-notes-hero">
+        <div>
+          <span><NotebookPen size={28} /></span>
+          <div>
+            <p>QEYDLƏR</p>
+            <h1>Qeydlər</h1>
+            <small>Şəxsi qeydlər, tapşırıqlar və vacib məlumatlar.</small>
+          </div>
+        </div>
+        <div className="admin-notes-header-side">
+          <div className="admin-notes-compact-stats">
+            <span><b>{notes.length}</b> Ümumi</span>
+            <span><b>{openCount}</b> Açıq</span>
+            <span><b>{doneCount}</b> Tamamlandı</span>
+          </div>
+          <button type="button" className="admin-primary-button" onClick={addNote}>
+            <Plus size={15} />
+            Yeni qeyd
+          </button>
+        </div>
+      </header>
+
+      <section className="admin-notes-workspace">
+        <aside className="admin-notes-browser">
+          <div className="admin-notes-tabs">
+            {filterItems.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                className={filter === item.key ? "is-active" : ""}
+                onClick={() => setFilter(item.key)}
+              >
+                {item.label}
+                <small>{item.count}</small>
+              </button>
+            ))}
+          </div>
+          <label className="admin-notes-search">
+            <Search size={15} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Qeydlərdə axtar..." />
+          </label>
+          <div className="admin-notes-list">
+            <AnimatePresence initial={false}>
+              {filteredNotes.map((note) => {
+                const meta = notePriorityMeta[note.priority];
+
+                return (
+                  <motion.button
+                    key={note.id}
+                    type="button"
+                    style={{
+                      "--note-accent": meta.color,
+                      "--note-soft": meta.soft,
+                      "--note-glow": meta.glow,
+                    } as CSSProperties}
+                    className={`${activeNote?.id === note.id ? "is-active" : ""}${note.done ? " is-done" : ""}`}
+                    onClick={() => {
+                      setDraftNote(note);
+                    }}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <i />
+                    <span>
+                      <strong>{note.title.trim() || "Adsız qeyd"}</strong>
+                      <small>{note.body.trim() || "Detalları əlavə edin"}</small>
+                      <em>{formatNoteDate(note.updatedAt)}</em>
+                    </span>
+                    <b>{note.done ? "Tamam" : meta.label}</b>
+                    {note.image ? <Images size={14} /> : null}
+                  </motion.button>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        </aside>
+
+        {activeNote ? (
+          <article
+            className="admin-note-editor"
+            style={{
+              "--note-accent": activeMeta.color,
+              "--note-soft": activeMeta.soft,
+              "--note-glow": activeMeta.glow,
+            } as CSSProperties}
+          >
+            <header>
+              <div>
+                <span className="admin-note-save-state is-saved">
+                  <i />
+                  Manual saxlama
+                </span>
+                <h2>{activeNote.title.trim() || "Yeni qeyd"}</h2>
+              </div>
+              <div className="admin-note-actions">
+                <label className="admin-note-image-button">
+                  <ImagePlus size={15} />
+                  Şəkil əlavə et
+                  <input type="file" accept="image/*" onChange={(event) => attachImage(event.target.files?.[0])} />
+                </label>
+                <button type="button" className="admin-primary-button" onClick={saveNote}>
+                  <Save size={14} />
+                  Qeydi saxla
+                </button>
+              </div>
+            </header>
+
+            <div className="admin-note-grid">
+              <label className="admin-field admin-field-span">
+                <span>Başlıq</span>
+                <span className="admin-field-control">
+                  <input value={activeNote.title} onChange={(event) => updateDraft({ title: event.target.value })} placeholder="Məs: Yeni ideya, tapşırıq, görüş..." />
+                </span>
+              </label>
+              <label className="admin-field">
+                <span>Status</span>
+                <AdminSelect
+                  value={activeNote.done ? "done" : "open"}
+                  onChange={(status) => updateDraft({ done: status === "done" })}
+                  options={[
+                    { value: "open", label: "Açıq todo" },
+                    { value: "done", label: "Tamamlandı" },
+                  ]}
+                  label="Status"
+                  icon={<CheckCircle2 size={15} />}
+                />
+              </label>
+              <label className="admin-field">
+                <span>Prioritet</span>
+                <AdminSelect
+                  value={activeNote.priority}
+                  onChange={(priority) => updateDraft({ priority: priority as AdminNoteItem["priority"] })}
+                  options={notePriorityOptions}
+                  label="Prioritet"
+                  icon={<Flag size={15} />}
+                />
+              </label>
+            </div>
+
+            <div className="admin-note-writing-shell">
+              <div className="admin-note-toolbar">
+                <button type="button" onClick={() => formatNote("bold")} title="Bold"><strong>B</strong></button>
+                <button type="button" onClick={() => formatNote("italic")} title="Italic"><Italic size={15} /></button>
+                <button type="button" onClick={() => formatNote("underline")} title="Underline"><Underline size={15} /></button>
+                <button type="button" onClick={() => formatNote("list")} title="List"><ListTodo size={15} /></button>
+                <button type="button" onClick={() => formatNote("checklist")} title="Checklist"><ListChecks size={15} /></button>
+                <button type="button" onClick={() => formatNote("link")} title="Link"><Link2 size={15} /></button>
+                <button type="button" onClick={() => formatNote("code")} title="Code"><Code2 size={15} /></button>
+                <label title="Image">
+                  <ImagePlus size={15} />
+                  <input type="file" accept="image/*" onChange={(event) => attachImage(event.target.files?.[0])} />
+                </label>
+              </div>
+              <textarea
+                ref={noteBodyRef}
+                value={activeNote.body}
+                onChange={(event) => updateDraft({ body: event.target.value })}
+                rows={12}
+                placeholder="Qeydinizi buraya yazın..."
+              />
+            </div>
+
+            {activeNote.image ? (
+              <div className="admin-note-attachments">
+                <article>
+                  <span><Image src={activeNote.image} alt={activeNote.title || "Qeyd şəkli"} fill sizes="180px" /></span>
+                  <div>
+                    <strong>Əlavə şəkil</strong>
+                    <small>Qeydə bağlı vizual məlumat</small>
+                  </div>
+                  <button type="button" onClick={() => setPreviewImage(activeNote.image ?? null)}><Eye size={14} /> Önizlə</button>
+                  <label>
+                    <Upload size={14} />
+                    Dəyiş
+                    <input type="file" accept="image/*" onChange={(event) => attachImage(event.target.files?.[0])} />
+                  </label>
+                  <button type="button" onClick={() => updateDraft({ image: null })}><Trash2 size={14} /></button>
+                </article>
+              </div>
+            ) : (
+              <label className="admin-note-dropzone">
+                <ImagePlus size={22} />
+                <span>Şəkil əlavə et</span>
+                <small>PNG, JPG və ya ekran görüntüsü. Saxlamaq üçün Qeydi saxla düyməsini basın.</small>
+                <input type="file" accept="image/*" onChange={(event) => attachImage(event.target.files?.[0])} />
+              </label>
+            )}
+          </article>
+        ) : null}
+
+        {!activeNote ? (
+          <article className="admin-note-empty-state">
+            <NotebookPen size={34} />
+            <h2>Hələ qeyd yoxdur</h2>
+            <p>Yeni qeyd yaradın, məlumatları doldurun və sonra manual olaraq saxlayın.</p>
+            <button type="button" className="admin-primary-button" onClick={addNote}>
+              <Plus size={15} />
+              Yeni qeyd
+            </button>
+          </article>
+        ) : null}
+
+        {activeNote ? (
+          <aside className="admin-note-inspector">
+            <section>
+              <h3>Məlumat</h3>
+              <dl>
+                <div><dt>Yaradılıb</dt><dd>{formatNoteDate(activeNote.createdAt)}</dd></div>
+                <div><dt>Son dəyişiklik</dt><dd>{formatNoteDate(activeNote.updatedAt)}</dd></div>
+                <div><dt>Prioritet</dt><dd style={{ color: activeMeta.color }}>{activeMeta.label}</dd></div>
+                <div><dt>Status</dt><dd>{activeNote.done ? "Tamamlandı" : "Açıq"}</dd></div>
+                <div><dt>Attachment</dt><dd>{activeNote.image ? "1 şəkil" : "Yoxdur"}</dd></div>
+              </dl>
+            </section>
+            <section>
+              <h3>Qısa yollar</h3>
+              <div className="admin-note-shortcuts">
+                <span><kbd>⌘</kbd><kbd>S</kbd> Yadda saxla</span>
+                <span><kbd>⌘</kbd><kbd>K</kbd> Axtarış</span>
+                <span><kbd>Esc</kbd> Popup bağla</span>
+              </div>
+            </section>
+            <button type="button" className="admin-danger-button" onClick={() => deleteNote(activeNote.id)}>
+              <Trash2 size={14} />
+              Qeydi sil
+            </button>
+          </aside>
+        ) : null}
+      </section>
+
+      {previewImage ? (
+        <AdminPortal>
+          <div className="admin-preview-layer" role="dialog" aria-modal="true" aria-label="Qeyd şəkli">
+            <button type="button" className="admin-preview-backdrop" onClick={() => setPreviewImage(null)} aria-label="Önizləməni bağla" />
+            <section className="admin-note-image-preview">
+              <button type="button" className="admin-icon-button" onClick={() => setPreviewImage(null)} aria-label="Bağla">
+                <X size={16} />
+              </button>
+              <Image src={previewImage} alt="Qeyd şəkli" fill sizes="900px" />
+            </section>
+          </div>
+        </AdminPortal>
+      ) : null}
+    </div>
+  );
+}
+
+function formatNoteDate(value: string) {
+  return new Intl.DateTimeFormat("az-AZ", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
 function SettingsView({
@@ -5099,16 +5780,15 @@ function CarEditorForm({
                 </label>
                 <label className="admin-field">
                   <span>Başqa variantdan məlumatları kopyala</span>
-                  <span className="admin-field-control is-select">
-                    <select value={copySourceIndex} onChange={(event) => setCopySourceIndex(Number(event.target.value))}>
-                      {variantSlots.map((slot, index) => (
-                        <option key={`${slot.key}-copy`} value={index}>
-                          {variantTitleParts(slot.variant, index).title}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown size={15} />
-                  </span>
+                  <AdminSelect
+                    value={String(copySourceIndex)}
+                    onChange={(nextValue) => setCopySourceIndex(Number(nextValue))}
+                    options={variantSlots.map((slot, index) => ({
+                      value: String(index),
+                      label: variantTitleParts(slot.variant, index).title,
+                    }))}
+                    label="Başqa variantdan məlumatları kopyala"
+                  />
                 </label>
                 {suggestedPrice !== null ? (
                   <div className="admin-price-suggestion">
