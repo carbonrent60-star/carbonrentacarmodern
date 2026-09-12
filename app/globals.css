@@ -780,13 +780,41 @@ button {
 }
 
 .car-brand {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   margin-bottom: 3px;
   color: #929292;
   font-size: 9px;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.car-brand i,
+.hb-car-brand-logo {
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(24, 23, 23, .08);
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .72);
+  box-shadow: 0 8px 22px rgba(24, 23, 23, .08);
+  color: #191919;
+}
+
+.car-brand i svg,
+.hb-car-brand-logo svg {
+  max-width: 17px;
+  max-height: 17px;
+}
+
+.car-brand i strong,
+.hb-car-brand-logo strong {
+  color: #191919;
+  font-size: 7px;
+  letter-spacing: 0;
 }
 
 .car-name-row h3 {
@@ -8363,13 +8391,25 @@ button {
 }
 
 .carbon-detail-kicker {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
   margin-bottom: 14px;
   color: var(--detail-accent);
   font-size: 8px;
   font-weight: 650;
   letter-spacing: .17em;
   text-transform: uppercase;
+}
+
+.carbon-detail-kicker i {
+  width: 34px;
+  height: 34px;
+}
+
+.carbon-detail-kicker i svg {
+  max-width: 24px;
+  max-height: 24px;
 }
 
 .carbon-detail-title-row h1 {
@@ -10129,6 +10169,22 @@ button {
   font-size: 7px;
 }
 
+.carbon-related-info .carbon-related-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.carbon-related-brand i {
+  width: 24px;
+  height: 24px;
+}
+
+.carbon-related-brand i svg {
+  max-width: 17px;
+  max-height: 17px;
+}
+
 .carbon-related-info strong {
   font-size: 12px;
   font-weight: 550;
@@ -11244,6 +11300,41 @@ button {
   font-size: 6px;
   letter-spacing: .15em;
   text-transform: uppercase;
+}
+
+.fleet-v4-card-title > div:first-child > .fleet-v4-brand-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.fleet-v4-brand-line i,
+.carbon-detail-kicker i,
+.carbon-related-brand i {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(24, 23, 23, .08);
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .72);
+  box-shadow: 0 8px 22px rgba(24, 23, 23, .08);
+  color: #191919;
+}
+
+.fleet-v4-brand-line i svg,
+.carbon-detail-kicker i svg,
+.carbon-related-brand i svg {
+  max-width: 20px;
+  max-height: 20px;
+}
+
+.fleet-v4-brand-line i strong,
+.carbon-detail-kicker i strong,
+.carbon-related-brand i strong {
+  color: #191919;
+  font-size: 8px;
+  letter-spacing: 0;
 }
 
 .fleet-v4-card-title h2 {
@@ -24609,6 +24700,10 @@ body:has(.carbon-shared-navbar-light) {
 
 .hb-car-dropdown-info small {
   overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
 
   color: #a19c97;
 

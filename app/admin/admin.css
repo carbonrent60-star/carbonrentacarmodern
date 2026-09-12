@@ -6772,9 +6772,13 @@ kbd {
 }
 
 .admin-car-hero {
+  --admin-car-hero-accent: 236, 72, 153;
+  --admin-car-hero-soft: 168, 85, 247;
+  --admin-car-hero-deep: 13, 20, 34;
+  --admin-car-hero-glow: 62%;
   min-height: 244px;
   padding: 28px 28px 24px;
-  border: 1px solid rgba(148, 163, 184, .12);
+  border: 1px solid rgba(var(--admin-car-hero-accent), .18);
   border-radius: 22px;
   position: relative;
   overflow: hidden;
@@ -6783,11 +6787,19 @@ kbd {
   align-items: center;
   gap: 24px;
   background:
-    radial-gradient(circle at 67% 44%, rgba(236, 72, 153, .28), transparent 30%),
-    radial-gradient(circle at 38% 10%, rgba(124, 58, 237, .18), transparent 34%),
-    linear-gradient(135deg, rgba(14, 22, 38, .96), rgba(8, 13, 24, .98));
-  box-shadow: 0 28px 90px rgba(0, 0, 0, .24), inset 0 1px rgba(255, 255, 255, .06);
+    radial-gradient(circle at var(--admin-car-hero-glow) 48%, rgba(var(--admin-car-hero-accent), .30), transparent 30%),
+    radial-gradient(circle at 38% 10%, rgba(var(--admin-car-hero-soft), .18), transparent 36%),
+    linear-gradient(135deg, rgba(var(--admin-car-hero-deep), .98), rgba(8, 13, 24, .98));
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, .24),
+    0 0 0 1px rgba(var(--admin-car-hero-accent), .035) inset,
+    inset 0 1px rgba(255, 255, 255, .06);
   isolation: isolate;
+  transition:
+    border-color 420ms var(--admin-ease),
+    box-shadow 420ms var(--admin-ease),
+    background 520ms var(--admin-ease),
+    transform 420ms var(--admin-ease);
 }
 
 .admin-car-hero::before {
@@ -6800,18 +6812,43 @@ kbd {
     linear-gradient(90deg, rgba(255, 255, 255, .035) 1px, transparent 1px);
   background-size: 34px 34px;
   mask-image: linear-gradient(90deg, rgba(0, 0, 0, .28), rgba(0, 0, 0, .86), rgba(0, 0, 0, .42));
+  opacity: .9;
+  transition: opacity 420ms var(--admin-ease);
 }
 
 .admin-car-hero::after {
   content: "";
   position: absolute;
-  right: 18%;
+  right: 19%;
   bottom: 22px;
   width: 40%;
   height: 52px;
   z-index: -1;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, .52), transparent 68%);
+  background:
+    radial-gradient(ellipse at center, rgba(0, 0, 0, .52), transparent 68%),
+    linear-gradient(90deg, transparent, rgba(var(--admin-car-hero-accent), .16), transparent);
   filter: blur(4px);
+  opacity: .9;
+  transition:
+    opacity 420ms var(--admin-ease),
+    transform 520ms var(--admin-ease);
+}
+
+.admin-car-hero:hover {
+  border-color: rgba(var(--admin-car-hero-accent), .28);
+  box-shadow:
+    0 34px 100px rgba(0, 0, 0, .28),
+    0 0 0 1px rgba(var(--admin-car-hero-accent), .05) inset,
+    inset 0 1px rgba(255, 255, 255, .08);
+}
+
+.admin-car-hero:hover::before {
+  opacity: 1;
+}
+
+.admin-car-hero:hover::after {
+  opacity: 1;
+  transform: translate3d(10px, -2px, 0) scaleX(1.05);
 }
 
 .admin-car-hero-copy {
@@ -6889,21 +6926,50 @@ kbd {
 .admin-car-hero-pills span {
   min-height: 36px;
   padding: 0 14px;
-  border: 1px solid rgba(203, 213, 225, .14);
+  border: 1px solid rgba(var(--admin-car-hero-accent), .18);
   border-radius: 11px;
   display: inline-flex;
   align-items: center;
-  background: rgba(15, 23, 42, .68);
+  background:
+    linear-gradient(135deg, rgba(var(--admin-car-hero-accent), .11), rgba(15, 23, 42, .62));
   color: #dbe4f0;
   font-size: 13px;
   font-weight: 700;
   box-shadow: inset 0 1px rgba(255, 255, 255, .06);
+  transition:
+    border-color 320ms var(--admin-ease),
+    background 320ms var(--admin-ease),
+    transform 320ms var(--admin-ease);
+}
+
+.admin-car-hero:hover .admin-car-hero-pills span {
+  border-color: rgba(var(--admin-car-hero-accent), .26);
+  transform: translate3d(0, -1px, 0);
 }
 
 .admin-car-hero-image {
   min-height: 220px;
   position: relative;
   z-index: 1;
+  isolation: isolate;
+  animation: adminHeroImageIn 520ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.admin-car-hero-image::before {
+  content: "";
+  width: 78%;
+  height: 46%;
+  position: absolute;
+  left: 11%;
+  bottom: 6%;
+  z-index: -1;
+  border-radius: 999px;
+  background: radial-gradient(ellipse at center, rgba(var(--admin-car-hero-accent), .22), transparent 68%);
+  filter: blur(18px);
+  opacity: .78;
+  transition:
+    opacity 420ms var(--admin-ease),
+    transform 520ms var(--admin-ease);
 }
 
 .admin-car-hero-image img {
@@ -6926,19 +6992,47 @@ kbd {
     contrast(1.05);
 }
 
+.admin-car-hero:hover .admin-car-hero-image::before {
+  opacity: .96;
+  transform: translate3d(6px, -2px, 0) scale(1.04);
+}
+
+@keyframes adminHeroImageIn {
+  from {
+    opacity: 0;
+    transform: translate3d(24px, 10px, 0) scale(.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
 .admin-car-brand-card {
   min-height: 150px;
   padding: 22px;
-  border: 1px solid rgba(203, 213, 225, .12);
+  border: 1px solid rgba(var(--admin-car-hero-accent), .18);
   border-radius: 20px;
   display: grid;
   align-content: center;
   justify-items: center;
   gap: 10px;
-  background: rgba(15, 23, 42, .42);
+  background:
+    radial-gradient(circle at 50% 0, rgba(var(--admin-car-hero-accent), .15), transparent 62%),
+    rgba(15, 23, 42, .48);
   box-shadow: inset 0 1px rgba(255, 255, 255, .08);
   backdrop-filter: blur(18px);
   text-align: center;
+  transition:
+    border-color 360ms var(--admin-ease),
+    background 420ms var(--admin-ease),
+    transform 360ms var(--admin-ease);
+}
+
+.admin-car-hero:hover .admin-car-brand-card {
+  border-color: rgba(var(--admin-car-hero-accent), .28);
+  transform: translate3d(0, -2px, 0);
 }
 
 .admin-car-brand-card span {
@@ -6947,8 +7041,10 @@ kbd {
   border-radius: 18px;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, .09);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, .12), rgba(var(--admin-car-hero-accent), .12));
   color: #f8fafc;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .08);
 }
 
 .admin-car-brand-card > strong {
@@ -7858,13 +7954,17 @@ kbd {
 }
 
 .is-light-theme .admin-car-brand-card span {
-  background: rgba(15, 23, 42, .06);
-  color: #0f172a;
+  background: rgba(15, 23, 42, .9);
+  color: #f8fafc;
 }
 
 .is-light-theme .admin-car-brand-card > strong,
 .is-light-theme .admin-car-brand-card span strong {
   color: #0f172a;
+}
+
+.is-light-theme .admin-car-brand-card span strong {
+  color: #f8fafc;
 }
 
 .is-light-theme .admin-car-brand-card small {

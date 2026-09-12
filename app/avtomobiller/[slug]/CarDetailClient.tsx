@@ -32,6 +32,7 @@ import {
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import CarbonNavbar from "@/components/CarbonNavbar";
+import { CarBrandLogo } from "@/components/CarBrandLogo";
 import CarbonDateRangePicker from "@/components/CarbonDateRangePicker";
 import {
   translateCarValue,
@@ -962,6 +963,9 @@ export default function CarDetailClient({
               >
                 <div>
                   <span className="carbon-detail-kicker">
+                    <i>
+                      <CarBrandLogo brand={car.brand} size={20} />
+                    </i>
                     {car.brand} · {car.category}
                   </span>
 
@@ -1447,7 +1451,12 @@ export default function CarDetailClient({
 
                     <div className="carbon-related-info">
                       <div>
-                        <span>{item.brand}</span>
+                        <span className="carbon-related-brand">
+                          <i>
+                            <CarBrandLogo brand={item.brand} size={18} />
+                          </i>
+                          {item.brand}
+                        </span>
                         <strong>{item.title}</strong>
                       </div>
 

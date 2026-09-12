@@ -5,6 +5,7 @@ import {
   useCarbonCopy,
 } from "@/lib/carbon-locale";
 import { fetchPublicCars } from "@/lib/supabase/cars";
+import { CarBrandLogo } from "@/components/CarBrandLogo";
 import {
   useEffect,
   useMemo,
@@ -875,6 +876,9 @@ function CarPicker({
 
                 <span className="hb-car-dropdown-info">
                   <small>
+                    <span className="hb-car-brand-logo">
+                      <CarBrandLogo brand={car.brand} size={15} />
+                    </span>
                     {car.brand}
                     <i>·</i>
                     {copy.carsPage.categories[car.category as keyof typeof copy.carsPage.categories] ?? car.category}

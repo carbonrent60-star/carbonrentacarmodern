@@ -35,6 +35,7 @@ import {
 } from "@/data/cars";
 import { fetchPublicCars } from "@/lib/supabase/cars";
 import CarbonNavbar from "@/components/CarbonNavbar";
+import { CarBrandLogo } from "@/components/CarBrandLogo";
 import {
   translateCarValue,
   useCarbonCopy,
@@ -1332,7 +1333,10 @@ export default function CarsClient() {
                           <div className="fleet-v4-card-body">
                             <div className="fleet-v4-card-title">
                               <div>
-                                <span>
+                                <span className="fleet-v4-brand-line">
+                                  <i>
+                                    <CarBrandLogo brand={car.brand} size={20} />
+                                  </i>
                                   {car.brand}
                                 </span>
 

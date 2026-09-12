@@ -16,6 +16,7 @@ import {
   type Car,
   getShortTermPrice,
 } from "@/data/cars";
+import { CarBrandLogo } from "@/components/CarBrandLogo";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -88,7 +89,12 @@ export default function CarCard({
       <div className="car-card-content">
         <div className="car-name-row">
           <div>
-            <span className="car-brand">{car.brand}</span>
+            <span className="car-brand">
+              <i>
+                <CarBrandLogo brand={car.brand} size={18} />
+              </i>
+              {car.brand}
+            </span>
             <h3>{car.title}</h3>
           </div>
 

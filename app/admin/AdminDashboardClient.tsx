@@ -5,17 +5,6 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
 import {
-  BMWIconDark,
-  ChevroletIconDark,
-  FordIconDark,
-  HyundaiIconDark,
-  JaguarIconDark,
-  KiaIconDark,
-  LandroverIconDark,
-  MBIconDark,
-  ToyotaIconDark,
-} from "@cardog-icons/react";
-import {
   ArrowRight,
   BadgeHelp,
   Bell,
@@ -57,7 +46,7 @@ import {
   WandSparkles,
   type LucideIcon,
 } from "lucide-react";
-import { type ElementType, type FormEvent, type PointerEvent, type ReactNode, type SVGProps, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type FormEvent, type PointerEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteBlogInlineAction,
   deleteCarInlineAction,
@@ -72,6 +61,7 @@ import {
   type AdminActivityLog,
 } from "./actions";
 import AdminImageField from "./AdminImageField";
+import { CarBrandLogo } from "@/components/CarBrandLogo";
 import type { Car, CarCategory, CarVariant } from "@/data/cars";
 import type { AdminBlogPost } from "@/lib/supabase/blogs";
 import {
@@ -308,26 +298,62 @@ const categoryLabels: Record<string, string> = {
   Sport: "Sport",
 };
 
-const brandLogoMap: Record<string, ElementType<SVGProps<SVGSVGElement>>> = {
-  BMW: BMWIconDark,
-  Chevrolet: ChevroletIconDark,
-  Ford: FordIconDark,
-  Hyundai: HyundaiIconDark,
-  Jaguar: JaguarIconDark,
-  Kia: KiaIconDark,
-  "Land Rover": LandroverIconDark,
-  "Mercedes-Benz": MBIconDark,
-  Toyota: ToyotaIconDark,
-};
+const adminBrandOptions = [
+  "Acura",
+  "Alfa Romeo",
+  "Aston Martin",
+  "Audi",
+  "BMW",
+  "Bentley",
+  "Bugatti",
+  "Buick",
+  "BYD",
+  "Cadillac",
+  "Chevrolet",
+  "Chrysler",
+  "Dodge",
+  "Ferrari",
+  "Fiat",
+  "Ford",
+  "Genesis",
+  "GMC",
+  "Honda",
+  "Hummer",
+  "Hyundai",
+  "Infiniti",
+  "Jaguar",
+  "Jeep",
+  "Kia",
+  "Koenigsegg",
+  "Lamborghini",
+  "Land Rover",
+  "Lexus",
+  "Lincoln",
+  "Lotus",
+  "Lucid",
+  "Maserati",
+  "Mazda",
+  "McLaren",
+  "Mercedes-Benz",
+  "Mini",
+  "Mitsubishi",
+  "Nissan",
+  "Pagani",
+  "Polestar",
+  "Porsche",
+  "RAM",
+  "Rivian",
+  "Rolls-Royce",
+  "Subaru",
+  "Tesla",
+  "Toyota",
+  "VinFast",
+  "Volkswagen",
+  "Volvo",
+];
 
 function BrandLogo({ brand, size = 42 }: { brand?: string | null; size?: number }) {
-  const Logo = brand ? brandLogoMap[brand] : null;
-
-  if (Logo) {
-    return <Logo width={size} height={size} aria-label={`${brand} loqosu`} />;
-  }
-
-  return <strong aria-label={`${brand ?? "Brend"} loqosu`}>{(brand ?? "C").slice(0, 2).toUpperCase()}</strong>;
+  return <CarBrandLogo brand={brand} size={size} tone="dark" />;
 }
 
 const rentalPriceLabels: Record<(typeof rentalPriceKeys)[number], string> = {
@@ -414,6 +440,7 @@ function Field({
   placeholder,
   span,
   icon,
+  suggestions,
 }: {
   label: string;
   name: string;
@@ -422,7 +449,10 @@ function Field({
   placeholder?: string;
   span?: boolean;
   icon?: ReactNode;
+  suggestions?: string[];
 }) {
+  const listId = suggestions?.length ? `${name}-suggestions` : undefined;
+
   return (
     <label className={`admin-field${span ? " admin-field-span" : ""}${icon ? " has-icon" : ""}`}>
       <span>{label}</span>
@@ -431,9 +461,17 @@ function Field({
         <input
           name={name}
           type={type}
+          list={listId}
           placeholder={placeholder}
           defaultValue={defaultValue ?? ""}
         />
+        {listId ? (
+          <datalist id={listId}>
+            {suggestions?.map((item) => (
+              <option key={item} value={item} />
+            ))}
+          </datalist>
+        ) : null}
       </span>
     </label>
   );
@@ -576,6 +614,234 @@ function displayPrice(car: AdminCar, mode: CarTableMode = "fleet") {
 
 function displayImage(car: AdminCar, mode: CarTableMode = "fleet") {
   return mode === "wedding" ? car.weddingThumbnail ?? car.thumbnail : car.thumbnail;
+}
+
+type AdminHeroPalette = { accent: string; soft: string; deep: string; glow: string };
+
+const adminCarHeroPalettes: Record<string, AdminHeroPalette> = {
+  Acura: { accent: "96, 165, 250", soft: "37, 99, 235", deep: "10, 18, 34", glow: "62%" },
+  "Alfa Romeo": { accent: "248, 113, 113", soft: "185, 28, 28", deep: "27, 10, 13", glow: "58%" },
+  "Aston Martin": { accent: "52, 211, 153", soft: "20, 184, 166", deep: "8, 24, 22", glow: "62%" },
+  Audi: { accent: "226, 232, 240", soft: "100, 116, 139", deep: "15, 23, 42", glow: "66%" },
+  "BMW": { accent: "59, 130, 246", soft: "37, 99, 235", deep: "15, 23, 42", glow: "62%" },
+  Bentley: { accent: "74, 222, 128", soft: "22, 163, 74", deep: "8, 24, 18", glow: "63%" },
+  Bugatti: { accent: "96, 165, 250", soft: "29, 78, 216", deep: "9, 16, 34", glow: "62%" },
+  Buick: { accent: "248, 113, 113", soft: "220, 38, 38", deep: "24, 12, 18", glow: "58%" },
+  BYD: { accent: "248, 113, 113", soft: "220, 38, 38", deep: "24, 12, 18", glow: "58%" },
+  Cadillac: { accent: "251, 191, 36", soft: "168, 85, 247", deep: "26, 18, 26", glow: "58%" },
+  Chevrolet: { accent: "251, 191, 36", soft: "245, 158, 11", deep: "26, 19, 8", glow: "58%" },
+  Chrysler: { accent: "147, 197, 253", soft: "59, 130, 246", deep: "10, 18, 34", glow: "62%" },
+  Dodge: { accent: "251, 113, 133", soft: "225, 29, 72", deep: "29, 10, 18", glow: "57%" },
+  Ferrari: { accent: "251, 191, 36", soft: "239, 68, 68", deep: "29, 16, 8", glow: "56%" },
+  Fiat: { accent: "248, 113, 113", soft: "220, 38, 38", deep: "24, 12, 18", glow: "58%" },
+  Ford: { accent: "249, 115, 22", soft: "37, 99, 235", deep: "14, 18, 30", glow: "60%" },
+  Genesis: { accent: "226, 232, 240", soft: "100, 116, 139", deep: "17, 24, 39", glow: "66%" },
+  GMC: { accent: "248, 113, 113", soft: "220, 38, 38", deep: "24, 12, 18", glow: "58%" },
+  Honda: { accent: "248, 113, 113", soft: "220, 38, 38", deep: "24, 12, 18", glow: "58%" },
+  Hummer: { accent: "132, 204, 22", soft: "77, 124, 15", deep: "17, 24, 12", glow: "62%" },
+  "Mercedes-Benz": { accent: "203, 213, 225", soft: "100, 116, 139", deep: "17, 24, 39", glow: "66%" },
+  "Hyundai": { accent: "56, 189, 248", soft: "14, 165, 233", deep: "12, 20, 36", glow: "60%" },
+  Infiniti: { accent: "203, 213, 225", soft: "100, 116, 139", deep: "17, 24, 39", glow: "66%" },
+  "Kia": { accent: "248, 113, 113", soft: "220, 38, 38", deep: "24, 12, 18", glow: "58%" },
+  Jaguar: { accent: "244, 114, 182", soft: "219, 39, 119", deep: "28, 13, 28", glow: "58%" },
+  Jeep: { accent: "132, 204, 22", soft: "77, 124, 15", deep: "17, 24, 12", glow: "62%" },
+  Koenigsegg: { accent: "96, 165, 250", soft: "239, 68, 68", deep: "12, 16, 32", glow: "58%" },
+  Lamborghini: { accent: "251, 191, 36", soft: "245, 158, 11", deep: "29, 19, 8", glow: "56%" },
+  "Land Rover": { accent: "34, 197, 94", soft: "21, 128, 61", deep: "12, 24, 18", glow: "64%" },
+  "Range Rover": { accent: "34, 197, 94", soft: "21, 128, 61", deep: "12, 24, 18", glow: "64%" },
+  Lexus: { accent: "203, 213, 225", soft: "100, 116, 139", deep: "17, 24, 39", glow: "66%" },
+  Lincoln: { accent: "203, 213, 225", soft: "100, 116, 139", deep: "17, 24, 39", glow: "66%" },
+  Lotus: { accent: "251, 191, 36", soft: "34, 197, 94", deep: "15, 24, 12", glow: "58%" },
+  Lucid: { accent: "251, 191, 36", soft: "245, 158, 11", deep: "24, 17, 10", glow: "58%" },
+  Maserati: { accent: "96, 165, 250", soft: "37, 99, 235", deep: "10, 18, 34", glow: "62%" },
+  Mazda: { accent: "248, 113, 113", soft: "185, 28, 28", deep: "27, 10, 13", glow: "58%" },
+  McLaren: { accent: "249, 115, 22", soft: "234, 88, 12", deep: "28, 14, 8", glow: "56%" },
+  Mini: { accent: "226, 232, 240", soft: "100, 116, 139", deep: "17, 24, 39", glow: "66%" },
+  Mitsubishi: { accent: "248, 113, 113", soft: "220, 38, 38", deep: "24, 12, 18", glow: "58%" },
+  Nissan: { accent: "203, 213, 225", soft: "100, 116, 139", deep: "17, 24, 39", glow: "66%" },
+  Pagani: { accent: "56, 189, 248", soft: "245, 158, 11", deep: "13, 18, 27", glow: "58%" },
+  Polestar: { accent: "226, 232, 240", soft: "125, 211, 252", deep: "14, 22, 32", glow: "66%" },
+  Porsche: { accent: "251, 191, 36", soft: "220, 38, 38", deep: "29, 16, 8", glow: "56%" },
+  RAM: { accent: "248, 113, 113", soft: "120, 113, 108", deep: "24, 13, 12", glow: "58%" },
+  Rivian: { accent: "251, 191, 36", soft: "132, 204, 22", deep: "20, 22, 12", glow: "58%" },
+  "Rolls-Royce": { accent: "226, 232, 240", soft: "147, 51, 234", deep: "22, 16, 34", glow: "66%" },
+  Subaru: { accent: "96, 165, 250", soft: "37, 99, 235", deep: "10, 18, 34", glow: "62%" },
+  Tesla: { accent: "248, 113, 113", soft: "220, 38, 38", deep: "24, 12, 18", glow: "58%" },
+  "Toyota": { accent: "248, 113, 113", soft: "239, 68, 68", deep: "24, 12, 18", glow: "58%" },
+  VinFast: { accent: "96, 165, 250", soft: "37, 99, 235", deep: "10, 18, 34", glow: "62%" },
+  Volkswagen: { accent: "96, 165, 250", soft: "37, 99, 235", deep: "10, 18, 34", glow: "62%" },
+  Volvo: { accent: "96, 165, 250", soft: "37, 99, 235", deep: "10, 18, 34", glow: "62%" },
+};
+
+const adminModelHeroPalettes: Array<[RegExp, AdminHeroPalette]> = [
+  [/mustang/i, { accent: "249, 115, 22", soft: "234, 88, 12", deep: "24, 13, 8", glow: "58%" }],
+  [/range rover|vogue|defender|discovery/i, { accent: "34, 197, 94", soft: "21, 128, 61", deep: "12, 24, 18", glow: "64%" }],
+];
+
+const adminCategoryHeroPalettes: Record<string, AdminHeroPalette> = {
+  Econom: { accent: "45, 212, 191", soft: "20, 184, 166", deep: "8, 22, 24", glow: "58%" },
+  Comfort: { accent: "96, 165, 250", soft: "59, 130, 246", deep: "10, 18, 34", glow: "62%" },
+  Business: { accent: "203, 213, 225", soft: "100, 116, 139", deep: "17, 24, 39", glow: "66%" },
+  SUV: { accent: "34, 197, 94", soft: "22, 163, 74", deep: "9, 22, 18", glow: "63%" },
+  Miniven: { accent: "168, 85, 247", soft: "124, 58, 237", deep: "20, 13, 34", glow: "60%" },
+  Sport: { accent: "251, 113, 133", soft: "225, 29, 72", deep: "29, 10, 18", glow: "57%" },
+};
+
+function carHeroPalette(car?: AdminCar) {
+  const modelPalette = adminModelHeroPalettes.find(([pattern]) =>
+    pattern.test(`${car?.brand ?? ""} ${car?.title ?? ""} ${car?.category ?? ""}`)
+  )?.[1];
+
+  return (
+    modelPalette ??
+    (car?.brand ? adminCarHeroPalettes[car.brand] : null) ??
+    (car?.category ? adminCategoryHeroPalettes[car.category] : null) ??
+    { accent: "236, 72, 153", soft: "168, 85, 247", deep: "13, 20, 34", glow: "62%" }
+  );
+}
+
+function rgbToHsl(red: number, green: number, blue: number) {
+  const r = red / 255;
+  const g = green / 255;
+  const b = blue / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const lightness = (max + min) / 2;
+
+  if (max === min) {
+    return { hue: 0, saturation: 0, lightness };
+  }
+
+  const delta = max - min;
+  const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+  let hue = 0;
+
+  if (max === r) {
+    hue = (g - b) / delta + (g < b ? 6 : 0);
+  } else if (max === g) {
+    hue = (b - r) / delta + 2;
+  } else {
+    hue = (r - g) / delta + 4;
+  }
+
+  return { hue: hue * 60, saturation, lightness };
+}
+
+function hslToRgb(hue: number, saturation: number, lightness: number) {
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const x = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const match = lightness - chroma / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  if (hue < 60) [r, g, b] = [chroma, x, 0];
+  else if (hue < 120) [r, g, b] = [x, chroma, 0];
+  else if (hue < 180) [r, g, b] = [0, chroma, x];
+  else if (hue < 240) [r, g, b] = [0, x, chroma];
+  else if (hue < 300) [r, g, b] = [x, 0, chroma];
+  else [r, g, b] = [chroma, 0, x];
+
+  return [
+    Math.round((r + match) * 255),
+    Math.round((g + match) * 255),
+    Math.round((b + match) * 255),
+  ];
+}
+
+function imagePaletteFromPixels(data: Uint8ClampedArray): AdminHeroPalette | null {
+  let totalWeight = 0;
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+
+  for (let index = 0; index < data.length; index += 16) {
+    const alpha = data[index + 3];
+    if (alpha < 160) continue;
+
+    const r = data[index];
+    const g = data[index + 1];
+    const b = data[index + 2];
+    const { saturation, lightness } = rgbToHsl(r, g, b);
+
+    if (lightness < 0.12 || lightness > 0.92 || saturation < 0.18) {
+      continue;
+    }
+
+    const weight = saturation * (1 - Math.abs(lightness - 0.52)) * 1.25;
+    totalWeight += weight;
+    red += r * weight;
+    green += g * weight;
+    blue += b * weight;
+  }
+
+  if (totalWeight < 4) {
+    return null;
+  }
+
+  const averageRed = Math.round(red / totalWeight);
+  const averageGreen = Math.round(green / totalWeight);
+  const averageBlue = Math.round(blue / totalWeight);
+  const hsl = rgbToHsl(averageRed, averageGreen, averageBlue);
+  const accent = hslToRgb(hsl.hue, Math.min(0.82, Math.max(0.5, hsl.saturation + 0.18)), 0.58);
+  const soft = hslToRgb(hsl.hue, Math.min(0.74, Math.max(0.42, hsl.saturation)), 0.44);
+  const deep = hslToRgb(hsl.hue, 0.42, 0.12);
+
+  return {
+    accent: accent.join(", "),
+    soft: soft.join(", "),
+    deep: deep.join(", "),
+    glow: hsl.hue > 25 && hsl.hue < 75 ? "57%" : "62%",
+  };
+}
+
+function useImageHeroPalette(image: string | null | undefined, fallback: AdminHeroPalette) {
+  const [extractedPalette, setExtractedPalette] = useState<{
+    image: string;
+    palette: AdminHeroPalette;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!image || typeof window === "undefined") {
+      return;
+    }
+
+    let cancelled = false;
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.decoding = "async";
+
+    img.onload = () => {
+      if (cancelled) return;
+
+      try {
+        const canvas = document.createElement("canvas");
+        const size = 56;
+        canvas.width = size;
+        canvas.height = size;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (!context) return;
+
+        context.clearRect(0, 0, size, size);
+        context.drawImage(img, 0, 0, size, size);
+        const extracted = imagePaletteFromPixels(context.getImageData(0, 0, size, size).data);
+
+        if (extracted && !cancelled) {
+          setExtractedPalette({ image, palette: extracted });
+        }
+      } catch {
+        // Remote images can block canvas reads; the brand/category palette remains the fallback.
+      }
+    };
+
+    img.src = image;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [image]);
+
+  return extractedPalette && extractedPalette.image === image ? extractedPalette.palette : fallback;
 }
 
 function carMissingInfo(car: AdminCar, mode: CarTableMode = "fleet") {
@@ -3824,6 +4090,11 @@ function CarEditorHero({
   startingPrice: number | null;
 }) {
   const category = categoryLabels[car?.category ?? ""] ?? car?.category ?? "Model";
+  const fallbackPalette = useMemo(
+    () => carHeroPalette(car),
+    [car]
+  );
+  const palette = useImageHeroPalette(image, fallbackPalette);
   const meta = uniqueCompact([
     `${variantCount} variant`,
     startingPrice !== null ? `${startingPrice} ₼-dan` : null,
@@ -3834,10 +4105,17 @@ function CarEditorHero({
 
   return (
     <motion.header
+      key={car?.id ?? title}
       className="admin-car-hero"
-      initial={{ opacity: 0, y: 18, filter: "blur(8px)" }}
-      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+      style={{
+        "--admin-car-hero-accent": palette.accent,
+        "--admin-car-hero-soft": palette.soft,
+        "--admin-car-hero-deep": palette.deep,
+        "--admin-car-hero-glow": palette.glow,
+      } as CSSProperties}
+      initial={{ opacity: 0, y: 18, scale: 0.992, filter: "blur(10px)" }}
+      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="admin-car-hero-copy">
         <span className={`admin-car-status${car?.isActive === false ? " is-muted" : ""}`}>
@@ -4344,7 +4622,7 @@ function CarEditorForm({
 	            <div className="admin-form-grid">
 	              <Field label="Model adı" name="title" defaultValue={car?.title} placeholder="Mercedes S Class" icon={<CarFront size={16} />} />
 	              <Field label="URL adı" name="slug" defaultValue={car?.slug} placeholder="mercedes-s-class" icon={<ExternalLink size={16} />} />
-	              <Field label="Brend" name="brand" defaultValue={car?.brand} placeholder="Mercedes-Benz" icon={<ShieldCheck size={16} />} />
+	              <Field label="Brend" name="brand" defaultValue={car?.brand} placeholder="Mercedes-Benz" icon={<ShieldCheck size={16} />} suggestions={adminBrandOptions} />
 	              <SelectField label="Kateqoriya" name="category" defaultValue={car?.category ?? "Business"} options={[...carCategories]} icon={<Grid2X2 size={16} />} />
 	              <Field label="Sıralama" name="sortOrder" type="number" defaultValue={car?.sortOrder ?? editor.index + 1} icon={<Rows3 size={16} />} />
 	              <Field label="Buraxılış ili" name="manufactureYear" type="number" defaultValue={car?.manufactureYear} placeholder="2024" icon={<CalendarDays size={16} />} />
