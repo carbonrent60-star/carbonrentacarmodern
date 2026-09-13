@@ -3707,12 +3707,15 @@ function NotesView({
   notes: AdminNoteItem[];
   setNotes: Dispatch<SetStateAction<AdminNoteItem[]>>;
 }) {
-  const [draftNote, setDraftNote] = useState<AdminNoteItem | null>(() => notes[0] ?? null);
+  const [selectedNoteId, setSelectedNoteId] = useState(() => notes[0]?.id ?? "");
+  const [draftNote, setDraftNote] = useState<AdminNoteItem | null>(null);
   const [filter, setFilter] = useState<"all" | "open" | "done">("all");
   const [query, setQuery] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const noteBodyRef = useRef<HTMLTextAreaElement>(null);
-  const activeNote = draftNote;
+  const selectedNote = notes.find((note) => note.id === selectedNoteId) ?? null;
+  const activeNote = draftNote ?? selectedNote;
+  const isEditingNote = Boolean(draftNote);
   const doneCount = notes.filter((note) => note.done).length;
   const openCount = notes.length - doneCount;
   const filteredNotes = notes.filter((note) => {
@@ -3738,6 +3741,7 @@ function NotesView({
   function addNote() {
     const next = createAdminNote();
     setDraftNote(next);
+    setSelectedNoteId("");
     setFilter("all");
   }
 
@@ -3760,7 +3764,8 @@ function NotesView({
       persistNotes(nextNotes);
       return nextNotes;
     });
-    setDraftNote(cleanNote);
+    setSelectedNoteId(cleanNote.id);
+    setDraftNote(null);
   }, [draftNote, persistNotes, setNotes]);
 
   useEffect(() => {
@@ -3781,7 +3786,8 @@ function NotesView({
     persistNotes(next);
 
     const nextActive = next[0] ?? null;
-    setDraftNote(nextActive);
+    setSelectedNoteId(nextActive?.id ?? "");
+    setDraftNote(null);
   }
 
   function attachImage(file?: File | null) {
@@ -3885,9 +3891,10 @@ function NotesView({
                       "--note-soft": meta.soft,
                       "--note-glow": meta.glow,
                     } as CSSProperties}
-                    className={`${activeNote?.id === note.id ? "is-active" : ""}${note.done ? " is-done" : ""}`}
+                    className={`${!isEditingNote && selectedNote?.id === note.id ? "is-active" : ""}${note.done ? " is-done" : ""}`}
                     onClick={() => {
-                      setDraftNote(note);
+                      setSelectedNoteId(note.id);
+                      setDraftNote(null);
                     }}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -3909,15 +3916,21 @@ function NotesView({
           </div>
         </aside>
 
-        {activeNote ? (
-          <article
-            className="admin-note-editor"
-            style={{
-              "--note-accent": activeMeta.color,
-              "--note-soft": activeMeta.soft,
-              "--note-glow": activeMeta.glow,
-            } as CSSProperties}
-          >
+        <AnimatePresence mode="wait" initial={false}>
+          {isEditingNote && activeNote ? (
+            <motion.article
+              key={`note-editor-${activeNote.id}`}
+              className="admin-note-editor"
+              style={{
+                "--note-accent": activeMeta.color,
+                "--note-soft": activeMeta.soft,
+                "--note-glow": activeMeta.glow,
+              } as CSSProperties}
+              initial={{ opacity: 0, y: 18, scale: 0.985, filter: "blur(8px)" }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -10, scale: 0.99, filter: "blur(6px)" }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            >
             <header>
               <div>
                 <span className="admin-note-save-state is-saved">
@@ -3992,6 +4005,10 @@ function NotesView({
                 rows={12}
                 placeholder="Qeydinizi buraya yazın..."
               />
+              <div className="admin-note-live-preview">
+                <span>Canlı önizləmə</span>
+                <FormattedNoteBody body={activeNote.body} />
+              </div>
             </div>
 
             {activeNote.image ? (
@@ -4019,11 +4036,61 @@ function NotesView({
                 <input type="file" accept="image/*" onChange={(event) => attachImage(event.target.files?.[0])} />
               </label>
             )}
-          </article>
-        ) : null}
-
-        {!activeNote ? (
-          <article className="admin-note-empty-state">
+            </motion.article>
+          ) : selectedNote ? (
+            <motion.article
+              key={`note-uploaded-${selectedNote.id}`}
+              className="admin-note-uploaded-card"
+              style={{
+                "--note-accent": activeMeta.color,
+                "--note-soft": activeMeta.soft,
+                "--note-glow": activeMeta.glow,
+              } as CSSProperties}
+              initial={{ opacity: 0, y: 18, scale: 0.985, filter: "blur(8px)" }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -10, scale: 0.99, filter: "blur(6px)" }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <header>
+                <div>
+                  <span className="admin-note-uploaded-status"><CheckCircle2 size={15} /> Saxlanmış qeyd</span>
+                  <h2>{selectedNote.title || "Adsız qeyd"}</h2>
+                  <p>{selectedNote.done ? "Tamamlandı" : "Açıq"} · {activeMeta.label} · {formatNoteDate(selectedNote.updatedAt)}</p>
+                </div>
+                <div className="admin-note-actions">
+                  <button type="button" className="admin-secondary-button" onClick={() => setDraftNote(selectedNote)}>
+                    <NotebookPen size={14} />
+                    Redaktə et
+                  </button>
+                  <button type="button" className="admin-danger-button" onClick={() => deleteNote(selectedNote.id)}>
+                    <Trash2 size={14} />
+                    Sil
+                  </button>
+                </div>
+              </header>
+              <div className="admin-note-uploaded-body">
+                <FormattedNoteBody body={selectedNote.body} />
+              </div>
+              {selectedNote.image ? (
+                <button type="button" className="admin-note-uploaded-attachment" onClick={() => setPreviewImage(selectedNote.image ?? null)}>
+                  <span><Image src={selectedNote.image} alt={selectedNote.title || "Qeyd şəkli"} fill sizes="220px" /></span>
+                  <div>
+                    <strong>Əlavə edilmiş şəkil</strong>
+                    <small>Önizləmək üçün aç</small>
+                  </div>
+                  <Eye size={16} />
+                </button>
+              ) : null}
+            </motion.article>
+          ) : (
+          <motion.article
+            key="note-empty"
+            className="admin-note-empty-state"
+            initial={{ opacity: 0, y: 14, scale: 0.985, filter: "blur(8px)" }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -8, scale: 0.99, filter: "blur(6px)" }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
             <NotebookPen size={34} />
             <h2>Hələ qeyd yoxdur</h2>
             <p>Yeni qeyd yaradın, məlumatları doldurun və sonra manual olaraq saxlayın.</p>
@@ -4031,11 +4098,20 @@ function NotesView({
               <Plus size={15} />
               Yeni qeyd
             </button>
-          </article>
-        ) : null}
+          </motion.article>
+          )}
+        </AnimatePresence>
 
-        {activeNote ? (
-          <aside className="admin-note-inspector">
+        <AnimatePresence mode="wait" initial={false}>
+          {activeNote ? (
+          <motion.aside
+            key={`note-inspector-${activeNote.id}`}
+            className="admin-note-inspector"
+            initial={{ opacity: 0, x: 14, filter: "blur(8px)" }}
+            animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, x: 10, filter: "blur(6px)" }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
             <section>
               <h3>Məlumat</h3>
               <dl>
@@ -4058,8 +4134,23 @@ function NotesView({
               <Trash2 size={14} />
               Qeydi sil
             </button>
-          </aside>
-        ) : null}
+          </motion.aside>
+          ) : (
+            <motion.aside
+              key="note-inspector-empty"
+              className="admin-note-inspector admin-note-inspector-empty"
+              initial={{ opacity: 0, x: 14, filter: "blur(8px)" }}
+              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, x: 10, filter: "blur(6px)" }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <section>
+                <h3>Hazırdır</h3>
+                <p>Qeyd seçin və ya yeni qeyd yaradın.</p>
+              </section>
+            </motion.aside>
+          )}
+        </AnimatePresence>
       </section>
 
       {previewImage ? (
@@ -4086,6 +4177,90 @@ function formatNoteDate(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function FormattedNoteBody({ body }: { body: string }) {
+  const lines = body.trim().split("\n");
+
+  if (!body.trim()) {
+    return <p className="admin-note-empty-copy">Bu qeyddə mətn yoxdur.</p>;
+  }
+
+  return (
+    <>
+      {lines.map((line, index) => {
+        const checklistMatch = line.match(/^\s*-\s+\[( |x)\]\s+(.+)$/i);
+        const listMatch = line.match(/^\s*-\s+(.+)$/);
+
+        if (checklistMatch) {
+          const done = checklistMatch[1].toLowerCase() === "x";
+
+          return (
+            <p key={`${line}-${index}`} className={`admin-note-render-check${done ? " is-done" : ""}`}>
+              <CheckCircle2 size={15} />
+              <span>{renderNoteInline(checklistMatch[2])}</span>
+            </p>
+          );
+        }
+
+        if (listMatch) {
+          return (
+            <p key={`${line}-${index}`} className="admin-note-render-list">
+              <i />
+              <span>{renderNoteInline(listMatch[1])}</span>
+            </p>
+          );
+        }
+
+        return <p key={`${line}-${index}`}>{renderNoteInline(line)}</p>;
+      })}
+    </>
+  );
+}
+
+function renderNoteInline(text: string) {
+  const parts: ReactNode[] = [];
+  const pattern = /(\*\*[^*]+\*\*|_[^_]+_|<u>.*?<\/u>|`[^`]+`|\[[^\]]+\]\((https?:\/\/[^)\s]+)\))/g;
+  let lastIndex = 0;
+
+  Array.from(text.matchAll(pattern)).forEach((match, index) => {
+    if (match.index === undefined) return;
+
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    const token = match[0];
+
+    if (token.startsWith("**") && token.endsWith("**")) {
+      parts.push(<strong key={`${token}-${index}`}>{token.slice(2, -2)}</strong>);
+    } else if (token.startsWith("_") && token.endsWith("_")) {
+      parts.push(<em key={`${token}-${index}`}>{token.slice(1, -1)}</em>);
+    } else if (token.startsWith("<u>") && token.endsWith("</u>")) {
+      parts.push(<u key={`${token}-${index}`}>{token.slice(3, -4)}</u>);
+    } else if (token.startsWith("`") && token.endsWith("`")) {
+      parts.push(<code key={`${token}-${index}`}>{token.slice(1, -1)}</code>);
+    } else {
+      const linkMatch = token.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
+      if (linkMatch) {
+        parts.push(
+          <a key={`${token}-${index}`} href={linkMatch[2]} target="_blank" rel="noopener noreferrer">
+            {linkMatch[1]}
+          </a>
+        );
+      } else {
+        parts.push(token);
+      }
+    }
+
+    lastIndex = match.index + token.length;
+  });
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length ? parts : text;
 }
 
 function SettingsView({
